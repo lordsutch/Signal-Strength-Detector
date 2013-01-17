@@ -1,6 +1,9 @@
-package com.tombarrasso.android.signaldetector;
+package com.lordsutch.android.signaldetector;
 
 // Android Packages
+import java.util.List;
+
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Build;
@@ -11,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.TextView;
 import android.widget.Button;
+import android.telephony.CellInfo;
 import android.telephony.SignalStrength;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -20,13 +24,15 @@ import android.telephony.gsm.GsmCellLocation;
 import android.widget.Toast;
 import android.util.Log;
 
+@TargetApi(17)
 public final class HomeActivity extends Activity
 {
 	public static final String TAG = HomeActivity.class.getSimpleName();
 	
-	public static final String EMAIL = "tbarrasso@sevenplusandroid.org";
+	public static final String EMAIL = "lordsutch@gmail.com";
 	
 	private CellLocation mCellLocation;
+	private String mCellInfo = null;
 	private SignalStrength mSignalStrength;
 	private boolean mDone = false;
 	private TextView mText = null;
@@ -36,8 +42,11 @@ public final class HomeActivity extends Activity
 
     /** Called when the activity is first created. */
     @Override
+    @TargetApi(17)
     public void onCreate(Bundle savedInstanceState)
     {
+    	List<CellInfo> mInfo;
+    	
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
@@ -70,7 +79,20 @@ public final class HomeActivity extends Activity
     	
     	// Register the listener with the telephony manager
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
-    		PhoneStateListener.LISTEN_CELL_LOCATION);
+    		PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
+    	
+    	mInfo = mManager.getAllCellInfo();
+    	Log.d(TAG, "getAllCellInfo()");
+    	
+    	if(mInfo != null) {
+    		Log.d(TAG, mInfo.toString());
+    		mCellInfo = "";
+    		for(CellInfo item : mInfo) {
+    			Log.d(TAG, item.toString());
+    			if(item != null)
+    				mCellInfo = mCellInfo + ReflectionUtils.dumpClass(item.getClass(), item);
+    		}
+    	}
     }
     
     // Listener for signal strength.
@@ -88,6 +110,25 @@ public final class HomeActivity extends Activity
     		update();
     	}
     	
+    	@Override
+    	public void onCellInfoChanged(List<CellInfo> mInfo)
+    	{
+    		if (mDone) return;
+    		
+    		Log.d(TAG, "Cell info obtained.");
+    	
+    		if(mInfo != null) {
+        		mCellInfo = "";
+    			for(CellInfo item : mInfo) {
+    				Log.d(TAG, item.toString());
+    				if(item != null)
+    					mCellInfo = mCellInfo + ReflectionUtils.dumpClass(item.getClass(), item);
+    			}
+    		}
+    		
+    		update();
+    	}
+
     	@Override
     	public void onSignalStrengthsChanged(SignalStrength sStrength)
     	{
@@ -115,8 +156,9 @@ public final class HomeActivity extends Activity
     			"`\nBRAND: `" + Build.BRAND + ((Build.VERSION.SDK_INT >= 8) ? ("`\nBOOTLOADER: `" + Build.BOOTLOADER) : "") +
     			"`\nBOARD: `" + Build.BOARD + "`\nID: `"+ Build.ID + "`\n\n" +
     			ReflectionUtils.dumpClass(SignalStrength.class, mSignalStrength) + "\n" +
-    			ReflectionUtils.dumpClass(mCellLocation.getClass(), mCellLocation) + "\n" + getWimaxDump() +
-    			ReflectionUtils.dumpClass(TelephonyManager.class, mManager) +
+    			ReflectionUtils.dumpClass(mCellLocation.getClass(), mCellLocation) + "\n" + // getWimaxDump() +
+    			ReflectionUtils.dumpClass(TelephonyManager.class, mManager) + "\n" +
+    			mCellInfo +
     			ReflectionUtils.dumpStaticFields(Context.class, getApplicationContext()));
     			
     		return null;
@@ -155,7 +197,7 @@ public final class HomeActivity extends Activity
     
     private final void update()
     {
-    	if (mSignalStrength == null || mCellLocation == null) return;
+    	if (mSignalStrength == null || mCellLocation == null || mCellInfo == null) return;
     	
     	final ReflectionTask mTask = new ReflectionTask();
     	mTask.execute();
@@ -166,9 +208,7 @@ public final class HomeActivity extends Activity
      */
     public static final String getRadio()
     {
-    	if (Build.VERSION.SDK_INT >= 8 && Build.VERSION.SDK_INT < 14)
-    		return Build.RADIO;
-    	else if (Build.VERSION.SDK_INT >= 14)
+    	if (Build.VERSION.SDK_INT >= 14)
     		return Build.getRadioVersion();
     	else
     		return null;

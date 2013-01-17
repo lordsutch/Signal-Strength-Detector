@@ -1,4 +1,4 @@
-package com.tombarrasso.android.signaldetector;
+package com.lordsutch.android.signaldetector;
 
 import java.lang.reflect.*;
 import android.util.Log;
