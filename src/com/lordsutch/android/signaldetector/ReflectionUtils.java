@@ -40,7 +40,7 @@ public final class ReflectionUtils
 			mStr += "\n";
 		}
 		
-		mStr += "METHODS\\nn";
+		mStr += "METHODS\n\n";
 		
 		// Dump all methods.
 		
