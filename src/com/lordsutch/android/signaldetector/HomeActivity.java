@@ -1,6 +1,10 @@
 package com.lordsutch.android.signaldetector;
 
 // Android Packages
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -10,6 +14,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -53,9 +60,13 @@ public final class HomeActivity extends Activity
 	private TelephonyManager mManager;
 	private Object mHTCManager;
 	private LocationProvider mLocationProvider = null;
-	
+	private Notification.Builder mBuilder = null;
+	private NotificationManager mNotifyMgr;
 	private LocationManager mLocationManager;
+	private int mNotificationId = 001;
 
+	private File logFile = null;
+	
     /** Called when the activity is first created. */
     @Override
     @TargetApi(17)
@@ -65,7 +76,7 @@ public final class HomeActivity extends Activity
     	
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
+                
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
@@ -97,6 +108,26 @@ public final class HomeActivity extends Activity
     			finish();
     		}
     	});
+    	
+    	Intent resultIntent = new Intent(this, HomeActivity.class);
+    	PendingIntent resultPendingIntent =
+    		    PendingIntent.getActivity(
+    		    this,
+    		    0,
+    		    resultIntent,
+    		    PendingIntent.FLAG_UPDATE_CURRENT
+    		);
+
+    	mBuilder = new Notification.Builder(this)
+    		    .setSmallIcon(R.drawable.icon)
+    		    .setContentTitle(getString(R.string.signal_detector_is_running))
+    		    .setContentText("Hello World!")
+    		    .setContentIntent(resultPendingIntent);
+
+    	mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+    	// Builds the notification and issues it.
+    	mNotifyMgr.notify(mNotificationId, mBuilder.build());
     	
     	// Register the listener with the telephony manager
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
@@ -196,6 +227,41 @@ public final class HomeActivity extends Activity
         startActivity(settingsIntent);
     }
     
+    private void appendLog(String text, String header)
+    {       
+    	Boolean newfile = false;
+    	File logFile = new File(getExternalFilesDir(null), "ltecells.csv");
+    	if (!logFile.exists())
+    	{
+    		try
+    		{
+    			logFile.createNewFile();
+    			newfile = true;
+    		} 
+    		catch (IOException e)
+    		{
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+    	}
+    	try
+    	{
+    		//BufferedWriter for performance, true to set append to file flag
+    		BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true)); 
+    		if (newfile) {
+    			buf.append(header);
+    		}
+    		buf.append(text);
+    		buf.newLine();
+    		buf.close();
+    	}
+    	catch (IOException e)
+    	{
+    		// TODO Auto-generated catch block
+    		e.printStackTrace();
+    	}
+    }
+
     private final LocationListener mLocListener = new LocationListener()
     {
     	@Override
@@ -214,33 +280,37 @@ public final class HomeActivity extends Activity
 			TextView servingid = (TextView) findViewById(R.id.cellid);
 			TextView strength = (TextView) findViewById(R.id.sigstrength);
 
+			String cellID = "";
+			Integer physCellID = -1;
+			Integer sigStrength = -999;
+			
 			mInfo = mManager.getAllCellInfo();
         	if(mInfo != null) {
         		for(CellInfo item : mInfo) {
         			if(item != null && item.getClass() == CellInfoLte.class) {
-        				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
-        				servingid.setText(String.format("%07x", cellid.getCi()) + " " + String.valueOf(cellid.getPci()));
-        				gotID = true;
-        				
         				CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
-        				strength.setText(String.valueOf(cstr.getDbm()) + "\u2009dBm");
+        				sigStrength = cstr.getDbm();
+
+        				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
+        				cellID = String.format("%07x", cellid.getCi());
+        				physCellID = cellid.getPci();
+        				gotID = true;        				
         			}
         		}
         	}
     		if(!gotID && mHTCManager != null) {
     			Method m = null;
     			String s = "";
-    			Integer ss = -999;
     			
     			try {
-					m = mHTCManager.getClass().getMethod("getSectorId");
+					m = mHTCManager.getClass().getMethod("getSectorId", null);
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
     			if(m != null) {
     				try {
-    					s = (String) m.invoke(mHTCManager, (Object []) null);
+    					cellID = (String) m.invoke(mHTCManager, (Object []) null);
     				} catch (IllegalArgumentException e) {
     					// TODO Auto-generated catch block
     					e.printStackTrace();
@@ -251,17 +321,16 @@ public final class HomeActivity extends Activity
     					// TODO Auto-generated catch block
     					e.printStackTrace();
     				}
-    				servingid.setText(s);
     			}
     			
     			try {
-					m = mSignalStrength.getClass().getMethod("getLteDbm");
+					m = mSignalStrength.getClass().getMethod("getLteDbm", null);
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
     			try {
-					ss = (Integer) m.invoke(mSignalStrength, (Object []) null);
+					sigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
 				} catch (IllegalArgumentException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -272,9 +341,34 @@ public final class HomeActivity extends Activity
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-    			
-    			strength.setText(ss.toString() + "\u2009dBm");
     		}
+
+    		if(cellID != "") {
+    			if(physCellID >= 0) {
+    				servingid.setText(cellID + " " + String.valueOf(physCellID));
+    			} else {
+    				servingid.setText(cellID);
+    			}
+    		} else {
+    			servingid.setText(R.string.none);
+    		}
+    		
+    		if(sigStrength > -900) {
+    			strength.setText(sigStrength.toString() + "\u2009dBm");
+    		} else {
+    			strength.setText(R.string.no_signal);
+    		}
+    		
+    		if(sigStrength > -900 || cellID != "")
+    			appendLog(mLocation.getLatitude()+","+mLocation.getLongitude()+","+cellID+","+String.valueOf(physCellID)+","+
+    					(sigStrength > -900 ? sigStrength.toString() : "")+"\n", "latitude,longitude,cellid,physcellid,dBm\n");
+
+    		if(cellID != "")
+    			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
+    		else
+    			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
+
+        	mNotifyMgr.notify(mNotificationId, mBuilder.build());
     	}
 
 		@Override
@@ -460,6 +554,7 @@ public final class HomeActivity extends Activity
     protected void onStop() {
         super.onStop();
         mLocationManager.removeUpdates(mLocListener);
+        mNotifyMgr.cancelAll();
     }
 
     /**

@@ -10,4 +10,7 @@
     <string name="location">Location</string>
     <string name="enable_gps">Enable GPS</string>
     <string name="enable_gps_dialog">GPS provider not enabled. Would you like to enable it?</string>
+    <string name="signal_detector_is_running">Signal Detector is running</string>
+    <string name="no_signal">no signal</string>
+    <string name="none">none</string>
 </resources>
