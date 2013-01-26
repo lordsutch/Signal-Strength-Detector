@@ -303,14 +303,14 @@ public final class HomeActivity extends Activity
     			String s = "";
     			
     			try {
-					m = mHTCManager.getClass().getMethod("getSectorId", null);
+					m = mHTCManager.getClass().getMethod("getSectorId", int.class);
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
     			if(m != null) {
     				try {
-    					cellID = (String) m.invoke(mHTCManager, (Object []) null);
+    					cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
     				} catch (IllegalArgumentException e) {
     					// TODO Auto-generated catch block
     					e.printStackTrace();
@@ -324,7 +324,7 @@ public final class HomeActivity extends Activity
     			}
     			
     			try {
-					m = mSignalStrength.getClass().getMethod("getLteDbm", null);
+					m = mSignalStrength.getClass().getMethod("getLteDbm");
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -343,11 +343,11 @@ public final class HomeActivity extends Activity
 				}
     		}
 
-    		if(cellID != "") {
+    		if(!cellID.isEmpty()) {
     			if(physCellID >= 0) {
     				servingid.setText(cellID + " " + String.valueOf(physCellID));
     			} else {
-    				servingid.setText(cellID);
+    				servingid.setText("'"+cellID+"'");
     			}
     		} else {
     			servingid.setText(R.string.none);
@@ -359,11 +359,11 @@ public final class HomeActivity extends Activity
     			strength.setText(R.string.no_signal);
     		}
     		
-    		if(sigStrength > -900 || cellID != "")
+    		if(sigStrength > -900 || !cellID.isEmpty())
     			appendLog(mLocation.getLatitude()+","+mLocation.getLongitude()+","+cellID+","+String.valueOf(physCellID)+","+
     					(sigStrength > -900 ? sigStrength.toString() : "")+"\n", "latitude,longitude,cellid,physcellid,dBm\n");
 
-    		if(cellID != "")
+    		if(!cellID.isEmpty())
     			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
     		else
     			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
