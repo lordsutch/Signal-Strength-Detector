@@ -5,14 +5,14 @@
     <string name="results">Signal Detector Output</string>
     <string name="cancel">Cancel</string>
     <string name="submit">Submit</string>
-    <string name="lte_signal_strength">LTE Signal Strength</string>
-    <string name="serving_lte_cell_id">Serving LTE Cell ID</string>
+    <string name="lte_signal_strength">LTE Signal</string>
+    <string name="serving_lte_cell_id">LTE Cell ID</string>
     <string name="location">Location</string>
     <string name="enable_gps">Enable GPS</string>
     <string name="enable_gps_dialog">GPS provider not enabled. Would you like to enable it?</string>
     <string name="signal_detector_is_running">Signal Detector is running</string>
     <string name="no_signal">no signal</string>
     <string name="none">none</string>
-    <string name="cdma_1xrtt_base_station">CDMA 1xRTT Base Station</string>
-    <string name="_1xrtt_signal_strength">1xRTT Signal Strength</string>
+    <string name="cdma_1xrtt_base_station">1xRTT Tower</string>
+    <string name="_1xrtt_signal_strength">1xRTT Signal</string>
 </resources>
