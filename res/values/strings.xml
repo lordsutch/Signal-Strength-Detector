@@ -5,4 +5,9 @@
     <string name="results">Signal Detector Output</string>
     <string name="cancel">Cancel</string>
     <string name="submit">Submit</string>
+    <string name="lte_signal_strength">LTE Signal Strength</string>
+    <string name="serving_lte_cell_id">Serving LTE Cell ID</string>
+    <string name="location">Location</string>
+    <string name="enable_gps">Enable GPS</string>
+    <string name="enable_gps_dialog">GPS provider not enabled. Would you like to enable it?</string>
 </resources>
