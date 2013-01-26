@@ -36,12 +36,14 @@ import android.telephony.CellSignalStrengthLte;
 import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
+import android.telephony.cdma.CdmaCellLocation;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.os.SystemClock;
 
 @TargetApi(17)
 public final class HomeActivity extends Activity
@@ -252,10 +254,10 @@ public final class HomeActivity extends Activity
         startActivity(settingsIntent);
     }
     
-    private void appendLog(String text, String header)
+    private void appendLog(String logfile, String text, String header)
     {       
     	Boolean newfile = false;
-    	File logFile = new File(getExternalFilesDir(null), "ltecells.csv");
+    	File logFile = new File(getExternalFilesDir(null), logfile);
     	if (!logFile.exists())
     	{
     		try
@@ -288,77 +290,101 @@ public final class HomeActivity extends Activity
     	}
     }
 
-    private final LocationListener mLocListener = new LocationListener()
-    {
-    	@Override
-    	public void onLocationChanged(Location mLocation)
-    	{
-    		Boolean gotID = false;
-    		
-    		TextView lat = (TextView) findViewById(R.id.positionLat);
-    		TextView lon = (TextView) findViewById(R.id.positionLon);
-    		
-    		double latitude = mLocation.getLatitude();
-    		double longitude = mLocation.getLongitude();
-    		
-    		lat.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S"));
-    		lon.setText(String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
+    private long THIRTY_SECONDS = 30*1000;
+    
+    private void updatelog() {
+    	Location mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+    	
+    	if(mLocation == null)
+    		return;
 
-        	List<CellInfo> mInfo;
+		Boolean gotID = false;
+		
+		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
+		
+		double latitude = mLocation.getLatitude();
+		double longitude = mLocation.getLongitude();
+		
+		latlon.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S") + " " +
+			String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
 
-			TextView servingid = (TextView) findViewById(R.id.cellid);
-			TextView strength = (TextView) findViewById(R.id.sigstrength);
+    	List<CellInfo> mInfo;
 
-			String cellID = "";
-			Integer physCellID = -1;
-			Integer sigStrength = -999;
+		TextView servingid = (TextView) findViewById(R.id.cellid);
+		TextView strength = (TextView) findViewById(R.id.sigstrength);
+		
+		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
+		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
+
+		String cellID = "";
+		int physCellID = -1;
+		int sigStrength = -999;
+		
+		int bsid = -1;
+		int nid = -1;
+		int sid = -1;
+		int cdmaSigStrength = -999;
+		
+		if(mCellLocation != null) {
+			if(mCellLocation.getClass() == CdmaCellLocation.class) {
+				CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
+				bsid = x.getBaseStationId();
+				nid = x.getNetworkId();
+				sid = x.getSystemId();
+			}
+		}
+		
+		if(mSignalStrength != null && !mSignalStrength.isGsm()) {
+			cdmaSigStrength = mSignalStrength.getCdmaDbm();
+		}
+		
+		mInfo = mManager.getAllCellInfo();
+    	if(mInfo != null) {
+    		for(CellInfo item : mInfo) {
+    			if(item != null && item.getClass() == CellInfoLte.class) {
+    				CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
+    				sigStrength = cstr.getDbm();
+
+    				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
+    				cellID = String.format("%08x", cellid.getCi());
+    				physCellID = cellid.getPci();
+    				gotID = true;        				
+    			}
+    		}
+    	}
+		if(!gotID && mHTCManager != null) {
+			Method m = null;
+			String s = "";
 			
-			mInfo = mManager.getAllCellInfo();
-        	if(mInfo != null) {
-        		for(CellInfo item : mInfo) {
-        			if(item != null && item.getClass() == CellInfoLte.class) {
-        				CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
-        				sigStrength = cstr.getDbm();
-
-        				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
-        				cellID = String.format("%08x", cellid.getCi());
-        				physCellID = cellid.getPci();
-        				gotID = true;        				
-        			}
-        		}
-        	}
-    		if(!gotID && mHTCManager != null) {
-    			Method m = null;
-    			String s = "";
-    			
-    			try {
-					m = mHTCManager.getClass().getMethod("getSectorId", int.class);
-				} catch (NoSuchMethodException e) {
+			try {
+				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if(m != null) {
+				try {
+					cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-    			if(m != null) {
-    				try {
-    					cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
-    				} catch (IllegalArgumentException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				} catch (IllegalAccessException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				} catch (InvocationTargetException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				}
-    			}
-    			
-    			try {
+			}
+			
+			if(mSignalStrength != null) {
+				try {
 					m = mSignalStrength.getClass().getMethod("getLteRsrp");
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-    			try {
+				try {
 					sigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
 				} catch (IllegalArgumentException e) {
 					// TODO Auto-generated catch block
@@ -370,37 +396,71 @@ public final class HomeActivity extends Activity
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-    		}
+			}
+		}
 
-    		if(!cellID.isEmpty()) {
-    			if(physCellID >= 0) {
-    				servingid.setText(cellID + " " + String.valueOf(physCellID));
-    			} else {
-    				servingid.setText("'"+cellID+"'");
-    			}
-    		} else {
-    			servingid.setText(R.string.none);
-    		}
+		if(!cellID.isEmpty()) {
+			if(physCellID >= 0) {
+				servingid.setText(cellID + " " + String.valueOf(physCellID));
+			} else {
+				servingid.setText("'"+cellID+"'");
+			}
+		} else {
+			servingid.setText(R.string.none);
+		}
+		
+		if(sigStrength > -900) {
+			strength.setText(String.valueOf(sigStrength) + "\u2009dBm");
+		} else {
+			strength.setText(R.string.no_signal);
+		}
+
+		if(cdmaSigStrength > -900) {
+			cdmaStrength.setText(String.valueOf(cdmaSigStrength) + "\u2009dBm");
+		} else {
+			cdmaStrength.setText(R.string.no_signal);
+		}
+		
+		if(sid >= 0 && nid >= 0 && bsid >= 0) {
+			cdmaBS.setText(String.format("SID %d, NID %d, BSID %d", sid, nid, bsid));
+		} else {
+			cdmaBS.setText(R.string.none);
+		}
+		
+		if(!cellID.isEmpty())
+			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
+		else
+			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
+
+    	mNotifyMgr.notify(mNotificationId, mBuilder.build());
+
+    	if((mLocation.getTime() - (System.currentTimeMillis())) <= THIRTY_SECONDS) {
+    		String slat = Location.convert(latitude, Location.FORMAT_DEGREES);
+    		String slon = Location.convert(longitude, Location.FORMAT_DEGREES);
     		
-    		if(sigStrength > -900) {
-    			strength.setText(sigStrength.toString() + "\u2009dBm");
-    		} else {
-    			strength.setText(R.string.no_signal);
-    		}
-    		
-    		if(sigStrength > -900 || !cellID.isEmpty())
-    			appendLog(Location.convert(latitude, Location.FORMAT_DEGREES)+","+
-    					Location.convert(longitude, Location.FORMAT_DEGREES)+","+cellID+","+
+    		if(sigStrength > -900 || !cellID.isEmpty()) {
+    			Log.d(TAG, "Logging LTE cell.");
+    			appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
     					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    					(sigStrength > -900 ? sigStrength.toString() : ""),
+    					(sigStrength > -900 ? String.valueOf(sigStrength) : ""),
     					"latitude,longitude,cellid,physcellid,dBm");
-
-    		if(!cellID.isEmpty())
-    			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
-    		else
-    			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
-
-        	mNotifyMgr.notify(mNotificationId, mBuilder.build());
+    		}
+    		if(sid >= 22404 && sid <= 22451) {
+    			Log.d(TAG, "Logging ESMR cell.");
+    			appendLog("esmrcells.csv", slat+","+slon+","+
+    					String.valueOf(sid)+","+String.valueOf(nid)+","+String.valueOf(bsid)+","+
+    					(cdmaSigStrength > -900 ? String.valueOf(cdmaSigStrength) : ""),
+    					"latitude,longitude,sid,nid,bsid,rssi");
+    		}
+    	}
+    }
+    
+    private final LocationListener mLocListener = new LocationListener()
+    {
+    	@Override
+    	public void onLocationChanged(Location mLocation)
+    	{
+    		updatelog();
     	}
 
 		@Override
@@ -428,22 +488,15 @@ public final class HomeActivity extends Activity
     	@Override
     	public void onCellLocationChanged(CellLocation mLocation)
     	{
-    		if (mDone) return;
-    		
-    		Log.d(TAG, "Cell location obtained.");
-    	
     		mCellLocation = mLocation;
     		
     		update();
+    		updatelog();
     	}
     	
     	@Override
     	public void onCellInfoChanged(List<CellInfo> mInfo)
     	{
-    		if (mDone) return;
-    		
-    		Log.d(TAG, "Cell info obtained.");
-    	
     		if(mInfo != null) {
         		mCellInfo = "";
     			for(CellInfo item : mInfo) {
@@ -454,18 +507,16 @@ public final class HomeActivity extends Activity
     		}
     		
     		update();
+    		updatelog();
     	}
 
     	@Override
     	public void onSignalStrengthsChanged(SignalStrength sStrength)
     	{
-    		if (mDone) return;
-    		
-    		Log.d(TAG, "Signal strength obtained.");
-    		
     		mSignalStrength = sStrength;
     		
     		update();
+    		updatelog();
     	}
     };
     
@@ -513,8 +564,8 @@ public final class HomeActivity extends Activity
     		mText.setText(mTextStr);
     	
 			// Stop listening.
-			mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-			Toast.makeText(getApplicationContext(), R.string.done, Toast.LENGTH_SHORT).show();
+			// mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+			// Toast.makeText(getApplicationContext(), R.string.done, Toast.LENGTH_SHORT).show();
 			
 			mSubmit.setEnabled(true);
 		}

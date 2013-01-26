@@ -16,13 +16,13 @@
 
 		<LinearLayout
 		    android:layout_width="fill_parent"
-		    android:layout_height="fill_parent"
+		    android:layout_height="wrap_content"
 		    android:orientation="vertical" >
 
 			<TableLayout
 			    android:layout_width="match_parent"
 			    android:layout_height="wrap_content"
-			    android:stretchColumns="0,1,2" >
+			    android:stretchColumns="0,1" >
 
 			    <TableRow
 			        android:id="@+id/tableRow1"
@@ -36,13 +36,7 @@
 			            android:text="@string/location" />
 
 			        <TextView
-			            android:id="@+id/positionLat"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:textAlignment="textEnd" />
-
-			        <TextView
-			            android:id="@+id/positionLon"
+			            android:id="@+id/positionLatLon"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
 			            android:textAlignment="textEnd" />
@@ -84,6 +78,41 @@
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
 			            android:textAlignment="textEnd" />
+			    </TableRow>
+
+			    <TableRow
+			        android:id="@+id/tableRow4"
+			        android:layout_width="match_parent"
+			        android:layout_height="wrap_content" >
+
+			        <TextView
+			            android:id="@+id/textView3"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:text="@string/cdma_1xrtt_base_station" />
+
+			        <TextView
+			            android:id="@+id/cdma_sysinfo"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content" />
+
+			    </TableRow>
+
+			    <TableRow
+			        android:id="@+id/tableRow5"
+			        android:layout_width="match_parent"
+			        android:layout_height="wrap_content" >
+
+			        <TextView
+			            android:id="@+id/textView4"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:text="@string/_1xrtt_signal_strength" />
+
+			        <TextView
+			            android:id="@+id/cdmaSigStrength"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content" />
 
 			    </TableRow>
 			</TableLayout>

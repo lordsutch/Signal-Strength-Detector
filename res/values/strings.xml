@@ -13,4 +13,6 @@
     <string name="signal_detector_is_running">Signal Detector is running</string>
     <string name="no_signal">no signal</string>
     <string name="none">none</string>
+    <string name="cdma_1xrtt_base_station">CDMA 1xRTT Base Station</string>
+    <string name="_1xrtt_signal_strength">1xRTT Signal Strength</string>
 </resources>
