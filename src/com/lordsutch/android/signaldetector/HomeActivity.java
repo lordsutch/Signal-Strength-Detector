@@ -206,8 +206,8 @@ public final class HomeActivity extends Activity
     		TextView lat = (TextView) findViewById(R.id.positionLat);
     		TextView lon = (TextView) findViewById(R.id.positionLon);
     		
-    		lat.setText(String.valueOf(mLocation.getLatitude())+"\00b0");
-    		lon.setText(String.valueOf(mLocation.getLongitude())+"\00b0");
+    		lat.setText(String.valueOf(mLocation.getLatitude())+"\u00b0N");
+    		lon.setText(String.valueOf(mLocation.getLongitude())+"\u00b0E");
 
         	List<CellInfo> mInfo;
 
@@ -219,7 +219,7 @@ public final class HomeActivity extends Activity
         		for(CellInfo item : mInfo) {
         			if(item != null && item.getClass() == CellInfoLte.class) {
         				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
-        				servingid.setText(Integer.toHexString(cellid.getCi()) + " " + String.valueOf(cellid.getPci()));
+        				servingid.setText(String.format("%07x", cellid.getCi()) + " " + String.valueOf(cellid.getPci()));
         				gotID = true;
         				
         				CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
