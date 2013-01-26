@@ -298,8 +298,11 @@ public final class HomeActivity extends Activity
     		TextView lat = (TextView) findViewById(R.id.positionLat);
     		TextView lon = (TextView) findViewById(R.id.positionLon);
     		
-    		lat.setText(String.valueOf(mLocation.getLatitude())+"\u00b0N");
-    		lon.setText(String.valueOf(mLocation.getLongitude())+"\u00b0E");
+    		double latitude = mLocation.getLatitude();
+    		double longitude = mLocation.getLongitude();
+    		
+    		lat.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S"));
+    		lon.setText(String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
 
         	List<CellInfo> mInfo;
 
@@ -386,9 +389,11 @@ public final class HomeActivity extends Activity
     		}
     		
     		if(sigStrength > -900 || !cellID.isEmpty())
-    			appendLog(mLocation.getLatitude()+","+mLocation.getLongitude()+","+cellID+","+
+    			appendLog(Location.convert(latitude, Location.FORMAT_DEGREES)+","+
+    					Location.convert(longitude, Location.FORMAT_DEGREES)+","+cellID+","+
     					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    					(sigStrength > -900 ? sigStrength.toString() : ""), "latitude,longitude,cellid,physcellid,dBm");
+    					(sigStrength > -900 ? sigStrength.toString() : ""),
+    					"latitude,longitude,cellid,physcellid,dBm");
 
     		if(!cellID.isEmpty())
     			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
