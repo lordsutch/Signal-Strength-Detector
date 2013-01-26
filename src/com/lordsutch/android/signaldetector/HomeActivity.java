@@ -353,7 +353,7 @@ public final class HomeActivity extends Activity
     			}
     			
     			try {
-					m = mSignalStrength.getClass().getMethod("getLteDbm");
+					m = mSignalStrength.getClass().getMethod("getLteRsrp");
 				} catch (NoSuchMethodException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
