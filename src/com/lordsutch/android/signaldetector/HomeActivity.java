@@ -275,6 +275,7 @@ public final class HomeActivity extends Activity
     		BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true)); 
     		if (newfile) {
     			buf.append(header);
+    			buf.newLine();
     		}
     		buf.append(text);
     		buf.newLine();
@@ -385,8 +386,9 @@ public final class HomeActivity extends Activity
     		}
     		
     		if(sigStrength > -900 || !cellID.isEmpty())
-    			appendLog(mLocation.getLatitude()+","+mLocation.getLongitude()+","+cellID+","+String.valueOf(physCellID)+","+
-    					(sigStrength > -900 ? sigStrength.toString() : "")+"\n", "latitude,longitude,cellid,physcellid,dBm\n");
+    			appendLog(mLocation.getLatitude()+","+mLocation.getLongitude()+","+cellID+","+
+    					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
+    					(sigStrength > -900 ? sigStrength.toString() : ""), "latitude,longitude,cellid,physcellid,dBm");
 
     		if(!cellID.isEmpty())
     			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
