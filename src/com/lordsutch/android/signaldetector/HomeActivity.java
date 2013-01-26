@@ -154,6 +154,31 @@ public final class HomeActivity extends Activity
 
     		Method m = null;
     		Object x = null;
+    		String s = null;
+    		
+			try {
+				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if(m != null) {
+				try {
+					s = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+    		if(s != null)
+    			mCellInfo += "getSectorId = '" + s + "'\n";
+			
     		try {
     			m = mHTCManager.getClass().getMethod("requestGetLTERFBandInfo");
     		} catch (NoSuchMethodException e) {
@@ -292,7 +317,7 @@ public final class HomeActivity extends Activity
         				sigStrength = cstr.getDbm();
 
         				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
-        				cellID = String.format("%07x", cellid.getCi());
+        				cellID = String.format("%08x", cellid.getCi());
         				physCellID = cellid.getPci();
         				gotID = true;        				
         			}
