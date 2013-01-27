@@ -342,19 +342,22 @@ public final class HomeActivity extends Activity
     	if(mInfo != null) {
     		for(CellInfo item : mInfo) {
     			if(item != null && item.getClass() == CellInfoLte.class) {
-    				CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
-    				sigStrength = cstr.getDbm();
+    				CellInfoLte x = (CellInfoLte) item;
+    				CellSignalStrengthLte cstr = x.getCellSignalStrength();
+    				if(cstr != null)
+    					sigStrength = cstr.getDbm();
 
-    				CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
-    				cellID = String.format("%08x", cellid.getCi());
-    				physCellID = cellid.getPci();
-    				gotID = true;        				
+    				CellIdentityLte cellid = x.getCellIdentity();
+    				if(cellid != null) {
+    					cellID = String.format("%08x", cellid.getCi());
+    					physCellID = cellid.getPci();
+    					gotID = true;
+    				}
     			}
     		}
     	}
 		if(!gotID && mHTCManager != null) {
 			Method m = null;
-			String s = "";
 			
 			try {
 				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
