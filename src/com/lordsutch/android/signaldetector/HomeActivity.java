@@ -45,7 +45,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.os.SystemClock;
 
-@TargetApi(17)
+@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 public final class HomeActivity extends Activity
 {
 	public static final String TAG = HomeActivity.class.getSimpleName();
@@ -70,8 +70,7 @@ public final class HomeActivity extends Activity
 	private File logFile = null;
 	
     /** Called when the activity is first created. */
-    @Override
-    @TargetApi(17)
+	@Override
     public void onCreate(Bundle savedInstanceState)
     {
     	List<CellInfo> mInfo;
@@ -135,12 +134,14 @@ public final class HomeActivity extends Activity
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
     		PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
     	
+    	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2, 2, mLocListener);
+    	
     	mInfo = mManager.getAllCellInfo();
     	Log.d(TAG, "getAllCellInfo()");
     	
     	if(mInfo != null) {
     		Log.d(TAG, mInfo.toString());
-    		mCellInfo = "";
+    		mCellInfo = "getAllCellInfo():\n";
     		for(CellInfo item : mInfo) {
     			Log.d(TAG, item.toString());
     			if(item != null)
@@ -148,8 +149,7 @@ public final class HomeActivity extends Activity
     		}
     	}
     	
-    	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2, 2, mLocListener);
-    	
+    	/*    	
     	if(mHTCManager != null) {
     		if(mCellInfo == null)
     			mCellInfo = "";
@@ -227,7 +227,7 @@ public final class HomeActivity extends Activity
     			mCellInfo += "requestGetLTETxRxInfo\n" + ReflectionUtils.dumpClass(x.getClass(), x);
     		else
     			mCellInfo += "requestGetLTETxRxInfo returns " + m.getReturnType().toString() + "\n";
-    	}
+    	} */
     }
     
     @Override
@@ -292,10 +292,24 @@ public final class HomeActivity extends Activity
 
     private long THIRTY_SECONDS = 30*1000;
     
+    private int parseSignalStrength() {
+    	String sstrength = mSignalStrength.toString();
+    	int strength = -999;
+    	
+    	String[] bits = sstrength.split("\\s+");
+    	if(bits.length >= 10)
+    		try {
+    			strength = Integer.parseInt(bits[9]);
+    		}
+    		catch (NumberFormatException e) {}
+    	
+    	return strength;
+    }
+    
     private void updatelog() {
     	Location mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
     	
-    	if(mLocation == null)
+    	if(mLocation == null || mSignalStrength == null)
     		return;
 
 		Boolean gotID = false;
@@ -356,6 +370,10 @@ public final class HomeActivity extends Activity
     			}
     		}
     	}
+    	
+    	if(sigStrength < -900)
+    		sigStrength = parseSignalStrength();
+    	
 		if(!gotID && mHTCManager != null) {
 			Method m = null;
 			
