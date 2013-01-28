@@ -76,7 +76,7 @@ public final class HomeActivity extends Activity
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
+        // mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
         
         mHTCManager = getSystemService("htctelephony");
     	mText = (TextView) findViewById(R.id.text);
