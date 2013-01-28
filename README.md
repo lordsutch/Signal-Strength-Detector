@@ -1,18 +1,30 @@
-Signal Strength Detector - SignalStrength API detector for Android 2.1+
+Signal Detector - LTE and ESMR base station tracking for Sprint phones
 =============
 
+Copyright (C) 2013 Chris Lawrence
+
+Based on Signal Strength Detector
 Copyright (C) 2011 Thomas James Barrasso
 
-Author: Thomas James Barrasso  
-Name: Signal Strength Detector 
-Version: 1  
+Author: Chris Lawrence
+Name: Signal Detector 
+Version: 2
 License: Apache License, Version 2.0  
-Market: https://market.android.com/details?id=com.tombarrasso.android.signaldetector  
 
 Description:
 -------
 
-This is a simple application for Android 2.1+ that uses Java Reflection APIs to determine any/ all possible data that can be obtained from SignalStrength.java as well as a few more classes. It is designed to improve the signal strength API in Android across different devices that utilize CDMA, GSM, LTE, HSPA+, WiMAX, or other radio technologies.
+This application tracks the base station IDs and signal strengths for
+LTE (1900 MHz) and 1xRTT base stations (on the ESMR band used by
+Sprint).  The data may be useful for mapping out base station
+locations and coverage.
+
+Developed for the S4GRU community at http://s4gru.com
+
+This code may also work on non-Sprint LTE devices, but there are no
+guarantees.  LTE base stations IDs are only available currently with
+HTC devices; they may also be available on devices running custom ROMs
+based on Android 4.1 and later that implement the CellIdentityLte API.
 
 License:
 -------
@@ -28,8 +40,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-Support:
--------
-
-Do you appreciate this application? Consider or donating via PayPal. To do so see http://tombarrasso.com/. Anything is welcome! If you would like to give complements or need assistance feel free to email me at contact@tombarrasso.com, I will do my best to respond!

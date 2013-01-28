@@ -2,11 +2,14 @@ package com.lordsutch.android.signaldetector;
 
 // Android Packages
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.annotation.TargetApi;
@@ -27,6 +30,8 @@ import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
@@ -41,6 +46,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ListAdapter;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.SystemClock;
@@ -419,8 +426,8 @@ public final class HomeActivity extends Activity
 				}
 			}
 		}
-
-		if(!cellID.isEmpty()) {
+		
+		if(!cellID.isEmpty() || physCellID >= 0) {
 			if(physCellID >= 0) {
 				servingid.setText(cellID + " " + String.valueOf(physCellID));
 			} else {
@@ -562,7 +569,7 @@ public final class HomeActivity extends Activity
     			ReflectionUtils.dumpStaticFields(Context.class, getApplicationContext()) */
     			);
     			
-    		return null;
+			return null;
 		}
 		
 		protected void onProgressUpdate(Void... progress)
