@@ -411,7 +411,7 @@ public final class HomeActivity extends Activity
 			}
 		}
 		
-		if(mSignalStrength != null && !validSignalStrength(sigStrength)) {
+		if(!validSignalStrength(sigStrength)) {
 			Method m;
 
 			try {
