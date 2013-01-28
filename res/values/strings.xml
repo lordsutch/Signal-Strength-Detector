@@ -15,4 +15,5 @@
     <string name="none">none</string>
     <string name="cdma_1xrtt_base_station">1xRTT Tower</string>
     <string name="_1xrtt_signal_strength">1xRTT Signal</string>
+    <string name="_2g_3g_signal">2G/3G Signal</string>
 </resources>

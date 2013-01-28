@@ -42,6 +42,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
+import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -313,10 +314,15 @@ public final class HomeActivity extends Activity
     	return strength;
     }
     
+    final private Boolean validSignalStrength(int strength)
+    {
+    	return (strength > -900 && strength < 900);
+    }
+    
     private void updatelog() {
     	Location mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
     	
-    	if(mLocation == null || mSignalStrength == null)
+    	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
     		return;
 
 		Boolean gotID = false;
@@ -333,31 +339,34 @@ public final class HomeActivity extends Activity
 
 		TextView servingid = (TextView) findViewById(R.id.cellid);
 		TextView strength = (TextView) findViewById(R.id.sigstrength);
+
+		TextView strengthLabel = (TextView) findViewById(R.id.sigStrengthLabel);
+		TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
 		
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 
 		String cellID = "";
 		int physCellID = -1;
-		int sigStrength = -999;
+		int sigStrength = -9999;
 		
 		int bsid = -1;
 		int nid = -1;
 		int sid = -1;
-		int cdmaSigStrength = -999;
+		int cdmaSigStrength = -9999;
+		int gsmSigStrength = -9999;
 		
-		if(mCellLocation != null) {
-			if(mCellLocation.getClass() == CdmaCellLocation.class) {
-				CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
-				bsid = x.getBaseStationId();
-				nid = x.getNetworkId();
-				sid = x.getSystemId();
-			}
+		if(mCellLocation.getClass() == CdmaCellLocation.class) {
+			CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
+			bsid = x.getBaseStationId();
+			nid = x.getNetworkId();
+			sid = x.getSystemId();
 		}
 		
-		if(mSignalStrength != null && !mSignalStrength.isGsm()) {
-			cdmaSigStrength = mSignalStrength.getCdmaDbm();
-		}
+		cdmaSigStrength = mSignalStrength.getCdmaDbm();
+
+		gsmSigStrength = mSignalStrength.getGsmSignalStrength();
+		gsmSigStrength = (gsmSigStrength < 32 ? -113+2*gsmSigStrength : -9999);
 		
 		mInfo = mManager.getAllCellInfo();
     	if(mInfo != null) {
@@ -378,7 +387,7 @@ public final class HomeActivity extends Activity
     		}
     	}
     	
-    	if(sigStrength < -900)
+    	if(!validSignalStrength(sigStrength))
     		sigStrength = parseSignalStrength();
     	
 		if(!gotID && mHTCManager != null) {
@@ -386,44 +395,40 @@ public final class HomeActivity extends Activity
 			
 			try {
 				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
+				cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			if(m != null) {
-				try {
-					cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
-				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			if(mSignalStrength != null) {
-				try {
-					m = mSignalStrength.getClass().getMethod("getLteRsrp");
-				} catch (NoSuchMethodException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				try {
-					sigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
-				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+		}
+		
+		if(mSignalStrength != null && !validSignalStrength(sigStrength)) {
+			Method m;
+
+			try {
+				m = mSignalStrength.getClass().getMethod("getLteRsrp");
+				sigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		
@@ -437,20 +442,31 @@ public final class HomeActivity extends Activity
 			servingid.setText(R.string.none);
 		}
 		
-		if(sigStrength > -900) {
+		if(validSignalStrength(sigStrength)) {
 			strength.setText(String.valueOf(sigStrength) + "\u2009dBm");
 		} else {
 			strength.setText(R.string.no_signal);
 		}
 
-		if(cdmaSigStrength > -900) {
+		if(validSignalStrength(cdmaSigStrength) && mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+			strengthLabel.setText(R.string._1xrtt_signal_strength);
 			cdmaStrength.setText(String.valueOf(cdmaSigStrength) + "\u2009dBm");
-		} else {
+		} else if (validSignalStrength(gsmSigStrength)) {
+			strengthLabel.setText(R.string._2g_3g_signal);
+			cdmaStrength.setText(String.valueOf(gsmSigStrength) + "\u2009dBm");
+    	} else {
 			cdmaStrength.setText(R.string.no_signal);
 		}
 		
 		if(sid >= 0 && nid >= 0 && bsid >= 0) {
+			bsLabel.setText(R.string.cdma_1xrtt_base_station);
 			cdmaBS.setText(String.format("SID %d, NID %d, BSID %d", sid, nid, bsid));
+		} else if(mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
+			GsmCellLocation x = (GsmCellLocation) mCellLocation;
+			
+			bsLabel.setText("2G/3G Tower");
+			cdmaBS.setText(String.format("MNC %s, LAC %d, CID %d", mManager.getNetworkOperator(),
+					x.getLac(), x.getCid()));
 		} else {
 			cdmaBS.setText(R.string.none);
 		}
@@ -470,14 +486,14 @@ public final class HomeActivity extends Activity
     			Log.d(TAG, "Logging LTE cell.");
     			appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
     					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    					(sigStrength > -900 ? String.valueOf(sigStrength) : ""),
+    					(validSignalStrength(sigStrength) ? String.valueOf(sigStrength) : ""),
     					"latitude,longitude,cellid,physcellid,dBm");
     		}
     		if(sid >= 22404 && sid <= 22451) {
     			Log.d(TAG, "Logging ESMR cell.");
     			appendLog("esmrcells.csv", slat+","+slon+","+
     					String.valueOf(sid)+","+String.valueOf(nid)+","+String.valueOf(bsid)+","+
-    					(cdmaSigStrength > -900 ? String.valueOf(cdmaSigStrength) : ""),
+    					(validSignalStrength(cdmaSigStrength) ? String.valueOf(cdmaSigStrength) : ""),
     					"latitude,longitude,sid,nid,bsid,rssi");
     		}
     	}
@@ -554,7 +570,7 @@ public final class HomeActivity extends Activity
 		protected Void doInBackground(Void... mVoid)
 		{
 			mTextStr = 
-    			("DEVICE INFO\n\n" + "SDK: `" + Build.VERSION.SDK_INT + "`\nCODENAME: `" +
+    			("\n\nDEVICE INFO\n\n" + "SDK: `" + Build.VERSION.SDK_INT + "`\nCODENAME: `" +
     			Build.VERSION.CODENAME + "`\nRELEASE: `" + Build.VERSION.RELEASE +
     			"`\nDevice: `" + Build.DEVICE + "`\nHARDWARE: `" + Build.HARDWARE +
     			"`\nMANUFACTURER: `" + Build.MANUFACTURER + "`\nMODEL: `" + Build.MODEL +
