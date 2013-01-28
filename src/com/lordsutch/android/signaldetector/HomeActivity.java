@@ -2,14 +2,11 @@ package com.lordsutch.android.signaldetector;
 
 // Android Packages
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 
 import android.annotation.TargetApi;
@@ -30,8 +27,6 @@ import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.Settings;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
@@ -47,11 +42,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.ListAdapter;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.os.SystemClock;
 
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 public final class HomeActivity extends Activity
@@ -63,21 +54,17 @@ public final class HomeActivity extends Activity
 	private CellLocation mCellLocation;
 	private String mCellInfo = null;
 	private SignalStrength mSignalStrength;
-	private boolean mDone = false;
 	private TextView mText = null;
 	private String mTextStr;
 	private Button mSubmit, mCancel;
 	private TelephonyManager mManager;
 	private Object mHTCManager;
-	private LocationProvider mLocationProvider = null;
 	private Notification.Builder mBuilder = null;
 	private NotificationManager mNotifyMgr;
 	private LocationManager mLocationManager;
 	private int mNotificationId = 001;
 
-	private File logFile = null;
-	
-    /** Called when the activity is first created. */
+	/** Called when the activity is first created. */
 	@Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -89,7 +76,7 @@ public final class HomeActivity extends Activity
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        mLocationProvider = mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
+        mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
         
         mHTCManager = getSystemService("htctelephony");
     	mText = (TextView) findViewById(R.id.text);
@@ -601,8 +588,6 @@ public final class HomeActivity extends Activity
 
     private final void complete()
     {
-    	mDone = true;
-    	
     	try
     	{
     		mText.setText(mTextStr);
