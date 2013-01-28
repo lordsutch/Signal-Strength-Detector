@@ -49,17 +49,16 @@
 			        android:layout_height="wrap_content" >
 
 			        <TextView
-			            android:id="@+id/TextView01"
+			            android:id="@+id/textView2"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
-			            android:text="@string/lte_signal_strength" />
+			            android:text="@string/serving_lte_cell_id" />
 
 			        <TextView
-			            android:id="@+id/sigstrength"
+			            android:id="@+id/cellid"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
 			            android:textAlignment="textEnd" />
-
 			    </TableRow>
 
 			    <TableRow
@@ -68,13 +67,13 @@
 			        android:layout_height="wrap_content" >
 
 			        <TextView
-			            android:id="@+id/textView2"
+			            android:id="@+id/TextView01"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
-			            android:text="@string/serving_lte_cell_id" />
+			            android:text="@string/lte_signal_strength" />
 
 			        <TextView
-			            android:id="@+id/cellid"
+			            android:id="@+id/sigstrength"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content"
 			            android:textAlignment="textEnd" />
@@ -95,7 +94,6 @@
 			            android:id="@+id/cdma_sysinfo"
 			            android:layout_width="wrap_content"
 			            android:layout_height="wrap_content" />
-
 			    </TableRow>
 
 			    <TableRow
@@ -115,6 +113,7 @@
 			            android:layout_height="wrap_content" />
 
 			    </TableRow>
+
 			</TableLayout>
 
 			<TextView  
