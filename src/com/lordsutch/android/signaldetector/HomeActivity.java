@@ -681,6 +681,7 @@ public final class HomeActivity extends Activity
     protected void onStop() {
         super.onStop();
         mLocationManager.removeUpdates(mLocListener);
+        mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
         mNotifyMgr.cancelAll();
     }
 
