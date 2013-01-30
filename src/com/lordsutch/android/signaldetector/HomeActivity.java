@@ -319,6 +319,9 @@ public final class HomeActivity extends Activity
 		double latitude = mLocation.getLatitude();
 		double longitude = mLocation.getLongitude();
 		
+		double bslat = 999;
+		double bslon = 999;
+		
 		latlon.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S") + " " +
 			String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
 
@@ -335,24 +338,24 @@ public final class HomeActivity extends Activity
 
 		String cellID = "";
 		int physCellID = -1;
-		int sigStrength = -9999;
+		int lteSigStrength = -9999;
 		
 		int bsid = -1;
 		int nid = -1;
 		int sid = -1;
-		int cdmaSigStrength = -9999;
-		int gsmSigStrength = -9999;
 		
 		if(mCellLocation.getClass() == CdmaCellLocation.class) {
 			CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
 			bsid = x.getBaseStationId();
 			nid = x.getNetworkId();
 			sid = x.getSystemId();
+			
+			bslat = x.getBaseStationLatitude()/14400;
+			bslon = x.getBaseStationLongitude()/14400;
 		}
 		
-		cdmaSigStrength = mSignalStrength.getCdmaDbm();
-
-		gsmSigStrength = mSignalStrength.getGsmSignalStrength();
+		int cdmaSigStrength = mSignalStrength.getCdmaDbm();
+		int gsmSigStrength = mSignalStrength.getGsmSignalStrength();
 		gsmSigStrength = (gsmSigStrength < 32 ? -113+2*gsmSigStrength : -9999);
 		
 		mInfo = mManager.getAllCellInfo();
@@ -362,7 +365,7 @@ public final class HomeActivity extends Activity
     				CellInfoLte x = (CellInfoLte) item;
     				CellSignalStrengthLte cstr = x.getCellSignalStrength();
     				if(cstr != null)
-    					sigStrength = cstr.getDbm();
+    					lteSigStrength = cstr.getDbm();
 
     				CellIdentityLte cellid = x.getCellIdentity();
     				if(cellid != null) {
@@ -374,8 +377,8 @@ public final class HomeActivity extends Activity
     		}
     	}
     	
-    	if(!validSignalStrength(sigStrength))
-    		sigStrength = parseSignalStrength();
+    	if(!validSignalStrength(lteSigStrength))
+    		lteSigStrength = parseSignalStrength();
     	
 		if(!gotID && mHTCManager != null) {
 			Method m = null;
@@ -398,12 +401,12 @@ public final class HomeActivity extends Activity
 			}
 		}
 		
-		if(!validSignalStrength(sigStrength)) {
+		if(!validSignalStrength(lteSigStrength)) {
 			Method m;
 
 			try {
 				m = mSignalStrength.getClass().getMethod("getLteRsrp");
-				sigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
+				lteSigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -429,8 +432,8 @@ public final class HomeActivity extends Activity
 			servingid.setText(R.string.none);
 		}
 		
-		if(validSignalStrength(sigStrength)) {
-			strength.setText(String.valueOf(sigStrength) + "\u2009dBm");
+		if(validSignalStrength(lteSigStrength)) {
+			strength.setText(String.valueOf(lteSigStrength) + "\u2009dBm");
 		} else {
 			strength.setText(R.string.no_signal);
 		}
@@ -445,7 +448,7 @@ public final class HomeActivity extends Activity
 			cdmaStrength.setText(R.string.no_signal);
 		}
 		
-		if(sid >= 0 && nid >= 0 && bsid >= 0) {
+		if(sid >= 0 && nid >= 0 && bsid >= 0 && (mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA)) {
 			bsLabel.setText(R.string.cdma_1xrtt_base_station);
 			cdmaBS.setText(String.format("SID %d, NID %d, BSID %d", sid, nid, bsid));
 		} else if(mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
@@ -469,19 +472,22 @@ public final class HomeActivity extends Activity
     		String slat = Location.convert(latitude, Location.FORMAT_DEGREES);
     		String slon = Location.convert(longitude, Location.FORMAT_DEGREES);
     		
-    		if(sigStrength > -900 || !cellID.isEmpty()) {
+    		if(lteSigStrength > -900 || !cellID.isEmpty()) {
     			Log.d(TAG, "Logging LTE cell.");
     			appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
     					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    					(validSignalStrength(sigStrength) ? String.valueOf(sigStrength) : ""),
+    					(validSignalStrength(lteSigStrength) ? String.valueOf(lteSigStrength) : ""),
     					"latitude,longitude,cellid,physcellid,dBm");
     		}
     		if(sid >= 22404 && sid <= 22451) {
+    			String bslatstr = (bslat <= 200 ? Location.convert(bslat, Location.FORMAT_DEGREES) : "");
+    			String bslonstr = (bslat <= 200 ? Location.convert(bslon, Location.FORMAT_DEGREES) : "");
+    			
     			Log.d(TAG, "Logging ESMR cell.");
-    			appendLog("esmrcells.csv", slat+","+slon+","+
-    					String.valueOf(sid)+","+String.valueOf(nid)+","+String.valueOf(bsid)+","+
+    			appendLog("esmrcells.csv", 
+    					String.format("%s,%s,%d,%d,%d,%s,%s,%s", slat, slon, sid, nid, bsid,
     					(validSignalStrength(cdmaSigStrength) ? String.valueOf(cdmaSigStrength) : ""),
-    					"latitude,longitude,sid,nid,bsid,rssi");
+    					bslatstr, bslonstr), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon");
     		}
     	}
     }
