@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0,
+                               maximum-scale=1.0, user-scalable=no" />
+
+<link rel="stylesheet"
+      href="leaflet/leaflet.css" />
+<!--[if lte IE 8]>
+    <link rel="stylesheet" "leaflet/leaflet.ie.css" />
+<![endif]-->
+
+<style>
+body {
+    padding: 0;
+    margin: 0;
+}
+html, body, #map {
+    height: 100%;
+}
+</style>
+
+<script src="leaflet/leaflet.js"></script>
+</head>
+
+<body>
+<div id="map"></div>
+
+<script>
+var map = null;
+var marker = null;
+var zoom = 12;
+var oldspeed = 0;
+
+function startmap(lat, lon, newzoom) {
+  zoom = newzoom;
+  map = L.map('map', {center: [lat, lon], zoom: zoom});
+
+  L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpg',
+{maxZoom: 18, subdomains: "1234", attribution: 'Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'}).addTo(map);
+}
+
+function recenter(lat, lon, radius, speed) {
+  newZoom = 14-Math.floor(Math.log((speed*3.6)+0.1)/Math.LN10);
+
+  if(!map) startmap(lat, lon, newZoom);
+
+  if(marker) {
+    marker.setLatLng([lat, lon]);
+    marker.setRadius(radius);
+  } else {
+    marker = L.circle([lat, lon], radius);
+    marker.addTo(map);
+  }
+
+  if(zoom != newZoom && speed != oldspeed) {
+    map.setZoom(newZoom);
+    zoom = newZoom;
+    oldspeed = speed;
+  }
+
+  map.panTo([lat, lon]);
+}
+</script>
+</body>

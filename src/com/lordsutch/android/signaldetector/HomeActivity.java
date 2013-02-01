@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -20,6 +21,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -39,9 +41,8 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.TextView;
 
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -54,17 +55,19 @@ public final class HomeActivity extends Activity
 	private CellLocation mCellLocation;
 	private String mCellInfo = null;
 	private SignalStrength mSignalStrength;
-	private TextView mText = null;
 	private String mTextStr;
-	private Button mSubmit, mCancel;
 	private TelephonyManager mManager;
 	private Object mHTCManager;
 	private Notification.Builder mBuilder = null;
 	private NotificationManager mNotifyMgr;
 	private LocationManager mLocationManager;
 	private int mNotificationId = 001;
-
+    private Location mLocation = null;
+    
+    private WebView leafletView = null;
+	
 	/** Called when the activity is first created. */
+	@SuppressLint("SetJavaScriptEnabled")
 	@Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -79,40 +82,17 @@ public final class HomeActivity extends Activity
         // mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
         
         mHTCManager = getSystemService("htctelephony");
-    	mText = (TextView) findViewById(R.id.text);
-    	mSubmit = (Button) findViewById(R.id.submit);
-    	mCancel = (Button) findViewById(R.id.cancel);
     	
-    	// Prevent button press.
-    	mSubmit.setEnabled(false);
-    	
-    	// Handle click events.
-    	mSubmit.setOnClickListener(new OnClickListener()
-    	{
-    		@Override
-    		public void onClick(View mView)
-    		{
-    			sendResults();
-    			finish();
-    		}
-    	});
-    	mCancel.setOnClickListener(new OnClickListener()
-    	{
-    		@Override
-    		public void onClick(View mView)
-    		{
-    			finish();
-    		}
-    	});
-    	
+    	leafletView = (WebView) findViewById(R.id.leafletView);
+    	leafletView.loadUrl("file:///android_asset/leaflet.html");
+    	WebSettings webSettings = leafletView.getSettings();
+    	// webSettings.setAllowFileAccessFromFileURLs(true);
+    	webSettings.setJavaScriptEnabled(true);
+    	    	
     	Intent resultIntent = new Intent(this, HomeActivity.class);
     	PendingIntent resultPendingIntent =
-    		    PendingIntent.getActivity(
-    		    this,
-    		    0,
-    		    resultIntent,
-    		    PendingIntent.FLAG_UPDATE_CURRENT
-    		);
+    		    PendingIntent.getActivity(this, 0,
+    		    resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
     	mBuilder = new Notification.Builder(this)
     		    .setSmallIcon(R.drawable.icon)
@@ -129,8 +109,25 @@ public final class HomeActivity extends Activity
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
     		PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
     	
-    	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2, 2, mLocListener);
+    	Criteria gpsCriteria = new Criteria();
+    	gpsCriteria.setCostAllowed(false);
+    	gpsCriteria.setHorizontalAccuracy(Criteria.ACCURACY_MEDIUM);
     	
+    	List<String> providers = mLocationManager.getProviders(gpsCriteria, true);
+    	
+    	for(String provider : providers) {
+    		Log.d(TAG, "Registering "+provider);
+    		mLocationManager.requestLocationUpdates(provider, 1000, 10, mLocListener);
+    		Location mLoc = mLocationManager.getLastKnownLocation(provider);
+
+    		if(mLoc != null) {
+    			mLocation = getBetterLocation(mLoc, mLocation);
+    			if(mLocation != null) {
+    				centerMap();
+    			}
+    		}
+    	}
+    		
     	mInfo = mManager.getAllCellInfo();
     	Log.d(TAG, "getAllCellInfo()");
     	
@@ -240,7 +237,7 @@ public final class HomeActivity extends Activity
             // Build an alert dialog here that requests that the user enable
             // the location services, then when the user clicks the "OK" button,
             // call enableLocationSettings()
-            new EnableGpsDialogFragment().show(getFragmentManager(), "enableGpsDialog");
+            new EnableGpsDialogFragment().show(getFragmentManager(), "enableLocationSettings");
         }
     }
 
@@ -285,8 +282,6 @@ public final class HomeActivity extends Activity
     	}
     }
 
-    private long THIRTY_SECONDS = 30*1000;
-    
     private int parseSignalStrength() {
     	String sstrength = mSignalStrength.toString();
     	int strength = -999;
@@ -307,11 +302,13 @@ public final class HomeActivity extends Activity
     }
     
     private void updatelog() {
-    	Location mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+    	Log.d(TAG, "updatelog() entered");
     	
     	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
     		return;
-
+    	
+    	centerMap();
+    	
 		Boolean gotID = false;
 		
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
@@ -468,36 +465,49 @@ public final class HomeActivity extends Activity
 
     	mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
-    	if((mLocation.getTime() - (System.currentTimeMillis())) <= THIRTY_SECONDS) {
-    		String slat = Location.convert(latitude, Location.FORMAT_DEGREES);
-    		String slon = Location.convert(longitude, Location.FORMAT_DEGREES);
-    		
-    		if(lteSigStrength > -900 || !cellID.isEmpty()) {
-    			Log.d(TAG, "Logging LTE cell.");
-    			appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
-    					(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    					(validSignalStrength(lteSigStrength) ? String.valueOf(lteSigStrength) : ""),
-    					"latitude,longitude,cellid,physcellid,dBm");
-    		}
-    		if(sid >= 22404 && sid <= 22451) {
-    			String bslatstr = (bslat <= 200 ? Location.convert(bslat, Location.FORMAT_DEGREES) : "");
-    			String bslonstr = (bslat <= 200 ? Location.convert(bslon, Location.FORMAT_DEGREES) : "");
-    			
-    			Log.d(TAG, "Logging ESMR cell.");
-    			appendLog("esmrcells.csv", 
-    					String.format("%s,%s,%d,%d,%d,%s,%s,%s", slat, slon, sid, nid, bsid,
-    					(validSignalStrength(cdmaSigStrength) ? String.valueOf(cdmaSigStrength) : ""),
-    					bslatstr, bslonstr), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon");
-    		}
+    	String slat = Location.convert(latitude, Location.FORMAT_DEGREES);
+    	String slon = Location.convert(longitude, Location.FORMAT_DEGREES);
+
+    	if(lteSigStrength > -900 || !cellID.isEmpty()) {
+    		Log.d(TAG, "Logging LTE cell.");
+    		appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
+    				(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
+    				(validSignalStrength(lteSigStrength) ? String.valueOf(lteSigStrength) : ""),
+    				"latitude,longitude,cellid,physcellid,dBm");
     	}
+    	if(sid >= 22404 && sid <= 22451)
+    	{
+    		String bslatstr = (bslat <= 200 ? Location.convert(bslat, Location.FORMAT_DEGREES) : "");
+    		String bslonstr = (bslat <= 200 ? Location.convert(bslon, Location.FORMAT_DEGREES) : "");
+
+    		Log.d(TAG, "Logging ESMR cell.");
+    		appendLog("esmrcells.csv", 
+    				String.format("%s,%s,%d,%d,%d,%s,%s,%s", slat, slon, sid, nid, bsid,
+    						(validSignalStrength(cdmaSigStrength) ? String.valueOf(cdmaSigStrength) : ""),
+    						bslatstr, bslonstr), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon");
+    	}
+    }
+    
+    private void centerMap() {
+		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f)",
+				mLocation.getLatitude(), mLocation.getLongitude(),
+				mLocation.getAccuracy(), mLocation.getSpeed()));
+		
     }
     
     private final LocationListener mLocListener = new LocationListener()
     {
     	@Override
-    	public void onLocationChanged(Location mLocation)
+    	public void onLocationChanged(Location mLoc)
     	{
-    		updatelog();
+    		Log.d(TAG, mLoc.toString());
+    		mLocation = getBetterLocation(mLoc, mLocation);
+    		
+    		if(mLocation != null) {
+    			centerMap();
+    			updatelog();
+    		}
+    		
     	}
 
 		@Override
@@ -518,7 +528,68 @@ public final class HomeActivity extends Activity
 			
 		}
     };
-    
+
+    private static final int TWO_MINUTES = 1000 * 60 * 2;
+
+    /** Determines whether one Location reading is better than the current Location fix.
+     * Code taken from
+     * http://developer.android.com/guide/topics/location/obtaining-user-location.html
+     *
+     * @param newLocation  The new Location that you want to evaluate
+     * @param currentBestLocation  The current Location fix, to which you want to compare the new
+     *        one
+     * @return The better Location object based on recency and accuracy.
+     */
+   protected Location getBetterLocation(Location newLocation, Location currentBestLocation) {
+       if (currentBestLocation == null) {
+           // A new location is always better than no location
+           return newLocation;
+       }
+
+       // Check whether the new location fix is newer or older
+       long timeDelta = newLocation.getTime() - currentBestLocation.getTime();
+       boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
+       boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
+       boolean isNewer = timeDelta > 0;
+
+       // If it's been more than two minutes since the current location, use the new location
+       // because the user has likely moved.
+       if (isSignificantlyNewer) {
+           return newLocation;
+       // If the new location is more than two minutes older, it must be worse
+       } else if (isSignificantlyOlder) {
+           return currentBestLocation;
+       }
+
+       // Check whether the new location fix is more or less accurate
+       int accuracyDelta = (int) (newLocation.getAccuracy() - currentBestLocation.getAccuracy());
+       boolean isLessAccurate = accuracyDelta > 0;
+       boolean isMoreAccurate = accuracyDelta < 0;
+       boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+       // Check if the old and new location are from the same provider
+       boolean isFromSameProvider = isSameProvider(newLocation.getProvider(),
+               currentBestLocation.getProvider());
+
+       // Determine location quality using a combination of timeliness and accuracy
+       if (isMoreAccurate) {
+           return newLocation;
+       } else if (isNewer && !isLessAccurate) {
+           return newLocation;
+       } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+           return newLocation;
+       }
+       return currentBestLocation;
+   }
+
+   /** Checks whether two providers are the same */
+   private boolean isSameProvider(String provider1, String provider2) {
+       if (provider1 == null) {
+         return provider2 == null;
+       }
+       return provider1.equals(provider2);
+   }
+
     // Listener for signal strength.
     final PhoneStateListener mListener = new PhoneStateListener()
     {
@@ -596,13 +667,13 @@ public final class HomeActivity extends Activity
     {
     	try
     	{
-    		mText.setText(mTextStr);
+    		// mText.setText(mTextStr);
     	
 			// Stop listening.
 			// mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
 			// Toast.makeText(getApplicationContext(), R.string.done, Toast.LENGTH_SHORT).show();
 			
-			mSubmit.setEnabled(true);
+			// mSubmit.setEnabled(true);
 		}
 		catch (Exception e)
 		{

@@ -1,149 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:orientation="vertical"
-	android:background="@android:color/black"
-	android:padding="8dp"
-	android:id="@+id/root">
-	<ScrollView
-		xmlns:android="http://schemas.android.com/apk/res/android"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginBottom="56dp"
-		android:fillViewport="true">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="fill"
+    android:background="@android:color/black"
+    android:gravity="fill"
+    android:orientation="vertical"
+    android:padding="3dp" >
 
-		<LinearLayout
-		    android:layout_width="fill_parent"
-		    android:layout_height="wrap_content"
-		    android:orientation="vertical" >
+    <TableLayout
+        android:id="@+id/TableLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:stretchColumns="0,1"
+        android:paddingBottom="3dp" >
 
-			<TableLayout
-			    android:layout_width="match_parent"
-			    android:layout_height="wrap_content"
-			    android:stretchColumns="0,1" >
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
 
-			    <TableRow
-			        android:id="@+id/tableRow1"
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content" >
+            <TextView
+                android:id="@+id/textView1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/location" />
 
-			        <TextView
-			            android:id="@+id/textView1"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:text="@string/location" />
+            <TextView
+                android:id="@+id/positionLatLon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAlignment="textEnd" />
+        </TableRow>
 
-			        <TextView
-			            android:id="@+id/positionLatLon"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:textAlignment="textEnd" />
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
 
-			    </TableRow>
+            <TextView
+                android:id="@+id/textView2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/serving_lte_cell_id" />
 
-			    <TableRow
-			        android:id="@+id/tableRow2"
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content" >
+            <TextView
+                android:id="@+id/cellid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAlignment="textEnd" />
+        </TableRow>
 
-			        <TextView
-			            android:id="@+id/textView2"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:text="@string/serving_lte_cell_id" />
+        <TableRow
+            android:id="@+id/tableRow3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
 
-			        <TextView
-			            android:id="@+id/cellid"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:textAlignment="textEnd" />
-			    </TableRow>
+            <TextView
+                android:id="@+id/TextView01"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lte_signal_strength" />
 
-			    <TableRow
-			        android:id="@+id/tableRow3"
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content" >
+            <TextView
+                android:id="@+id/sigstrength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAlignment="textEnd" />
+        </TableRow>
 
-			        <TextView
-			            android:id="@+id/TextView01"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:text="@string/lte_signal_strength" />
+        <TableRow
+            android:id="@+id/tableRow4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
 
-			        <TextView
-			            android:id="@+id/sigstrength"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:textAlignment="textEnd" />
-			    </TableRow>
+            <TextView
+                android:id="@+id/bsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cdma_1xrtt_base_station" />
 
-			    <TableRow
-			        android:id="@+id/tableRow4"
-			        android:layout_width="match_parent"
-			        android:layout_height="wrap_content" >
+            <TextView
+                android:id="@+id/cdma_sysinfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </TableRow>
 
-			        <TextView
-			            android:id="@+id/bsLabel"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:text="@string/cdma_1xrtt_base_station" />
+        <TableRow
+            android:id="@+id/tableRow5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
 
-			        <TextView
-			            android:id="@+id/cdma_sysinfo"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content" />
-			    </TableRow>
+            <TextView
+                android:id="@+id/sigStrengthLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/_1xrtt_signal_strength" />
 
-			    <TableRow
-			        android:id="@+id/tableRow5"
-			        android:layout_width="match_parent"
-			        android:layout_height="wrap_content" >
+            <TextView
+                android:id="@+id/cdmaSigStrength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </TableRow>
+    </TableLayout>
 
-			        <TextView
-			            android:id="@+id/sigStrengthLabel"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content"
-			            android:text="@string/_1xrtt_signal_strength" />
+    <WebView
+        android:id="@+id/leafletView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/TableLayout1" />
 
-			        <TextView
-			            android:id="@+id/cdmaSigStrength"
-			            android:layout_width="wrap_content"
-			            android:layout_height="wrap_content" />
-
-			    </TableRow>
-
-			</TableLayout>
-
-			<TextView  
-				android:layout_width="fill_parent" 
-				android:layout_height="wrap_content" 
-				android:id="@+id/text"
-				android:textColor="@android:color/white" />
-		</LinearLayout>
-	</ScrollView>
-	<TableLayout
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true"
-		android:stretchColumns="0,1">
-		<TableRow
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content">  
-			<Button
-				android:id="@+id/cancel"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:text="@string/cancel"
-				android:textColor="@android:color/white"/>
-			<Button
-				android:id="@+id/submit"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:text="@string/submit"
-				android:textColor="@android:color/white"/>
-		</TableRow>
-	</TableLayout>
 </RelativeLayout>
-	
