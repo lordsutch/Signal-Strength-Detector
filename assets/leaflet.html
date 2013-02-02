@@ -40,6 +40,8 @@ function startmap(lat, lon, newzoom) {
 {maxZoom: 18, subdomains: "1234", attribution: 'Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'}).addTo(map);
 }
 
+var padding = 0.2;
+
 function recenter(lat, lon, radius, speed) {
   newZoom = 14-Math.floor(Math.log((speed*3.6)+0.1)/Math.LN10);
 
@@ -53,16 +55,16 @@ function recenter(lat, lon, radius, speed) {
     marker.addTo(map);
   }
 
-  if(zoom != newZoom && speed != oldspeed) {
-    map.setZoom(newZoom);
-    zoom = newZoom;
-    oldspeed = speed;
-  }
-
   if(pmarker) {
-    bounds = L.latLngBounds([[lat, lon], pmarker.getLatLng()]).pad(0.1);
+    bounds = L.latLngBounds([[lat, lon], pmarker.getLatLng()]).pad(padding);
     map.fitBounds(bounds);
   } else {
+    if(zoom != newZoom && speed != oldspeed) {
+      map.setZoom(newZoom);
+      zoom = newZoom;
+      oldspeed = speed;
+    }
+
     map.panTo([lat, lon]);
   }
 }
@@ -76,7 +78,7 @@ function placeMarker(lat, lon) {
     pmarker.update();
   }
 
-  bounds = L.latLngBounds([marker.getLatLng(), pmarker.getLatLng()]).pad(0.1);
+  bounds = L.latLngBounds([marker.getLatLng(), pmarker.getLatLng()]).pad(padding);
   map.fitBounds(bounds);
 }
 </script>
