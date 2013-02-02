@@ -347,8 +347,10 @@ public final class HomeActivity extends Activity
 			nid = x.getNetworkId();
 			sid = x.getSystemId();
 			
-			bslat = x.getBaseStationLatitude()/14400;
-			bslon = x.getBaseStationLongitude()/14400;
+			bslat = x.getBaseStationLatitude()/14400.0;
+			bslon = x.getBaseStationLongitude()/14400.0;
+			
+			addBsMarker(bslat, bslon);
 		}
 		
 		int cdmaSigStrength = mSignalStrength.getCdmaDbm();
@@ -450,10 +452,14 @@ public final class HomeActivity extends Activity
 			cdmaBS.setText(String.format("SID %d, NID %d, BSID %d", sid, nid, bsid));
 		} else if(mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
 			GsmCellLocation x = (GsmCellLocation) mCellLocation;
+			int lac = x.getLac();
+			int cid = x.getCid();
 			
-			bsLabel.setText("2G/3G Tower");
-			cdmaBS.setText(String.format("MNC %s, LAC %d, CID %d", mManager.getNetworkOperator(),
-					x.getLac(), x.getCid()));
+			if(lac >= 0 && cid >= 0) {
+				bsLabel.setText("2G/3G Tower");
+				cdmaBS.setText(String.format("MNC %s, LAC %d, CID %d", mManager.getNetworkOperator(),
+						x.getLac(), x.getCid()));
+			}
 		} else {
 			cdmaBS.setText(R.string.none);
 		}
@@ -493,6 +499,11 @@ public final class HomeActivity extends Activity
 				mLocation.getLatitude(), mLocation.getLongitude(),
 				mLocation.getAccuracy(), mLocation.getSpeed()));
 		
+    }
+    
+    private void addBsMarker(double lat, double lon) {
+    	leafletView.loadUrl(String.format("javascript:placeMarker(%f,%f)",
+    			lat, lon));
     }
     
     private final LocationListener mLocListener = new LocationListener()

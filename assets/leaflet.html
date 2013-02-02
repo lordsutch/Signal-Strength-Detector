@@ -30,6 +30,7 @@ var map = null;
 var marker = null;
 var zoom = 12;
 var oldspeed = 0;
+var pmarker = null;
 
 function startmap(lat, lon, newzoom) {
   zoom = newzoom;
@@ -58,7 +59,25 @@ function recenter(lat, lon, radius, speed) {
     oldspeed = speed;
   }
 
-  map.panTo([lat, lon]);
+  if(pmarker) {
+    bounds = L.latLngBounds([[lat, lon], pmarker.getLatLng()]).pad(0.1);
+    map.fitBounds(bounds);
+  } else {
+    map.panTo([lat, lon]);
+  }
+}
+
+function placeMarker(lat, lon) {
+  if(!pmarker) {
+    pmarker = L.marker([lat, lon], {title: "1X Base Station"});
+    pmarker.addTo(map);
+  } else {
+    pmarker.setLatLng([lat, lon]);
+    pmarker.update();
+  }
+
+  bounds = L.latLngBounds([marker.getLatLng(), pmarker.getLatLng()]).pad(0.1);
+  map.fitBounds(bounds);
 }
 </script>
 </body>
