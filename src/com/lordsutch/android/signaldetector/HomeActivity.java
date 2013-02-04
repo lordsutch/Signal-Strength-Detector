@@ -25,7 +25,6 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,11 +40,13 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.TextView;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 public final class HomeActivity extends Activity
 {
 	public static final String TAG = HomeActivity.class.getSimpleName();
@@ -65,14 +66,14 @@ public final class HomeActivity extends Activity
     private Location mLocation = null;
     
     private WebView leafletView = null;
+    
+    private boolean bsmarker = false;
 	
 	/** Called when the activity is first created. */
 	@SuppressLint("SetJavaScriptEnabled")
 	@Override
     public void onCreate(Bundle savedInstanceState)
     {
-    	List<CellInfo> mInfo;
-    	
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
                 
@@ -111,7 +112,7 @@ public final class HomeActivity extends Activity
     	
     	Criteria gpsCriteria = new Criteria();
     	gpsCriteria.setCostAllowed(false);
-    	gpsCriteria.setHorizontalAccuracy(Criteria.ACCURACY_MEDIUM);
+    	gpsCriteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
     	
     	List<String> providers = mLocationManager.getProviders(gpsCriteria, true);
     	
@@ -125,19 +126,6 @@ public final class HomeActivity extends Activity
     			if(mLocation != null) {
     				centerMap();
     			}
-    		}
-    	}
-    		
-    	mInfo = mManager.getAllCellInfo();
-    	Log.d(TAG, "getAllCellInfo()");
-    	
-    	if(mInfo != null) {
-    		Log.d(TAG, mInfo.toString());
-    		mCellInfo = "getAllCellInfo():\n";
-    		for(CellInfo item : mInfo) {
-    			Log.d(TAG, item.toString());
-    			if(item != null)
-    				mCellInfo = mCellInfo + ReflectionUtils.dumpClass(item.getClass(), item);
     		}
     	}
     	
@@ -240,6 +228,18 @@ public final class HomeActivity extends Activity
             new EnableGpsDialogFragment().show(getFragmentManager(), "enableLocationSettings");
         }
     }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.mainmenu, menu);
+        
+        MenuItem x = menu.findItem(R.id.mapbasestation);
+        if(bsmarker)
+        	x.setTitle(R.string.hide_base_station);
+        
+        return true;
+    }
 
     private void enableLocationSettings() {
         Intent settingsIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
@@ -301,7 +301,11 @@ public final class HomeActivity extends Activity
     	return (strength > -900 && strength < 900);
     }
     
-    private void updatelog() {
+	private double bslat = 999;
+	private double bslon = 999;
+    
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+	private void updatelog() {
     	Log.d(TAG, "updatelog() entered");
     	
     	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
@@ -315,9 +319,6 @@ public final class HomeActivity extends Activity
 		
 		double latitude = mLocation.getLatitude();
 		double longitude = mLocation.getLongitude();
-		
-		double bslat = 999;
-		double bslon = 999;
 		
 		latlon.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S") + " " +
 			String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
@@ -350,7 +351,7 @@ public final class HomeActivity extends Activity
 			bslat = x.getBaseStationLatitude()/14400.0;
 			bslon = x.getBaseStationLongitude()/14400.0;
 			
-			addBsMarker(bslat, bslon);
+			addBsMarker();
 		}
 		
 		int cdmaSigStrength = mSignalStrength.getCdmaDbm();
@@ -425,7 +426,7 @@ public final class HomeActivity extends Activity
 			if(physCellID >= 0) {
 				servingid.setText(cellID + " " + String.valueOf(physCellID));
 			} else {
-				servingid.setText("'"+cellID+"'");
+				servingid.setText(cellID);
 			}
 		} else {
 			servingid.setText(R.string.none);
@@ -495,15 +496,34 @@ public final class HomeActivity extends Activity
     }
     
     private void centerMap() {
+    	if(mLocation == null) return;
+    	
 		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f)",
 				mLocation.getLatitude(), mLocation.getLongitude(),
 				mLocation.getAccuracy(), mLocation.getSpeed()));
 		
     }
     
-    private void addBsMarker(double lat, double lon) {
-    	leafletView.loadUrl(String.format("javascript:placeMarker(%f,%f)",
-    			lat, lon));
+    private void addBsMarker() {
+    	if(bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
+    		leafletView.loadUrl(String.format("javascript:placeMarker(%f,%f)",
+    				bslat, bslon));
+    	else
+    		leafletView.loadUrl("javascript:clearMarker()");
+    }
+    
+    public void toggleBsMarker(MenuItem x) {
+    	bsmarker = !bsmarker;
+    	
+    	if(!bsmarker) {
+    		x.setTitle(R.string.show_base_station);
+    		leafletView.loadUrl("javascript:clearMarker()");
+    		centerMap();
+    	} else {
+    		x.setTitle(R.string.hide_base_station);
+    		addBsMarker();
+    	}
+    	invalidateOptionsMenu();
     }
     
     private final LocationListener mLocListener = new LocationListener()
@@ -613,7 +633,8 @@ public final class HomeActivity extends Activity
     		updatelog();
     	}
     	
-    	@Override
+    	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+		@Override
     	public void onCellInfoChanged(List<CellInfo> mInfo)
     	{
     		if(mInfo != null) {
@@ -758,6 +779,25 @@ public final class HomeActivity extends Activity
         mNotifyMgr.cancelAll();
     }
 
+    private String STATE_SHOWBS ="showBSlocation";
+    
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Save the user's current game state
+        savedInstanceState.putBoolean(STATE_SHOWBS, bsmarker);
+        
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+    }
+    
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Always call the superclass so it can restore the view hierarchy
+        super.onRestoreInstanceState(savedInstanceState);
+     
+        bsmarker = savedInstanceState.getBoolean(STATE_SHOWBS, false);
+        invalidateOptionsMenu();
+    }
+    
     /**
      * Dialog to prompt users to enable GPS on the device.
      */

@@ -26,13 +26,13 @@
             <TextView
                 android:id="@+id/textView1"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:text="@string/location" />
 
             <TextView
                 android:id="@+id/positionLatLon"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:textAlignment="textEnd" />
         </TableRow>
 
@@ -44,13 +44,13 @@
             <TextView
                 android:id="@+id/textView2"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:text="@string/serving_lte_cell_id" />
 
             <TextView
                 android:id="@+id/cellid"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content"  android:textColor="@android:color/primary_text_dark"
                 android:textAlignment="textEnd" />
         </TableRow>
 
@@ -62,13 +62,13 @@
             <TextView
                 android:id="@+id/TextView01"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content"  android:textColor="@android:color/primary_text_dark"
                 android:text="@string/lte_signal_strength" />
 
             <TextView
                 android:id="@+id/sigstrength"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:textAlignment="textEnd" />
         </TableRow>
 
@@ -80,12 +80,12 @@
             <TextView
                 android:id="@+id/bsLabel"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:text="@string/cdma_1xrtt_base_station" />
 
             <TextView
                 android:id="@+id/cdma_sysinfo"
-                android:layout_width="wrap_content"
+                android:layout_width="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:layout_height="wrap_content" />
         </TableRow>
 
@@ -97,12 +97,12 @@
             <TextView
                 android:id="@+id/sigStrengthLabel"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:text="@string/_1xrtt_signal_strength" />
 
             <TextView
                 android:id="@+id/cdmaSigStrength"
-                android:layout_width="wrap_content"
+                android:layout_width="wrap_content" android:textColor="@android:color/primary_text_dark"
                 android:layout_height="wrap_content" />
         </TableRow>
     </TableLayout>
