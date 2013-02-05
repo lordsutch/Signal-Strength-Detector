@@ -25,7 +25,6 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -57,7 +56,6 @@ public final class HomeActivity extends Activity
 	private CellLocation mCellLocation;
 	private String mCellInfo = null;
 	private SignalStrength mSignalStrength;
-	private String mTextStr;
 	private TelephonyManager mManager;
 	private Object mHTCManager;
 	private Notification.Builder mBuilder = null;
@@ -632,7 +630,6 @@ public final class HomeActivity extends Activity
     	{
     		mCellLocation = mLocation;
     		
-    		update();
     		updatelog();
     	}
     	
@@ -649,7 +646,6 @@ public final class HomeActivity extends Activity
     			}
     		}
     		
-    		update();
     		updatelog();
     	}
 
@@ -658,122 +654,9 @@ public final class HomeActivity extends Activity
     	{
     		mSignalStrength = sStrength;
     		
-    		update();
     		updatelog();
     	}
     };
-    
-    // AsyncTask to avoid an ANR.
-    private class ReflectionTask extends AsyncTask<Void, Void, Void>
-    {
-		protected Void doInBackground(Void... mVoid)
-		{
-			mTextStr = 
-    			("\n\nDEVICE INFO\n\n" + "SDK: `" + Build.VERSION.SDK_INT + "`\nCODENAME: `" +
-    			Build.VERSION.CODENAME + "`\nRELEASE: `" + Build.VERSION.RELEASE +
-    			"`\nDevice: `" + Build.DEVICE + "`\nHARDWARE: `" + Build.HARDWARE +
-    			"`\nMANUFACTURER: `" + Build.MANUFACTURER + "`\nMODEL: `" + Build.MODEL +
-    			"`\nPRODUCT: `" + Build.PRODUCT + ((getRadio() == null) ? "" : ("`\nRADIO: `" + getRadio())) +
-    			"`\nBRAND: `" + Build.BRAND + ((Build.VERSION.SDK_INT >= 8) ? ("`\nBOOTLOADER: `" + Build.BOOTLOADER) : "") +
-    			"`\nBOARD: `" + Build.BOARD + "`\nID: `"+ Build.ID + "`\n\n" +
-    			// ReflectionUtils.dumpClass(SignalStrength.class, mSignalStrength) + "\n" +
-    			// ReflectionUtils.dumpClass(mCellLocation.getClass(), mCellLocation) + "\n" + // getWimaxDump() +
-    			// ReflectionUtils.dumpClass(TelephonyManager.class, mManager) + "\n" +
-    			// ReflectionUtils.dumpClass(mHTCManager.getClass(), mHTCManager) + "\n" +
-    			mCellInfo /* +
-    			ReflectionUtils.dumpStaticFields(Context.class, getApplicationContext()) */
-    			);
-    			
-			return null;
-		}
-		
-		protected void onProgressUpdate(Void... progress)
-		{
-			// Do nothing...
-		}
-		
-		protected void onPostExecute(Void result)
-		{
-			complete();
-		}
-	}
-
-    private final void complete()
-    {
-    	try
-    	{
-    		// mText.setText(mTextStr);
-    	
-			// Stop listening.
-			// mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-			// Toast.makeText(getApplicationContext(), R.string.done, Toast.LENGTH_SHORT).show();
-			
-			// mSubmit.setEnabled(true);
-		}
-		catch (Exception e)
-		{
-			Log.e(TAG, "ERROR!!!", e);
-		}
-    }
-    
-    private final void update()
-    {
-    	if (mSignalStrength == null || mCellLocation == null /* || mCellInfo == null */) return;
-    	
-    	final ReflectionTask mTask = new ReflectionTask();
-    	mTask.execute();
-    }
-    
-    /**
-     * @return The Radio of the {@link Build} if available.
-     */
-    public static final String getRadio()
-    {
-    	if (Build.VERSION.SDK_INT >= 14)
-    		return Build.getRadioVersion();
-    	else
-    		return null;
-    }
-    
-    private static final String[] mServices =
-	{
-		"WiMax", "wimax", "wimax", "WIMAX", "WiMAX"
-	};
-    
-    /**
-     * @return A String containing a dump of any/ all WiMax
-     * classes/ services loaded via {@link Context}.
-     */
-    public final String getWimaxDump()
-    {
-    	String mStr = "";
-    	
-    	for (final String mService : mServices)
-    	{
-    		final Object mServiceObj = getApplicationContext()
-    			.getSystemService(mService);
-    		if (mServiceObj != null)
-    		{
-    			mStr += "getSystemService(" + mService + ")\n\n";
-    			mStr += ReflectionUtils.dumpClass(mServiceObj.getClass(), mServiceObj);
-			}
-    	}
-    	
-    	return mStr;
-    }
-    
-    /**
-     * Start an {@link Intent} chooser for the user to submit the results.
-     */
-    public final void sendResults()
-    {
-    	final Intent mIntent = new Intent(Intent.ACTION_SEND);
-		mIntent.setType("plain/text");
-		mIntent.putExtra(Intent.EXTRA_EMAIL, new String[] { EMAIL });
-		mIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.results));
-		mIntent.putExtra(Intent.EXTRA_TEXT, mTextStr);
-		HomeActivity.this.startActivity(Intent.createChooser(mIntent, "Send results."));
-    }
     
     protected void onStop() {
         super.onStop();
@@ -820,4 +703,3 @@ public final class HomeActivity extends Activity
         }
     }
 }
-
