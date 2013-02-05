@@ -43,6 +43,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.TextView;
@@ -80,6 +81,8 @@ public final class HomeActivity extends Activity
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
         // mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
         
         mHTCManager = getSystemService("htctelephony");
