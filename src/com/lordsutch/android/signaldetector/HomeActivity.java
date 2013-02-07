@@ -197,9 +197,6 @@ public final class HomeActivity extends Activity
     }
     
     private void updateGui(signalInfo signal) {
-    	if(!hasWindowFocus())
-    		return;
-    	
     	bslat = signal.bslat;
     	bslon = signal.bslon;
 
