@@ -62,7 +62,7 @@ var padding = 0.15;
 var LN8 = Math.log(8);
 
 function recenter(lat, lon, radius, speed) {
-  newZoom = 15-Math.ceil(Math.log((speed*3.6)+0.1)/LN8);
+  newZoom = 15-Math.floor(Math.log((speed*3.6)+1)/LN8);
 
   if(!map) startmap(lat, lon, newZoom);
 

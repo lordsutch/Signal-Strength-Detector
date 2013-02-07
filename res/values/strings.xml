@@ -18,4 +18,6 @@
     <string name="_2g_3g_signal">2G/3G Signal</string>
     <string name="show_base_station">Show base station</string>
     <string name="hide_base_station">Hide base station</string>
+    <string name="_2g_3g_tower">2G/3G Tower</string>
+    <string name="exit">Exit</string>
 </resources>

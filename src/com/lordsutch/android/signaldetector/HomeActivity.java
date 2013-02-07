@@ -1,70 +1,46 @@
 package com.lordsutch.android.signaldetector;
 
 // Android Packages
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.List;
+import java.lang.ref.WeakReference;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.location.Criteria;
-import android.location.Location;
-import android.location.LocationListener;
+import android.content.ServiceConnection;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 import android.provider.Settings;
-import android.telephony.CellIdentityLte;
-import android.telephony.CellInfo;
-import android.telephony.CellInfoLte;
-import android.telephony.CellLocation;
-import android.telephony.CellSignalStrengthLte;
-import android.telephony.PhoneStateListener;
-import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
-import android.telephony.cdma.CdmaCellLocation;
-import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.TextView;
+
+import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
+import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
 public final class HomeActivity extends Activity
 {
 	public static final String TAG = HomeActivity.class.getSimpleName();
-	
 	public static final String EMAIL = "lordsutch@gmail.com";
-	
-	private CellLocation mCellLocation;
-	private String mCellInfo = null;
-	private SignalStrength mSignalStrength;
-	private TelephonyManager mManager;
-	private Object mHTCManager;
-	private Notification.Builder mBuilder = null;
-	private NotificationManager mNotifyMgr;
-	private LocationManager mLocationManager;
-	private int mNotificationId = 001;
-    private Location mLocation = null;
-    
-    private WebView leafletView = null;
+	    
+    private static WebView leafletView = null;
     
     private boolean bsmarker = false;
 	
@@ -75,146 +51,47 @@ public final class HomeActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-                
-        mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        // mLocationManager.getProvider(LocationManager.GPS_PROVIDER);
-        
-        mHTCManager = getSystemService("htctelephony");
-    	
     	leafletView = (WebView) findViewById(R.id.leafletView);
     	leafletView.loadUrl("file:///android_asset/leaflet.html");
+    	
     	WebSettings webSettings = leafletView.getSettings();
     	// webSettings.setAllowFileAccessFromFileURLs(true);
-    	webSettings.setJavaScriptEnabled(true);
-    	    	
-    	Intent resultIntent = new Intent(this, HomeActivity.class);
-    	PendingIntent resultPendingIntent =
-    		    PendingIntent.getActivity(this, 0,
-    		    resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+    	webSettings.setJavaScriptEnabled(true);    	   
 
-    	mBuilder = new Notification.Builder(this)
-    		    .setSmallIcon(R.drawable.icon)
-    		    .setContentTitle(getString(R.string.signal_detector_is_running))
-    		    .setContentText("Hello World!")
-    		    .setContentIntent(resultPendingIntent);
-
-    	mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-
-    	// Builds the notification and issues it.
-    	mNotifyMgr.notify(mNotificationId, mBuilder.build());
-    	
-    	// Register the listener with the telephony manager
-    	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
-    		PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
-    	
-    	Criteria gpsCriteria = new Criteria();
-    	gpsCriteria.setCostAllowed(false);
-    	gpsCriteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-    	
-    	List<String> providers = mLocationManager.getProviders(gpsCriteria, true);
-    	
-    	for(String provider : providers) {
-    		Log.d(TAG, "Registering "+provider);
-    		mLocationManager.requestLocationUpdates(provider, 1000, 10, mLocListener);
-    		Location mLoc = mLocationManager.getLastKnownLocation(provider);
-
-    		if(mLoc != null) {
-    			mLocation = getBetterLocation(mLoc, mLocation);
-    			if(mLocation != null) {
-    				centerMap();
-    			}
-    		}
-    	}
-    	
-    	/*    	
-    	if(mHTCManager != null) {
-    		if(mCellInfo == null)
-    			mCellInfo = "";
-
-    		Method m = null;
-    		Object x = null;
-    		String s = null;
-    		
-			try {
-				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if(m != null) {
-				try {
-					s = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
-				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-    		if(s != null)
-    			mCellInfo += "getSectorId = '" + s + "'\n";
-			
-    		try {
-    			m = mHTCManager.getClass().getMethod("requestGetLTERFBandInfo");
-    		} catch (NoSuchMethodException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
-    		try {
-    			x = (Object) m.invoke(mHTCManager, (Object[]) null);
-    		} catch (IllegalArgumentException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		} catch (IllegalAccessException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		} catch (InvocationTargetException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
-    		if(x != null)
-    			mCellInfo += "requestGetLTERFBandInfo\n" + ReflectionUtils.dumpClass(x.getClass(), x);
-    		else
-    			mCellInfo += "requestGetLTERFBandInfo returns " + m.getReturnType().toString() + "\n";
-
-    		try {
-    			m = mHTCManager.getClass().getMethod("requestGetLTETxRxInfo");
-    		} catch (NoSuchMethodException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
-    		try {
-    			x = (Object) m.invoke(mHTCManager, (Object[]) null);
-    		} catch (IllegalArgumentException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		} catch (IllegalAccessException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		} catch (InvocationTargetException e) {
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
-
-    		if(x != null)
-    			mCellInfo += "requestGetLTETxRxInfo\n" + ReflectionUtils.dumpClass(x.getClass(), x);
-    		else
-    			mCellInfo += "requestGetLTETxRxInfo returns " + m.getReturnType().toString() + "\n";
-    	} */
+    	// Enable client caching
+    	leafletView.setWebChromeClient(new WebChromeClient() {
+    	      @Override
+    	      public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
+    	                   WebStorage.QuotaUpdater quotaUpdater)
+    	      {
+    	            quotaUpdater.updateQuota(spaceNeeded * 2);
+    	      }
+    	});
+    	 
+    	webSettings.setDomStorageEnabled(true);
+    	 
+    	// Set cache size to 2 mb by default. should be more than enough
+    	webSettings.setAppCacheMaxSize(1024*1024*2);
+    	 
+    	// This next one is crazy. It's the DEFAULT location for your app's cache
+    	// But it didn't work for me without this line.
+    	// UPDATE: no hardcoded path. Thanks to Kevin Hawkins
+    	String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
+    	webSettings.setAppCachePath(appCachePath);
+    	webSettings.setAllowFileAccess(true);
+    	webSettings.setAppCacheEnabled(true);
     }
     
+	SignalDetectorService mService;
+	boolean mBound = false;
+	
     @Override
     protected void onStart() {
         super.onStart();
-
+        
         // This verification should be done during onStart() because the system calls
         // this method when the user returns to the activity, which ensures the desired
         // location provider is enabled each time the activity resumes from the stopped state.
@@ -228,8 +105,44 @@ public final class HomeActivity extends Activity
             // call enableLocationSettings()
             new EnableGpsDialogFragment().show(getFragmentManager(), "enableLocationSettings");
         }
+        
+        // Bind cell tracking service
+        Intent intent = new Intent(this, SignalDetectorService.class);
+        
+        startService(intent);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
     }
     
+    @Override
+    protected void onResume() {
+    	super.onResume();
+
+    	Log.d(TAG, "Resuming");
+        if(mSignalInfo != null)
+        	updateGui(mSignalInfo);
+    }
+
+    private void enableLocationSettings() {
+        Intent settingsIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivity(settingsIntent);
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            LocalBinder binder = (LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+            mService.setMessenger(mMessenger);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -242,61 +155,6 @@ public final class HomeActivity extends Activity
         return true;
     }
 
-    private void enableLocationSettings() {
-        Intent settingsIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-        startActivity(settingsIntent);
-    }
-    
-    private void appendLog(String logfile, String text, String header)
-    {       
-    	Boolean newfile = false;
-    	File logFile = new File(getExternalFilesDir(null), logfile);
-    	if (!logFile.exists())
-    	{
-    		try
-    		{
-    			logFile.createNewFile();
-    			newfile = true;
-    		} 
-    		catch (IOException e)
-    		{
-    			// TODO Auto-generated catch block
-    			e.printStackTrace();
-    		}
-    	}
-    	try
-    	{
-    		//BufferedWriter for performance, true to set append to file flag
-    		BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true)); 
-    		if (newfile) {
-    			buf.append(header);
-    			buf.newLine();
-    		}
-    		buf.append(text);
-    		buf.newLine();
-    		buf.close();
-    	}
-    	catch (IOException e)
-    	{
-    		// TODO Auto-generated catch block
-    		e.printStackTrace();
-    	}
-    }
-
-    private int parseSignalStrength() {
-    	String sstrength = mSignalStrength.toString();
-    	int strength = -999;
-    	
-    	String[] bits = sstrength.split("\\s+");
-    	if(bits.length >= 10)
-    		try {
-    			strength = Integer.parseInt(bits[9]);
-    		}
-    		catch (NumberFormatException e) {}
-    	
-    	return strength;
-    }
-    
     final private Boolean validSignalStrength(int strength)
     {
     	return (strength > -900 && strength < 900);
@@ -305,26 +163,53 @@ public final class HomeActivity extends Activity
 	private double bslat = 999;
 	private double bslon = 999;
     
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-	private void updatelog() {
-    	Log.d(TAG, "updatelog() entered");
-    	
-    	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
+    /**
+     * Activity Handler of incoming messages from service.
+     */
+	static class IncomingHandler extends Handler {
+		private final WeakReference<HomeActivity> mActivity; 
+
+		IncomingHandler(HomeActivity activity) {
+	        mActivity = new WeakReference<HomeActivity>(activity);
+	    }
+		
+		@Override
+        public void handleMessage(Message msg) {
+        	HomeActivity activity = mActivity.get();
+            switch (msg.what) {
+                case SignalDetectorService.MSG_SIGNAL_UPDATE:
+                	if(activity != null)
+                		activity.updateSigInfo((signalInfo) msg.obj);
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    }
+
+    final Messenger mMessenger = new Messenger(new IncomingHandler(this));
+
+    private signalInfo mSignalInfo = null;
+    
+    public void updateSigInfo(signalInfo signal) {
+    	mSignalInfo = signal;
+    	updateGui(signal);
+    }
+    
+    private void updateGui(signalInfo signal) {
+    	if(!hasWindowFocus())
     		return;
     	
-    	centerMap();
-    	
-		Boolean gotID = false;
+    	bslat = signal.bslat;
+    	bslon = signal.bslon;
+
+		double latitude = signal.latitude;
+		double longitude = signal.longitude;
 		
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
-		double latitude = mLocation.getLatitude();
-		double longitude = mLocation.getLongitude();
-		
 		latlon.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S") + " " +
 			String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
-
-    	List<CellInfo> mInfo;
 
 		TextView servingid = (TextView) findViewById(R.id.cellid);
 		TextView strength = (TextView) findViewById(R.id.sigstrength);
@@ -335,174 +220,65 @@ public final class HomeActivity extends Activity
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 
-		String cellID = "";
-		int physCellID = -1;
-		int lteSigStrength = -9999;
-		
-		int bsid = -1;
-		int nid = -1;
-		int sid = -1;
-		
-		if(mCellLocation.getClass() == CdmaCellLocation.class) {
-			CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
-			bsid = x.getBaseStationId();
-			nid = x.getNetworkId();
-			sid = x.getSystemId();
-			
-			bslat = x.getBaseStationLatitude()/14400.0;
-			bslon = x.getBaseStationLongitude()/14400.0;
-			
-			addBsMarker();
-		}
-		
-		int cdmaSigStrength = mSignalStrength.getCdmaDbm();
-		int gsmSigStrength = mSignalStrength.getGsmSignalStrength();
-		gsmSigStrength = (gsmSigStrength < 32 ? -113+2*gsmSigStrength : -9999);
-		
-		mInfo = mManager.getAllCellInfo();
-    	if(mInfo != null) {
-    		for(CellInfo item : mInfo) {
-    			if(item != null && item.getClass() == CellInfoLte.class) {
-    				CellInfoLte x = (CellInfoLte) item;
-    				CellSignalStrengthLte cstr = x.getCellSignalStrength();
-    				if(cstr != null)
-    					lteSigStrength = cstr.getDbm();
-
-    				CellIdentityLte cellid = x.getCellIdentity();
-    				if(cellid != null) {
-    					cellID = String.format("%08x", cellid.getCi());
-    					physCellID = cellid.getPci();
-    					gotID = true;
-    				}
-    			}
-    		}
-    	}
-    	
-    	if(!validSignalStrength(lteSigStrength))
-    		lteSigStrength = parseSignalStrength();
-    	
-		if(!gotID && mHTCManager != null) {
-			Method m = null;
-			
-			try {
-				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
-				cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		if(!validSignalStrength(lteSigStrength)) {
-			Method m;
-
-			try {
-				m = mSignalStrength.getClass().getMethod("getLteRsrp");
-				lteSigStrength = (Integer) m.invoke(mSignalStrength, (Object []) null);
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		if(!cellID.isEmpty() || physCellID >= 0) {
-			if(physCellID >= 0) {
-				servingid.setText(cellID + " " + String.valueOf(physCellID));
+		if(!signal.cellID.isEmpty() || signal.physCellID >= 0) {
+			if(signal.physCellID >= 0) {
+				servingid.setText(signal.cellID + " " + String.valueOf(signal.physCellID));
 			} else {
-				servingid.setText(cellID);
+				servingid.setText(signal.cellID);
 			}
 		} else {
 			servingid.setText(R.string.none);
 		}
 		
-		if(validSignalStrength(lteSigStrength)) {
-			strength.setText(String.valueOf(lteSigStrength) + "\u2009dBm");
+		if(validSignalStrength(signal.lteSigStrength)) {
+			strength.setText(String.valueOf(signal.lteSigStrength) + "\u2009dBm");
 		} else {
 			strength.setText(R.string.no_signal);
 		}
 
-		if(validSignalStrength(cdmaSigStrength) && mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+		if(validSignalStrength(signal.cdmaSigStrength) && signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
 			strengthLabel.setText(R.string._1xrtt_signal_strength);
-			cdmaStrength.setText(String.valueOf(cdmaSigStrength) + "\u2009dBm");
-		} else if (validSignalStrength(gsmSigStrength)) {
+			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u2009dBm");
+		} else if (validSignalStrength(signal.gsmSigStrength)) {
 			strengthLabel.setText(R.string._2g_3g_signal);
-			cdmaStrength.setText(String.valueOf(gsmSigStrength) + "\u2009dBm");
+			cdmaStrength.setText(String.valueOf(signal.gsmSigStrength) + "\u2009dBm");
     	} else {
 			cdmaStrength.setText(R.string.no_signal);
 		}
 		
-		if(sid >= 0 && nid >= 0 && bsid >= 0 && (mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA)) {
+		if(signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 && (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
 			bsLabel.setText(R.string.cdma_1xrtt_base_station);
-			cdmaBS.setText(String.format("SID %d, NID %d, BSID %d", sid, nid, bsid));
-		} else if(mManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
-			GsmCellLocation x = (GsmCellLocation) mCellLocation;
-			int lac = x.getLac();
-			int cid = x.getCid();
+			cdmaBS.setText(String.format("SID\u00A0%d, NID\u00A0%d, BSID\u00A0%d", signal.sid, signal.nid, signal.bsid));
+		} else if(signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+			bsLabel.setText(R.string._2g_3g_tower);
+
+			String bstext = "MNC\u00A0"+signal.operator;
 			
-			if(lac >= 0 && cid >= 0) {
-				bsLabel.setText("2G/3G Tower");
-				cdmaBS.setText(String.format("MNC %s, LAC %d, CID %d", mManager.getNetworkOperator(),
-						x.getLac(), x.getCid()));
-			}
+			if(signal.lac > 0)
+				bstext += ", LAC\u00A0"+String.valueOf(signal.lac);
+			
+			if(signal.rnc > 0 && signal.rnc != signal.lac)
+				bstext += ", RNC\u00A0"+String.valueOf(signal.rnc);
+				
+			if(signal.cid > 0)
+				bstext += ", CID\u00A0"+String.valueOf(signal.cid);
+			
+			if(signal.psc > 0)
+				bstext += ", PSC\u00A0"+String.valueOf(signal.psc);
+
+			cdmaBS.setText(bstext);
 		} else {
 			cdmaBS.setText(R.string.none);
 		}
-		
-		if(!cellID.isEmpty())
-			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellID);
-		else
-			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
 
-    	mNotifyMgr.notify(mNotificationId, mBuilder.build());
-
-    	String slat = Location.convert(latitude, Location.FORMAT_DEGREES);
-    	String slon = Location.convert(longitude, Location.FORMAT_DEGREES);
-
-    	if(lteSigStrength > -900 || !cellID.isEmpty()) {
-    		Log.d(TAG, "Logging LTE cell.");
-    		appendLog("ltecells.csv", slat+","+slon+","+cellID+","+
-    				(physCellID >= 0 ? String.valueOf(physCellID) : "")+","+
-    				(validSignalStrength(lteSigStrength) ? String.valueOf(lteSigStrength) : ""),
-    				"latitude,longitude,cellid,physcellid,dBm");
-    	}
-    	if(sid >= 22404 && sid <= 22451)
-    	{
-    		String bslatstr = (bslat <= 200 ? Location.convert(bslat, Location.FORMAT_DEGREES) : "");
-    		String bslonstr = (bslat <= 200 ? Location.convert(bslon, Location.FORMAT_DEGREES) : "");
-
-    		Log.d(TAG, "Logging ESMR cell.");
-    		appendLog("esmrcells.csv", 
-    				String.format("%s,%s,%d,%d,%d,%s,%s,%s", slat, slon, sid, nid, bsid,
-    						(validSignalStrength(cdmaSigStrength) ? String.valueOf(cdmaSigStrength) : ""),
-    						bslatstr, bslonstr), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon");
-    	}
+		if(Math.abs(signal.latitude) <= 200)
+			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.speed);
+    	addBsMarker();
     }
     
-    private void centerMap() {
-    	if(mLocation == null) return;
-    	
+	private static void centerMap(double latitude, double longitude, double accuracy, double speed) {
 		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f)",
-				mLocation.getLatitude(), mLocation.getLongitude(),
-				mLocation.getAccuracy(), mLocation.getSpeed()));
-		
+				latitude, longitude, accuracy, speed));
     }
     
     private void addBsMarker() {
@@ -519,150 +295,31 @@ public final class HomeActivity extends Activity
     	if(!bsmarker) {
     		x.setTitle(R.string.show_base_station);
     		leafletView.loadUrl("javascript:clearMarker()");
-    		centerMap();
     	} else {
     		x.setTitle(R.string.hide_base_station);
     		addBsMarker();
     	}
     	invalidateOptionsMenu();
+    }    
+    
+    public void exitApp(MenuItem x) {
+    	if(mBound) {
+    		unbindService(mConnection);
+    		mBound = false;
+    	}
+
+    	Intent intent = new Intent(this, SignalDetectorService.class);
+        stopService(intent);
+    	finish();
     }
-    
-    private final LocationListener mLocListener = new LocationListener()
-    {
-    	@Override
-    	public void onLocationChanged(Location mLoc)
-    	{
-    		Log.d(TAG, mLoc.toString());
-    		mLocation = getBetterLocation(mLoc, mLocation);
-    		
-    		if(mLocation != null) {
-    			centerMap();
-    			updatelog();
-    		}
-    		
-    	}
 
-		@Override
-		public void onProviderDisabled(String provider) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void onProviderEnabled(String provider) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void onStatusChanged(String provider, int status, Bundle extras) {
-			// TODO Auto-generated method stub
-			
-		}
-    };
-
-    private static final int TWO_MINUTES = 1000 * 60 * 2;
-
-    /** Determines whether one Location reading is better than the current Location fix.
-     * Code taken from
-     * http://developer.android.com/guide/topics/location/obtaining-user-location.html
-     *
-     * @param newLocation  The new Location that you want to evaluate
-     * @param currentBestLocation  The current Location fix, to which you want to compare the new
-     *        one
-     * @return The better Location object based on recency and accuracy.
-     */
-   protected Location getBetterLocation(Location newLocation, Location currentBestLocation) {
-       if (currentBestLocation == null) {
-           // A new location is always better than no location
-           return newLocation;
-       }
-
-       // Check whether the new location fix is newer or older
-       long timeDelta = newLocation.getTime() - currentBestLocation.getTime();
-       boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
-       boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
-       boolean isNewer = timeDelta > 0;
-
-       // If it's been more than two minutes since the current location, use the new location
-       // because the user has likely moved.
-       if (isSignificantlyNewer) {
-           return newLocation;
-       // If the new location is more than two minutes older, it must be worse
-       } else if (isSignificantlyOlder) {
-           return currentBestLocation;
-       }
-
-       // Check whether the new location fix is more or less accurate
-       int accuracyDelta = (int) (newLocation.getAccuracy() - currentBestLocation.getAccuracy());
-       boolean isLessAccurate = accuracyDelta > 0;
-       boolean isMoreAccurate = accuracyDelta < 0;
-       boolean isSignificantlyLessAccurate = accuracyDelta > 200;
-
-       // Check if the old and new location are from the same provider
-       boolean isFromSameProvider = isSameProvider(newLocation.getProvider(),
-               currentBestLocation.getProvider());
-
-       // Determine location quality using a combination of timeliness and accuracy
-       if (isMoreAccurate) {
-           return newLocation;
-       } else if (isNewer && !isLessAccurate) {
-           return newLocation;
-       } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
-           return newLocation;
-       }
-       return currentBestLocation;
-   }
-
-   /** Checks whether two providers are the same */
-   private boolean isSameProvider(String provider1, String provider2) {
-       if (provider1 == null) {
-         return provider2 == null;
-       }
-       return provider1.equals(provider2);
-   }
-
-    // Listener for signal strength.
-    final PhoneStateListener mListener = new PhoneStateListener()
-    {
-    	@Override
-    	public void onCellLocationChanged(CellLocation mLocation)
-    	{
-    		mCellLocation = mLocation;
-    		
-    		updatelog();
-    	}
-    	
-    	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-		@Override
-    	public void onCellInfoChanged(List<CellInfo> mInfo)
-    	{
-    		if(mInfo != null) {
-        		mCellInfo = "";
-    			for(CellInfo item : mInfo) {
-    				Log.d(TAG, item.toString());
-    				if(item != null)
-    					mCellInfo = mCellInfo + ReflectionUtils.dumpClass(item.getClass(), item);
-    			}
-    		}
-    		
-    		updatelog();
-    	}
-
-    	@Override
-    	public void onSignalStrengthsChanged(SignalStrength sStrength)
-    	{
-    		mSignalStrength = sStrength;
-    		
-    		updatelog();
-    	}
-    };
-    
-    protected void onStop() {
-        super.onStop();
-        mLocationManager.removeUpdates(mLocListener);
-        mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        mNotifyMgr.cancelAll();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mBound) {
+        	unbindService(mConnection);
+        	mBound = false;
+        }
     }
 
     private String STATE_SHOWBS ="showBSlocation";
@@ -702,4 +359,5 @@ public final class HomeActivity extends Activity
                     .create();
         }
     }
+
 }

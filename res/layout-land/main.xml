@@ -29,7 +29,6 @@
             android:id="@+id/positionLatLon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/enable_gps"
             android:textColor="@android:color/primary_text_dark" />
 
         <TextView
