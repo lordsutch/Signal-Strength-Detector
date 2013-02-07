@@ -4,12 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import com.lordsutch.android.signaldetector.HomeActivity.IncomingHandler;
 
 import android.annotation.TargetApi;
 import android.app.Notification;
@@ -29,8 +26,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.os.RemoteException;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
@@ -43,8 +38,6 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
-import android.view.MenuItem;
-import android.widget.TextView;
 
 public class SignalDetectorService extends Service {
 	public static final String TAG = HomeActivity.class.getSimpleName();

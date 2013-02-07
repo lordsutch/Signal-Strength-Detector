@@ -356,5 +356,4 @@ public final class HomeActivity extends Activity
                     .create();
         }
     }
-
 }
