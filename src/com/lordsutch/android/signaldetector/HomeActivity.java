@@ -83,6 +83,8 @@ public final class HomeActivity extends Activity
     	webSettings.setAppCachePath(appCachePath);
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
+    	webSettings.setBuiltInZoomControls(false);
+    	
     }
     
 	SignalDetectorService mService;
