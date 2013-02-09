@@ -26,6 +26,7 @@ html, body, #map {
 <div id="map"></div>
 
 <script>
+<!--
 var map = null;
 var marker = null;
 var zoom = 12;
@@ -59,10 +60,21 @@ function startmap(lat, lon, newzoom) {
 }
 
 var padding = 0.15;
-var LN8 = Math.log(8);
+
+function zoom4speed(speed) {
+  kmh = speed*3.6;
+
+  if (kmh <= 55) {
+    return 16;
+  } else if (kmh <= 100) {
+    return 15;
+  } else {
+    return 14;
+  }
+}
 
 function recenter(lat, lon, radius, speed) {
-  newZoom = 15-Math.floor(Math.log((speed*3.6)+1)/LN8);
+  newZoom = zoom4speed(speed);
 
   if(!map) startmap(lat, lon, newZoom);
 
@@ -70,7 +82,7 @@ function recenter(lat, lon, radius, speed) {
     marker.setLatLng([lat, lon]);
     marker.setRadius(radius);
   } else {
-    marker = L.circle([lat, lon], radius);
+    marker = L.circle([lat, lon], radius, {color: "#c00"});
     marker.addTo(map);
   }
 
@@ -109,5 +121,6 @@ function clearMarker() {
   map.removeLayer(pmarker);
   pmarker = null;
 }
+-->
 </script>
 </body>
