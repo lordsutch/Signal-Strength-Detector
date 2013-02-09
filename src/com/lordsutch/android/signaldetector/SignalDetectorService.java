@@ -171,6 +171,7 @@ public class SignalDetectorService extends Service {
 		
 		double longitude;
 		double latitude;
+		double altitude;
 		double accuracy;
 		double speed;
 
@@ -214,6 +215,7 @@ public class SignalDetectorService extends Service {
     	signal.longitude = mLocation.getLongitude();
     	signal.speed = mLocation.getSpeed();
     	signal.accuracy = mLocation.getAccuracy();
+    	signal.altitude = mLocation.getAltitude();
     	
 		signal.phoneType = mManager.getPhoneType();
 
@@ -331,10 +333,12 @@ public class SignalDetectorService extends Service {
 
     		if(validSignalStrength(signal.lteSigStrength) || signal.physCellID >= 0 || !signal.cellID.isEmpty()) {
     			Log.d(TAG, "Logging LTE cell.");
-    			appendLog("ltecells.csv", slat+","+slon+","+signal.cellID+","+
+    			appendLog("ltecells.csv",
+    					slat+","+slon+","+signal.cellID+","+
     					(signal.physCellID >= 0 ? String.valueOf(signal.physCellID) : "")+","+
-    					(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : ""),
-    					"latitude,longitude,cellid,physcellid,dBm");
+    					(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
+    					String.valueOf(signal.altitude),
+    					"latitude,longitude,cellid,physcellid,dBm,altitude");
     		}
     		if(signal.sid >= 22404 && signal.sid <= 22451)
     		{
@@ -343,9 +347,9 @@ public class SignalDetectorService extends Service {
 
     			Log.d(TAG, "Logging ESMR cell.");
     			appendLog("esmrcells.csv", 
-    					String.format("%s,%s,%d,%d,%d,%s,%s,%s", slat, slon, signal.sid, signal.nid, signal.bsid,
+    					String.format("%s,%s,%d,%d,%d,%s,%s,%s,%f", slat, slon, signal.sid, signal.nid, signal.bsid,
     							(validSignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
-    							bslatstr, bslonstr), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon");
+    							bslatstr, bslonstr, signal.altitude), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude");
     		}
     	}
     	
