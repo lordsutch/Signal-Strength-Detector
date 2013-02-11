@@ -271,9 +271,9 @@ public final class HomeActivity extends Activity
 		}
 
 		if(validSignalStrength(signal.lteSigStrength))
-			getActionBar().setIcon(R.drawable.ic_launcher);
+			getActionBar().setLogo(R.drawable.ic_launcher);
 		else
-			getActionBar().setIcon(R.drawable.ic_stat_non4g);
+			getActionBar().setLogo(R.drawable.ic_stat_non4g);
 		
 		if(Math.abs(signal.latitude) <= 200)
 			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.speed);
