@@ -200,6 +200,7 @@ public class SignalDetectorService extends Service {
 		int gsmSigStrength = -9999;
 		
 		int phoneType = TelephonyManager.PHONE_TYPE_NONE;
+		int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
 	}
 	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -218,7 +219,8 @@ public class SignalDetectorService extends Service {
     	signal.altitude = mLocation.getAltitude();
     	
 		signal.phoneType = mManager.getPhoneType();
-
+		signal.networkType = mManager.getNetworkType();
+		
 		signal.operator = mManager.getNetworkOperator();
 
 		if(mCellLocation.getClass() == CdmaCellLocation.class) {
@@ -263,7 +265,10 @@ public class SignalDetectorService extends Service {
 
     				CellIdentityLte cellid = x.getCellIdentity();
     				if(cellid != null) {
-    					signal.cellID = String.format("%08x", cellid.getCi());
+    					if(cellid.getCi() < Integer.MAX_VALUE)
+    						signal.cellID = String.format("%08x", cellid.getCi());
+    					else
+    						signal.cellID = "";
     					signal.physCellID = cellid.getPci();
     					signal.tac = cellid.getTac();
     					signal.mnc = cellid.getMnc();
@@ -331,7 +336,8 @@ public class SignalDetectorService extends Service {
         	String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
         	String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
-    		if(validSignalStrength(signal.lteSigStrength) || signal.physCellID >= 0 || !signal.cellID.isEmpty()) {
+    		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
+    				(validSignalStrength(signal.lteSigStrength) || signal.physCellID >= 0 || !signal.cellID.isEmpty())) {
     			Log.d(TAG, "Logging LTE cell.");
     			appendLog("ltecells.csv",
     					slat+","+slon+","+signal.cellID+","+

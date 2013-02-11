@@ -219,8 +219,8 @@ public final class HomeActivity extends Activity
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 
-		if(!signal.cellID.isEmpty() || signal.physCellID >= 0) {
-			if(signal.physCellID >= 0) {
+		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && (!signal.cellID.isEmpty() || (signal.physCellID >= 0 && signal.physCellID <= 503))) {
+			if(signal.physCellID >= 0 && signal.physCellID <= 503) {
 				servingid.setText(signal.cellID + " " + String.valueOf(signal.physCellID));
 			} else {
 				servingid.setText(signal.cellID);
@@ -229,7 +229,7 @@ public final class HomeActivity extends Activity
 			servingid.setText(R.string.none);
 		}
 		
-		if(validSignalStrength(signal.lteSigStrength)) {
+		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
 			strength.setText(String.valueOf(signal.lteSigStrength) + "\u2009dBm");
 		} else {
 			strength.setText(R.string.no_signal);
