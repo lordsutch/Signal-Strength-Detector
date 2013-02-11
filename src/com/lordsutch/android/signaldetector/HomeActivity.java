@@ -270,6 +270,11 @@ public final class HomeActivity extends Activity
 			cdmaBS.setText(R.string.none);
 		}
 
+		if(validSignalStrength(signal.lteSigStrength))
+			getActionBar().setIcon(R.drawable.ic_launcher);
+		else
+			getActionBar().setIcon(R.drawable.ic_stat_non4g);
+		
 		if(Math.abs(signal.latitude) <= 200)
 			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.speed);
     	addBsMarker();
