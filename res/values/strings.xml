@@ -13,11 +13,14 @@
     <string name="signal_detector_is_running">Signal Detector is running</string>
     <string name="no_signal">no signal</string>
     <string name="none">none</string>
-    <string name="cdma_1xrtt_base_station">1xRTT Tower</string>
+    <string name="cdma_1xrtt_base_station">1xRTT Site</string>
     <string name="_1xrtt_signal_strength">1xRTT Signal</string>
     <string name="_2g_3g_signal">2G/3G Signal</string>
     <string name="show_base_station">Show base station</string>
     <string name="hide_base_station">Hide base station</string>
-    <string name="_2g_3g_tower">2G/3G Tower</string>
+    <string name="_2g_3g_tower">2G/3G Site</string>
     <string name="exit">Exit</string>
+    <string name="speed">Speed</string>
+    <string name="traditional_units">Traditional units</string>
+    <string name="metric_units">Metric units</string>
 </resources>
