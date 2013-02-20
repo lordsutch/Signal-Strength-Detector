@@ -15,8 +15,8 @@
         android:layout_width="0dp"
         android:layout_height="fill_parent"
         android:layout_weight=".4"
-        android:paddingRight="3dp"
-        android:orientation="vertical" >
+        android:orientation="vertical"
+        android:paddingRight="3dp" >
 
         <TextView
             android:id="@+id/textView1"
@@ -29,7 +29,22 @@
             android:id="@+id/positionLatLon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/textview6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/speed"
+            android:textColor="@android:color/holo_blue_dark" />
+
+        <TextView
+            android:id="@+id/speed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
 
         <TextView
             android:id="@+id/textView2"
@@ -42,7 +57,8 @@
             android:id="@+id/cellid"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
 
         <TextView
             android:id="@+id/TextView01"
@@ -55,7 +71,8 @@
             android:id="@+id/sigstrength"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
 
         <TextView
             android:id="@+id/bsLabel"
@@ -67,7 +84,9 @@
         <TextView
             android:id="@+id/cdma_sysinfo"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark" />
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
 
         <TextView
             android:id="@+id/sigStrengthLabel"
@@ -79,7 +98,9 @@
         <TextView
             android:id="@+id/cdmaSigStrength"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:textColor="@android:color/primary_text_dark" />
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
     </LinearLayout>
 
     <WebView
