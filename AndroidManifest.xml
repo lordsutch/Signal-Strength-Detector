@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest package="com.lordsutch.android.signaldetector"
-    android:versionCode="2"
-    android:versionName="1.2" xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
+    android:versionCode="3"
+    android:versionName="1.3" xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
