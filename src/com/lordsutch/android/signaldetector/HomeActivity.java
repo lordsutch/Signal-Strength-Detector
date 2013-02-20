@@ -84,7 +84,13 @@ public final class HomeActivity extends Activity
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
-    	
+
+        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+        String countryCode = tm.getSimCountryIso();
+        tradunits = (countryCode == "us");
+
+        invalidateOptionsMenu();
+        updateUnits();
     }
     
 	SignalDetectorService mService;
@@ -154,6 +160,10 @@ public final class HomeActivity extends Activity
         if(bsmarker)
         	x.setTitle(R.string.hide_base_station);
         
+        x = menu.findItem(R.id.units);
+        if(tradunits)
+        	x.setTitle(R.string.metric_units);
+        
         return true;
     }
 
@@ -198,18 +208,35 @@ public final class HomeActivity extends Activity
     	updateGui(signal);
     }
     
+    double speedfactor = 3.6;
+    String speedlabel = "km/h";
+    
+    double accuracyfactor = 1.0;
+    String accuracylabel = "m";
+    
+    double bearing = 0.0;
+    
     private void updateGui(signalInfo signal) {
     	bslat = signal.bslat;
     	bslon = signal.bslon;
+    	
+    	if(signal.bearing > 0.0)
+    		bearing = signal.bearing;
 
-		double latitude = signal.latitude;
-		double longitude = signal.longitude;
-		
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
-		latlon.setText(String.format("%3.6f", Math.abs(latitude))+"\u00b0"+(latitude >= 0 ? "N" : "S") + " " +
-			String.format("%3.6f", Math.abs(longitude))+"\u00b0"+(longitude >= 0 ? "E" : "W"));
+		latlon.setText(String.format("%3.6f\u00b0%s %3.6f\u00b0%s (±%.0f\u202F%s)",
+				Math.abs(signal.latitude), (signal.latitude >= 0 ? "N" : "S"),
+				Math.abs(signal.longitude), (signal.longitude >= 0 ? "E" : "W"),
+				signal.accuracy * accuracyfactor, accuracylabel));
 
+		TextView speed = (TextView) findViewById(R.id.speed);
+		
+		if(bearing > 0.0)
+			speed.setText(String.format("%3.1f %s @ %.1f\u00b0", signal.avgspeed * speedfactor, speedlabel, bearing));
+		else
+			speed.setText(String.format("%3.1f %s", signal.avgspeed * speedfactor, speedlabel));
+		
 		TextView servingid = (TextView) findViewById(R.id.cellid);
 		TextView strength = (TextView) findViewById(R.id.sigstrength);
 
@@ -230,17 +257,17 @@ public final class HomeActivity extends Activity
 		}
 		
 		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
-			strength.setText(String.valueOf(signal.lteSigStrength) + "\u2009dBm");
+			strength.setText(String.valueOf(signal.lteSigStrength) + "\u202FdBm");
 		} else {
 			strength.setText(R.string.no_signal);
 		}
 
 		if(validSignalStrength(signal.cdmaSigStrength) && signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
 			strengthLabel.setText(R.string._1xrtt_signal_strength);
-			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u2009dBm");
+			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u202FdBm");
 		} else if (validSignalStrength(signal.gsmSigStrength)) {
 			strengthLabel.setText(R.string._2g_3g_signal);
-			cdmaStrength.setText(String.valueOf(signal.gsmSigStrength) + "\u2009dBm");
+			cdmaStrength.setText(String.valueOf(signal.gsmSigStrength) + "\u202FdBm");
     	} else {
 			cdmaStrength.setText(R.string.no_signal);
 		}
@@ -276,13 +303,13 @@ public final class HomeActivity extends Activity
 			getActionBar().setLogo(R.drawable.ic_stat_non4g);
 		
 		if(Math.abs(signal.latitude) <= 200)
-			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.speed);
+			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing);
     	addBsMarker();
     }
     
-	private static void centerMap(double latitude, double longitude, double accuracy, double speed) {
-		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f)",
-				latitude, longitude, accuracy, speed));
+	private static void centerMap(double latitude, double longitude, double accuracy, double speed, double bearing) {
+		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f,%f)",
+				latitude, longitude, accuracy, speed, bearing));
     }
     
     private void addBsMarker() {
@@ -297,14 +324,48 @@ public final class HomeActivity extends Activity
     	bsmarker = !bsmarker;
     	
     	if(!bsmarker) {
-    		x.setTitle(R.string.show_base_station);
+    		// x.setTitle(R.string.show_base_station);
     		leafletView.loadUrl("javascript:clearMarker()");
     	} else {
-    		x.setTitle(R.string.hide_base_station);
+    		// x.setTitle(R.string.hide_base_station);
     		addBsMarker();
     	}
     	invalidateOptionsMenu();
     }    
+    
+    boolean tradunits = false;
+    
+    public void unitsChanged(MenuItem x) {
+    	tradunits = !tradunits;
+    	
+//    	Log.d(TAG, "Units changed.");
+    	
+//    	if(!tradunits) {
+//    		x.setTitle(R.string.traditional_units);
+//    	} else {
+//    		x.setTitle(R.string.metric_units);
+//    	}
+    	
+    	updateUnits();
+    	invalidateOptionsMenu();
+
+    	if(mSignalInfo != null)
+    		updateGui(mSignalInfo);
+    }
+
+    private void updateUnits() {
+    	if(tradunits) {
+    		speedfactor = 2.237;
+    		speedlabel = "mph";
+    		accuracyfactor = 3.28084;
+    		accuracylabel = "ft";
+    	} else {
+    		speedfactor = 3.6;
+    		speedlabel = "km/h";
+    		accuracyfactor = 1.0;
+    		accuracylabel = "m";
+    	}
+    }
     
     public void exitApp(MenuItem x) {
     	if(mBound) {
@@ -327,11 +388,13 @@ public final class HomeActivity extends Activity
     }
 
     private String STATE_SHOWBS ="showBSlocation";
+    private String STATE_UNITS = "traditionalUnits";
     
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         // Save the user's current game state
         savedInstanceState.putBoolean(STATE_SHOWBS, bsmarker);
+        savedInstanceState.putBoolean(STATE_UNITS, tradunits);
         
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
@@ -341,14 +404,23 @@ public final class HomeActivity extends Activity
         // Always call the superclass so it can restore the view hierarchy
         super.onRestoreInstanceState(savedInstanceState);
      
+        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+        String countryCode = tm.getSimCountryIso();
+        
+        Log.d(TAG, countryCode);
+        
         bsmarker = savedInstanceState.getBoolean(STATE_SHOWBS, false);
+        // Default to traditional if US SIM
+        tradunits = savedInstanceState.getBoolean(STATE_UNITS, (countryCode == "us"));
         invalidateOptionsMenu();
+        updateUnits();
     }
     
     /**
      * Dialog to prompt users to enable GPS on the device.
      */
-    public class EnableGpsDialogFragment extends DialogFragment {
+    @SuppressLint("ValidFragment")
+	public class EnableGpsDialogFragment extends DialogFragment {
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             return new AlertDialog.Builder(getActivity())

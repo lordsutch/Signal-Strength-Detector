@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import android.annotation.TargetApi;
@@ -69,6 +71,7 @@ public class SignalDetectorService extends Service {
         }
     }
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@Override
 	public IBinder onBind(Intent intent) {
 		Intent resultIntent = new Intent(this, HomeActivity.class);
@@ -100,11 +103,13 @@ public class SignalDetectorService extends Service {
     	
     	for(String provider : providers) {
     		Log.d(TAG, "Registering "+provider);
-    		mLocationManager.requestLocationUpdates(provider, 1000, 10, mLocListener);
+    		mLocationManager.requestLocationUpdates(provider, 500, 0, mLocListener);
     		Location mLoc = mLocationManager.getLastKnownLocation(provider);
 
-    		if(mLoc != null)
+    		if(mLoc != null) {
+        		updateLocations(mLoc);
     			mLocation = getBetterLocation(mLoc, mLocation);
+    		}
     	}
     	mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     	
@@ -174,6 +179,8 @@ public class SignalDetectorService extends Service {
 		double altitude;
 		double accuracy;
 		double speed;
+		double avgspeed;
+		double bearing;
 
 		// LTE
 		String cellID = "";
@@ -203,6 +210,57 @@ public class SignalDetectorService extends Service {
 		int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
 	}
 	
+	private static long FIVE_SECONDS = 5*1000;
+	private LinkedList<Location> locs = new LinkedList<Location>();
+	
+	private double calcAverageSpeed() {
+		double totspeed = 0;
+		int count = 0;
+		double weights = 0;
+		long now = System.currentTimeMillis();
+		
+		if(locs.size() < 1)
+			return 0.0;
+		
+		for(Location loc : locs) {
+			if(loc.hasSpeed()) {
+				long tdiff = Math.max(FIVE_SECONDS-Math.abs(loc.getTime() - now), 0);
+				double weight = Math.log1p(tdiff);
+				totspeed += loc.getSpeed() * weight;
+				count += 1;
+				weights += weight;
+				
+//				Log.d(TAG, String.format("%d %.5f", tdiff, weight));
+			}
+		}
+		
+		if(count == 0)
+			return 0.0;
+		
+		Log.d(TAG, String.format("%.2f %.2f", totspeed, weights));
+		
+		return totspeed / weights;
+	}
+
+	private void updateLocations(Location loc) {
+		long now = System.currentTimeMillis();
+		
+		Iterator<Location> it = locs.iterator();
+		boolean inlist = false;
+		
+		while(it.hasNext()) {
+			Location x = it.next();
+			if(x.equals(loc)) {
+				inlist = true;
+			} else if(Math.abs(now - x.getTime()) > FIVE_SECONDS) {
+				it.remove();
+			}
+		}
+		
+		if(!inlist)
+			locs.add(loc);
+	}
+	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	private void updatelog(boolean log) {
     	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
@@ -211,12 +269,14 @@ public class SignalDetectorService extends Service {
 		Boolean gotID = false;
 		
     	signalInfo signal = new signalInfo();
-    	
+
     	signal.latitude = mLocation.getLatitude();
     	signal.longitude = mLocation.getLongitude();
     	signal.speed = mLocation.getSpeed();
     	signal.accuracy = mLocation.getAccuracy();
     	signal.altitude = mLocation.getAltitude();
+    	signal.bearing = mLocation.getBearing();
+    	signal.avgspeed = calcAverageSpeed();
     	
 		signal.phoneType = mManager.getPhoneType();
 		signal.networkType = mManager.getNetworkType();
@@ -377,10 +437,11 @@ public class SignalDetectorService extends Service {
     	@Override
     	public void onLocationChanged(Location mLoc)
     	{
+        	updateLocations(mLoc);
+        	
     		mLocation = getBetterLocation(mLoc, mLocation);
-    		
-    		if(mLocation != null)
-    			updatelog(true);
+
+    		updatelog( (mLocation != null) );
     	}
 
 		@Override
