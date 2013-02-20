@@ -72,6 +72,8 @@ function recenter(lat, lon, radius, speed, bearing) {
                                           icon: arrowhead});
             arrow.addTo(map);
         }
+    } else if(arrow) {
+        arrow.setLatLng([lat, lon]);
     }
     
     if(pmarker) {
