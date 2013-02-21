@@ -225,7 +225,7 @@ public class SignalDetectorService extends Service {
 		for(Location loc : locs) {
 			if(loc.hasSpeed()) {
 				long tdiff = Math.max(FIVE_SECONDS-Math.abs(loc.getTime() - now), 0);
-				double weight = Math.log1p(tdiff);
+				double weight = Math.log1p(tdiff)+1;
 				totspeed += loc.getSpeed() * weight;
 				count += 1;
 				weights += weight;
