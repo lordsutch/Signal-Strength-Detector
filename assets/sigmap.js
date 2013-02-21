@@ -48,7 +48,7 @@ function zoom4speed(speed) {
 }
 
 arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
-                    iconSize: [30, 30], iconAnchor: [15, 15]});
+                    iconSize: [20, 20], iconAnchor: [10, 10]});
 
 function recenter(lat, lon, radius, speed, bearing) {
     newZoom = zoom4speed(speed);
