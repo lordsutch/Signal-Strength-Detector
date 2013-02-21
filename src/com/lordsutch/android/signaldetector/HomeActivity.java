@@ -43,7 +43,9 @@ public final class HomeActivity extends Activity
     private static WebView leafletView = null;
     
     private boolean bsmarker = false;
-	
+
+    private TelephonyManager mTelephonyManager;
+    
 	/** Called when the activity is first created. */
 	@SuppressLint("SetJavaScriptEnabled")
 	@Override
@@ -53,6 +55,8 @@ public final class HomeActivity extends Activity
         setContentView(R.layout.main);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        mTelephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
         
     	leafletView = (WebView) findViewById(R.id.leafletView);
     	leafletView.loadUrl("file:///android_asset/leaflet.html");
@@ -152,6 +156,8 @@ public final class HomeActivity extends Activity
         MenuItem x = menu.findItem(R.id.mapbasestation);
         if(bsmarker)
         	x.setTitle(R.string.hide_base_station);
+
+        x.setEnabled((mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA));
         
         x = menu.findItem(R.id.units);
         if(tradunits)
@@ -397,14 +403,14 @@ public final class HomeActivity extends Activity
         // Always call the superclass so it can restore the view hierarchy
         super.onRestoreInstanceState(savedInstanceState);
      
-        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        String countryCode = tm.getSimCountryIso();
+        String countryCode = mTelephonyManager.getSimCountryIso();
         
         Log.d(TAG, countryCode);
         
         bsmarker = savedInstanceState.getBoolean(STATE_SHOWBS, false);
         // Default to traditional if US SIM
         tradunits = savedInstanceState.getBoolean(STATE_UNITS, (countryCode == "us"));
+        
         invalidateOptionsMenu();
         updateUnits();
     }
