@@ -237,7 +237,7 @@ public class SignalDetectorService extends Service {
 		if(count == 0)
 			return 0.0;
 		
-		Log.d(TAG, String.format("%.2f %.2f", totspeed, weights));
+//		Log.d(TAG, String.format("%.2f %.2f", totspeed, weights));
 		
 		return totspeed / weights;
 	}
