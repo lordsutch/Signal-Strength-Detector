@@ -21,8 +21,8 @@ var overlays = {'Sensorly' : sensorly};
 function startmap(lat, lon, newzoom) {
     zoom = newzoom;
     map = L.map('map', {center: [lat, lon],
-                        fadeAnimation: false,
-                        zoomAnimation: false,
+                        // fadeAnimation: false,
+                        // zoomAnimation: false,
                         // markerZoomAnimation: false,
                         zoom: zoom
                        });
