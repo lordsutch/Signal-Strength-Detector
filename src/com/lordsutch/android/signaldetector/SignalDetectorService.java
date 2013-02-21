@@ -215,7 +215,6 @@ public class SignalDetectorService extends Service {
 	
 	private double calcAverageSpeed() {
 		double totspeed = 0;
-		int count = 0;
 		double weights = 0;
 		long now = System.currentTimeMillis();
 		
@@ -226,15 +225,15 @@ public class SignalDetectorService extends Service {
 			if(loc.hasSpeed()) {
 				long tdiff = Math.max(FIVE_SECONDS-Math.abs(loc.getTime() - now), 0);
 				double weight = Math.log1p(tdiff)+1;
+				
 				totspeed += loc.getSpeed() * weight;
-				count += 1;
 				weights += weight;
 				
 //				Log.d(TAG, String.format("%d %.5f", tdiff, weight));
 			}
 		}
 		
-		if(count == 0)
+		if(weights < 1.0)
 			return 0.0;
 		
 //		Log.d(TAG, String.format("%.2f %.2f", totspeed, weights));
