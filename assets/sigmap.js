@@ -36,14 +36,16 @@ var padding = 0.15;
 function zoom4speed(speed) {
     kmh = speed*3.6;
 
-    if (kmh <= 25) {
+    if (kmh <= 20) {
         return 17;
-    } else if (kmh <= 45) {
+    } else if (kmh <= 35) {
         return 16;
-    } else if (kmh <= 90) {
+    } else if (kmh <= 65) {
         return 15;
-    } else {
+    } else if (kmh <= 95) {
         return 14;
+    } else {
+        return 13;
     }
 }
 
