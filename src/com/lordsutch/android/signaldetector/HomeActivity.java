@@ -84,13 +84,6 @@ public final class HomeActivity extends Activity
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
-
-        TelephonyManager tm = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        String countryCode = tm.getSimCountryIso();
-        tradunits = (countryCode == "us");
-
-        invalidateOptionsMenu();
-        updateUnits();
     }
     
 	SignalDetectorService mService;
