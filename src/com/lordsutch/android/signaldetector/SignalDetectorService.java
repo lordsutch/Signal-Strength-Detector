@@ -260,6 +260,8 @@ public class SignalDetectorService extends Service {
 		if(!inlist)
 			locs.add(loc);
 	}
+
+	private double lastValidSpeed = 0.0;
 	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	private void updatelog(boolean log) {
@@ -272,7 +274,12 @@ public class SignalDetectorService extends Service {
 
     	signal.latitude = mLocation.getLatitude();
     	signal.longitude = mLocation.getLongitude();
-    	signal.speed = mLocation.getSpeed();
+    	if(mLocation.hasSpeed()) {
+    		signal.speed = mLocation.getSpeed();
+    		lastValidSpeed = signal.speed;
+    	} else {
+    		signal.speed = lastValidSpeed;
+    	}
     	signal.accuracy = mLocation.getAccuracy();
     	signal.altitude = mLocation.getAltitude();
     	signal.bearing = mLocation.getBearing();

@@ -233,9 +233,9 @@ public final class HomeActivity extends Activity
 		TextView speed = (TextView) findViewById(R.id.speed);
 		
 		if(bearing > 0.0)
-			speed.setText(String.format("%3.1f %s @ %.1f\u00b0", signal.avgspeed * speedfactor, speedlabel, bearing));
+			speed.setText(String.format("%3.1f %s @ %.1f\u00b0", signal.speed * speedfactor, speedlabel, bearing));
 		else
-			speed.setText(String.format("%3.1f %s", signal.avgspeed * speedfactor, speedlabel));
+			speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
 		
 		TextView servingid = (TextView) findViewById(R.id.cellid);
 		TextView strength = (TextView) findViewById(R.id.sigstrength);
