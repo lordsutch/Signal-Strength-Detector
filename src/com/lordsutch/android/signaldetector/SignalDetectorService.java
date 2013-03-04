@@ -78,7 +78,7 @@ public class SignalDetectorService extends Service {
     	PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
 
     	mBuilder = new Notification.Builder(this)
-    		    .setSmallIcon(R.drawable.ic_launcher)
+    		    .setSmallIcon(R.drawable.ic_stat_0g)
     		    .setContentTitle(getString(R.string.signal_detector_is_running))
     		    .setContentText("Hello World!")
     		    .setOnlyAlertOnce(true)
@@ -395,7 +395,39 @@ public class SignalDetectorService extends Service {
 		else
 			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + signal.cellID);
 
-		mBuilder.setSmallIcon(validSignalStrength(signal.lteSigStrength) ? R.drawable.ic_launcher : R.drawable.ic_stat_non4g);
+		int icon = R.drawable.ic_stat_0g;
+		
+		switch(signal.networkType) {
+		case TelephonyManager.NETWORK_TYPE_LTE:
+			icon = R.drawable.ic_stat_4g;
+			break;
+			
+		case TelephonyManager.NETWORK_TYPE_UMTS:
+		case TelephonyManager.NETWORK_TYPE_EVDO_0:
+		case TelephonyManager.NETWORK_TYPE_EVDO_A:
+		case TelephonyManager.NETWORK_TYPE_EVDO_B:
+		case TelephonyManager.NETWORK_TYPE_EHRPD:
+		case TelephonyManager.NETWORK_TYPE_HSDPA: /* 3.5G? */
+		case TelephonyManager.NETWORK_TYPE_HSPA:
+		case TelephonyManager.NETWORK_TYPE_HSPAP:
+		case TelephonyManager.NETWORK_TYPE_HSUPA:
+			icon = R.drawable.ic_stat_3g;
+			break;
+		
+		case TelephonyManager.NETWORK_TYPE_GPRS:
+		case TelephonyManager.NETWORK_TYPE_EDGE:
+		case TelephonyManager.NETWORK_TYPE_1xRTT:
+		case TelephonyManager.NETWORK_TYPE_CDMA:
+		case TelephonyManager.NETWORK_TYPE_IDEN:
+			icon = R.drawable.ic_stat_2g;
+			break;
+			
+		case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+			icon = R.drawable.ic_stat_0g;
+			break;
+		}
+		
+		mBuilder.setSmallIcon(icon);
     	mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
     	if(log) {
