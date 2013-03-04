@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/mapbasestation"
+        android:onClick="toggleBsMarker"
+        android:title="@string/show_base_station">
+    </item>
+    <item
+        android:id="@+id/units"
+        android:onClick="unitsChanged"
+        android:title="@string/traditional_units">
+    </item>
+    <item
+        android:id="@+id/exit"
+        android:checkable="false"
+        android:onClick="exitApp"
+        android:title="@string/exit" android:showAsAction="ifRoom|withText">
+    </item>
+
+</menu>
