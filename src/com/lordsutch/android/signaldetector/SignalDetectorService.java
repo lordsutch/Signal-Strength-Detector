@@ -119,7 +119,16 @@ public class SignalDetectorService extends Service {
     private void appendLog(String logfile, String text, String header)
     {       
     	Boolean newfile = false;
-    	File logFile = new File(getExternalFilesDir(null), logfile);
+    	File filesdir = getExternalFilesDir(null);
+    	
+//    	try {
+//			Log.d(TAG, filesdir.getCanonicalPath()+" "+logfile);
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+    	
+    	File logFile = new File(filesdir, logfile);
     	if (!logFile.exists())
     	{
     		try
@@ -434,6 +443,9 @@ public class SignalDetectorService extends Service {
         	String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
         	String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
+        	// Log.d(TAG, "Logging location.");
+        	// appendLog("location.csv", slat+","+slon, "latitude,longitude");
+        	
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
     				(validSignalStrength(signal.lteSigStrength) || signal.physCellID >= 0 || !signal.cellID.isEmpty())) {
     			Log.d(TAG, "Logging LTE cell.");
@@ -479,7 +491,7 @@ public class SignalDetectorService extends Service {
         	
     		mLocation = getBetterLocation(mLoc, mLocation);
 
-    		updatelog( (mLocation != null) );
+    		updatelog(true);
     	}
 
 		@Override
