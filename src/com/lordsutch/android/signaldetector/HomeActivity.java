@@ -219,7 +219,7 @@ public final class HomeActivity extends Activity
     
     private String directionForBearing(double bearing) {
     	if(bearing > 0) {
-    		int index = (int) Math.floor((bearing + 12.25)/22.5);
+    		int index = (int) Math.ceil((bearing + 11.25)/22.5);
 
     		int dir[] = {0, R.string.bearing_north, R.string.bearing_nne, R.string.bearing_northeast, 
     				R.string.bearing_ene, R.string.bearing_east, R.string.bearing_ese, R.string.bearing_southeast,
