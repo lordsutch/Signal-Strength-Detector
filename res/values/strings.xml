@@ -23,4 +23,20 @@
     <string name="speed">Speed</string>
     <string name="traditional_units">Traditional units</string>
     <string name="metric_units">Metric units</string>
+    <string name="bearing_north">N</string>
+    <string name="bearing_nne">NNE</string>
+    <string name="bearing_northeast">NE</string>
+    <string name="bearing_ene">ENE</string>
+    <string name="bearing_east">E</string>
+    <string name="bearing_ese">ESE</string>
+    <string name="bearing_southeast">SE</string>
+    <string name="bearing_sse">SSE</string>
+    <string name="bearing_south">S</string>
+    <string name="bearing_ssw">SSW</string>
+    <string name="bearing_southwest">SW</string>
+    <string name="bearing_wsw">WSW</string>
+    <string name="bearing_west">W</string>
+    <string name="bearing_wnw">WNW</string>
+    <string name="bearing_northwest">NW</string>
+    <string name="bearing_nnw">NNW</string>
 </resources>

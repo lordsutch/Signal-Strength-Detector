@@ -153,12 +153,14 @@ public final class HomeActivity extends Activity
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
         
+        // Only show base station option if on CDMA 
         MenuItem x = menu.findItem(R.id.mapbasestation);
         if(bsmarker)
         	x.setTitle(R.string.hide_base_station);
 
         x.setEnabled((mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA));
         
+        // Set units text
         x = menu.findItem(R.id.units);
         if(tradunits)
         	x.setTitle(R.string.metric_units);
@@ -215,6 +217,23 @@ public final class HomeActivity extends Activity
     
     double bearing = 0.0;
     
+    private String directionForBearing(double bearing) {
+    	if(bearing > 0) {
+    		int index = (int) Math.floor((bearing + 12.25)/22.5);
+
+    		int dir[] = {0, R.string.bearing_north, R.string.bearing_nne, R.string.bearing_northeast, 
+    				R.string.bearing_ene, R.string.bearing_east, R.string.bearing_ese, R.string.bearing_southeast,
+    				R.string.bearing_sse, R.string.bearing_south, R.string.bearing_ssw, R.string.bearing_southwest,
+    				R.string.bearing_wsw, R.string.bearing_west, R.string.bearing_wnw, R.string.bearing_northwest,
+    				R.string.bearing_nnw, R.string.bearing_north};
+
+    		return getResources().getString(dir[index]);
+    	}
+    	else {
+    		return "";
+    	}
+    }
+    
     private void updateGui(signalInfo signal) {
     	bslat = signal.bslat;
     	bslon = signal.bslon;
@@ -225,14 +244,14 @@ public final class HomeActivity extends Activity
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
 		latlon.setText(String.format("%3.6f\u00b0%s %3.6f\u00b0%s (±%.0f\u202F%s)",
-				Math.abs(signal.latitude), (signal.latitude >= 0 ? "N" : "S"),
-				Math.abs(signal.longitude), (signal.longitude >= 0 ? "E" : "W"),
+				Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
+				Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
 				signal.accuracy * accuracyfactor, accuracylabel));
 
 		TextView speed = (TextView) findViewById(R.id.speed);
 		
 		if(bearing > 0.0)
-			speed.setText(String.format("%3.1f %s @ %.1f\u00b0", signal.speed * speedfactor, speedlabel, bearing));
+			speed.setText(String.format("%3.1f %s %s", signal.speed * speedfactor, speedlabel, directionForBearing(bearing)));
 		else
 			speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
 		
