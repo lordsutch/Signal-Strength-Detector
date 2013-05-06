@@ -80,7 +80,7 @@ public class SignalDetectorService extends Service {
     	mBuilder = new Notification.Builder(this)
     		    .setSmallIcon(R.drawable.ic_stat_0g)
     		    .setContentTitle(getString(R.string.signal_detector_is_running))
-    		    .setContentText("Hello World!")
+    		    .setContentText("Loading...")
     		    .setOnlyAlertOnce(true)
     		    .setPriority(Notification.PRIORITY_LOW)
     		    .setContentIntent(resultPendingIntent);
