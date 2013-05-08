@@ -206,6 +206,7 @@ public class SignalDetectorService extends Service {
 		double bslat = 999;
 		double bslon = 999;
 		int cdmaSigStrength = -9999;
+		int evdoSigStrength = -9999;
 
 		// GSM/UMTS/W-CDMA
 		String operator = "";
@@ -327,6 +328,7 @@ public class SignalDetectorService extends Service {
 		
 		signal.cdmaSigStrength = mSignalStrength.getCdmaDbm();
 		signal.gsmSigStrength = mSignalStrength.getGsmSignalStrength();
+		signal.evdoSigStrength = mSignalStrength.getEvdoDbm();
 		
 		signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113+2*signal.gsmSigStrength : -9999);
 		

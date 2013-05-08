@@ -263,7 +263,8 @@ public final class HomeActivity extends Activity
 		
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
-
+		TextView evdoStrength = (TextView) findViewById(R.id.evdoSigStrength);
+		
 		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && (!signal.cellID.isEmpty() || (signal.physCellID >= 0 && signal.physCellID <= 503))) {
 			if(signal.physCellID >= 0 && signal.physCellID <= 503) {
 				servingid.setText(signal.cellID + " " + String.valueOf(signal.physCellID));
@@ -283,11 +284,19 @@ public final class HomeActivity extends Activity
 		if(validSignalStrength(signal.cdmaSigStrength) && signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
 			strengthLabel.setText(R.string._1xrtt_signal_strength);
 			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u202FdBm");
+			
+			if(validSignalStrength(signal.evdoSigStrength)) {
+				evdoStrength.setText(String.valueOf(signal.evdoSigStrength) + "\u202FdBm");
+			} else {
+				evdoStrength.setText(R.string.no_signal);
+			}
 		} else if (validSignalStrength(signal.gsmSigStrength)) {
 			strengthLabel.setText(R.string._2g_3g_signal);
 			cdmaStrength.setText(String.valueOf(signal.gsmSigStrength) + "\u202FdBm");
+			evdoStrength.setText("");
     	} else {
 			cdmaStrength.setText(R.string.no_signal);
+			evdoStrength.setText("");
 		}
 		
 		if(signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 && (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {

@@ -57,6 +57,7 @@
             android:id="@+id/cellid"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/none"
             android:textColor="@android:color/primary_text_dark"
             android:textIsSelectable="true" />
 
@@ -71,6 +72,7 @@
             android:id="@+id/sigstrength"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/no_signal"
             android:textColor="@android:color/primary_text_dark"
             android:textIsSelectable="true" />
 
@@ -85,6 +87,7 @@
             android:id="@+id/cdma_sysinfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/none"
             android:textColor="@android:color/primary_text_dark"
             android:textIsSelectable="true" />
 
@@ -95,12 +98,32 @@
             android:text="@string/_1xrtt_signal_strength"
             android:textColor="@android:color/holo_blue_dark" />
 
-        <TextView
-            android:id="@+id/cdmaSigStrength"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/cdmaSigs"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/primary_text_dark"
-            android:textIsSelectable="true" />
+            android:columnCount="2" android:weightSum="2"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/cdmaSigStrength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left" android:layout_weight="1"
+                android:text="@string/no_signal"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true" />
+
+            <TextView
+                android:id="@+id/evdoSigStrength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:layout_weight="1"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true" />
+
+        </LinearLayout>
     </LinearLayout>
 
     <WebView
