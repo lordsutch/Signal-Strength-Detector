@@ -299,10 +299,10 @@ public class SignalDetectorService extends Service {
 		
 		signal.operator = mManager.getNetworkOperator();
 
-		if(mCellLocation.getClass() == CdmaCellLocation.class) {
+		if(mCellLocation instanceof CdmaCellLocation) {
 			CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
 
-//			Log.d(TAG, x.toString());
+			Log.d(TAG, x.toString());
 			
 			signal.bsid = x.getBaseStationId();
 			signal.nid = x.getNetworkId();
@@ -312,10 +312,10 @@ public class SignalDetectorService extends Service {
 			signal.bslon = x.getBaseStationLongitude()/14400.0;
 		}
 		
-		if(mCellLocation.getClass() == GsmCellLocation.class) {
+		if(mCellLocation instanceof GsmCellLocation) {
 			GsmCellLocation x = (GsmCellLocation) mCellLocation;
 			
-//			Log.d(TAG, x.toString());
+			Log.d(TAG, x.toString());
 			
 			signal.lac = x.getLac();
 			signal.psc = x.getPsc();
@@ -334,7 +334,7 @@ public class SignalDetectorService extends Service {
 		
     	if(mCellInfo != null) {
     		for(CellInfo item : mCellInfo) {
-    			if(item != null && item.getClass() == CellInfoLte.class) {
+    			if(item != null && item instanceof CellInfoLte) {
     				CellInfoLte x = (CellInfoLte) item;
     				CellSignalStrengthLte cstr = x.getCellSignalStrength();
     				if(cstr != null)
