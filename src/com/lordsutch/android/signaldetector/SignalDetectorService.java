@@ -180,6 +180,11 @@ public class SignalDetectorService extends Service {
     	return (strength > -900 && strength < 900);
     }
     
+    final private Boolean validPhysicalCellID(int pci)
+    {
+    	return (pci >= 0 && pci <= 503);
+    }
+        
 	class signalInfo {
 		// Location location = null;
 		
@@ -192,11 +197,11 @@ public class SignalDetectorService extends Service {
 		double bearing;
 
 		// LTE
-		String cellID = "";
-		int physCellID = -1;
-		int tac = -1;
-		int mcc = -1;
-		int mnc = -1;
+		int cellID = Integer.MAX_VALUE;
+		int physCellID = Integer.MAX_VALUE;
+		int tac = Integer.MAX_VALUE;
+		int mcc = Integer.MAX_VALUE;
+		int mnc = Integer.MAX_VALUE;
 		int lteSigStrength = Integer.MAX_VALUE;
 		
 		// CDMA2000
@@ -342,10 +347,7 @@ public class SignalDetectorService extends Service {
 
     				CellIdentityLte cellid = x.getCellIdentity();
     				if(cellid != null) {
-    					if(cellid.getCi() < Integer.MAX_VALUE)
-    						signal.cellID = String.format("%08x", cellid.getCi());
-    					else
-    						signal.cellID = "";
+    					signal.cellID = signal.cellID;
     					signal.physCellID = cellid.getPci();
     					signal.tac = cellid.getTac();
     					signal.mnc = cellid.getMnc();
@@ -363,8 +365,11 @@ public class SignalDetectorService extends Service {
 			Method m = null;
 			
 			try {
+				String cellID;
+				
 				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
-				signal.cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
+				cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
+				signal.cellID = Integer.parseInt(cellID, 16);
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -400,11 +405,11 @@ public class SignalDetectorService extends Service {
 				e.printStackTrace();
 			}
 		}
-		
-		if(signal.cellID.isEmpty())
-			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + getString(R.string.none));
+
+		if(signal.cellID < Integer.MAX_VALUE && signal.networkType == TelephonyManager.NETWORK_TYPE_LTE)
+			mBuilder.setContentText(String.format("%s: %08X", getString(R.string.serving_lte_cell_id), signal.cellID));
 		else
-			mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + signal.cellID);
+			mBuilder.setContentText(String.format("%s: %s", getString(R.string.serving_lte_cell_id), getString(R.string.none)));			
 
 		int icon = R.drawable.ic_stat_0g;
 		
@@ -433,7 +438,7 @@ public class SignalDetectorService extends Service {
 			icon = R.drawable.ic_stat_2g;
 			break;
 			
-		case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+		default:
 			icon = R.drawable.ic_stat_0g;
 			break;
 		}
@@ -449,14 +454,15 @@ public class SignalDetectorService extends Service {
         	// appendLog("location.csv", slat+","+slon, "latitude,longitude");
         	
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-    				(validSignalStrength(signal.lteSigStrength) || signal.physCellID >= 0 || !signal.cellID.isEmpty())) {
+    				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.physCellID) || signal.cellID < Integer.MAX_VALUE)) {
     			Log.d(TAG, "Logging LTE cell.");
     			appendLog("ltecells.csv",
-    					slat+","+slon+","+signal.cellID+","+
-    					(signal.physCellID >= 0 ? String.valueOf(signal.physCellID) : "")+","+
-    					(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
-    					String.valueOf(signal.altitude),
-    					"latitude,longitude,cellid,physcellid,dBm,altitude");
+    					slat+","+slon+","+
+    							(signal.cellID < Integer.MAX_VALUE ? String.format("%08X", signal.cellID) : "")+","+
+    							(validPhysicalCellID(signal.physCellID) ? String.valueOf(signal.physCellID) : "")+","+
+    							(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
+    							String.valueOf(signal.altitude),
+    						"latitude,longitude,cellid,physcellid,dBm,altitude");
     		}
     		if(signal.sid >= 22404 && signal.sid <= 22451)
     		{

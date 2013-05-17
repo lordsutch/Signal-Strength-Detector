@@ -234,6 +234,11 @@ public final class HomeActivity extends Activity
     	}
     }
     
+    final private Boolean validPhysicalCellID(int pci)
+    {
+    	return (pci >= 0 && pci <= 503);
+    }
+
     private void updateGui(signalInfo signal) {
     	bslat = signal.bslat;
     	bslon = signal.bslon;
@@ -265,19 +270,21 @@ public final class HomeActivity extends Activity
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 		TextView evdoStrength = (TextView) findViewById(R.id.evdoSigStrength);
 		
-		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && (!signal.cellID.isEmpty() || (signal.physCellID >= 0 && signal.physCellID <= 503))) {
-			if(signal.physCellID >= 0 && signal.physCellID <= 503) {
-				servingid.setText(signal.cellID + " " + String.valueOf(signal.physCellID));
+		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && (signal.cellID < Integer.MAX_VALUE || validPhysicalCellID(signal.physCellID))) {
+			if(validPhysicalCellID(signal.physCellID)) {
+				servingid.setText(String.format("%08X %3d", signal.cellID, signal.physCellID));	
 			} else {
-				servingid.setText(signal.cellID);
+				servingid.setText(String.format("%08X", signal.cellID));
 			}
 		} else {
 			servingid.setText(R.string.none);
 		}
 		
 		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
+			getActionBar().setLogo(R.drawable.ic_launcher);
 			strength.setText(String.valueOf(signal.lteSigStrength) + "\u202FdBm");
 		} else {
+			getActionBar().setLogo(R.drawable.ic_stat_non4g);
 			strength.setText(R.string.no_signal);
 		}
 
@@ -285,7 +292,7 @@ public final class HomeActivity extends Activity
 			strengthLabel.setText(R.string._1xrtt_signal_strength);
 			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u202FdBm");
 			
-			if(validSignalStrength(signal.evdoSigStrength)) {
+			if(validSignalStrength(signal.evdoSigStrength) && isEVDONetwork(signal.networkType)) {
 				evdoStrength.setText(String.valueOf(signal.evdoSigStrength) + "\u202FdBm");
 			} else {
 				evdoStrength.setText(R.string.no_signal);
@@ -324,16 +331,18 @@ public final class HomeActivity extends Activity
 			cdmaBS.setText(R.string.none);
 		}
 
-		if(validSignalStrength(signal.lteSigStrength))
-			getActionBar().setLogo(R.drawable.ic_launcher);
-		else
-			getActionBar().setLogo(R.drawable.ic_stat_non4g);
-		
 		if(Math.abs(signal.latitude) <= 200)
 			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing);
     	addBsMarker();
     }
     
+	private boolean isEVDONetwork(int networkType) {
+		return(networkType == TelephonyManager.NETWORK_TYPE_EHRPD ||
+				networkType == TelephonyManager.NETWORK_TYPE_EVDO_0 ||
+				networkType == TelephonyManager.NETWORK_TYPE_EVDO_A ||
+				networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
+	}
+
 	private static void centerMap(double latitude, double longitude, double accuracy, double speed, double bearing) {
 		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f,%f)",
 				latitude, longitude, accuracy, speed, bearing));
