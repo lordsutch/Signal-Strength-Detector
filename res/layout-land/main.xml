@@ -122,7 +122,6 @@
                 android:layout_weight="1"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true" />
-
         </LinearLayout>
     </LinearLayout>
 

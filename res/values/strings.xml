@@ -39,4 +39,15 @@
     <string name="bearing_wnw">WNW</string>
     <string name="bearing_northwest">NW</string>
     <string name="bearing_nnw">NNW</string>
+    
+    <!-- Strings related to Settings -->
+	<string name="title_activity_settings">Settings</string>
+    
+    <string name="pref_title_traditional_units">Use traditional units</string>
+    <string name="pref_description_traditional_units">Currently using statute feet and miles.</string>
+    <string name="pref_description_metric_units">Currently using meters and kilometers.</string>
+
+    <string name="pref_title_base_station">Show base station location</string>
+    <string name="pref_description_base_station">Map marker will show reported base station location. May be inaccurate. (CDMA networks only.)</string>
+    <string name="pref_description_base_station_off">Reported base station location will not be shown on the map.</string>    
 </resources>
