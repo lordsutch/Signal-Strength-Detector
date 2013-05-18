@@ -13,12 +13,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -35,15 +37,13 @@ import android.widget.TextView;
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
-public final class HomeActivity extends Activity
+public final class SignalDetector extends Activity
 {
-	public static final String TAG = HomeActivity.class.getSimpleName();
+	public static final String TAG = SignalDetector.class.getSimpleName();
 	public static final String EMAIL = "lordsutch@gmail.com";
 	    
     private static WebView leafletView = null;
     
-    private boolean bsmarker = false;
-
     private TelephonyManager mTelephonyManager;
     
 	/** Called when the activity is first created. */
@@ -53,11 +53,13 @@ public final class HomeActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
+        
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         mTelephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);        
+
     	leafletView = (WebView) findViewById(R.id.leafletView);
     	leafletView.loadUrl("file:///android_asset/leaflet.html");
     	
@@ -74,7 +76,6 @@ public final class HomeActivity extends Activity
     	            quotaUpdater.updateQuota(spaceNeeded * 2);
     	      }
     	});
-    	 
     	webSettings.setDomStorageEnabled(true);
     	 
     	// Set cache size to 2 mb by default. should be more than enough
@@ -88,10 +89,20 @@ public final class HomeActivity extends Activity
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
+    	
+    	reloadPreferences();
     }
     
 	SignalDetectorService mService;
 	boolean mBound = false;
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.mainmenu, menu);
+
+		return true;
+	}	
 	
     @Override
     protected void onStart() {
@@ -147,27 +158,7 @@ public final class HomeActivity extends Activity
             mBound = false;
         }
     };
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.mainmenu, menu);
-        
-        // Only show base station option if on CDMA 
-        MenuItem x = menu.findItem(R.id.mapbasestation);
-        if(bsmarker)
-        	x.setTitle(R.string.hide_base_station);
-
-        x.setEnabled((mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA));
-        
-        // Set units text
-        x = menu.findItem(R.id.units);
-        if(tradunits)
-        	x.setTitle(R.string.metric_units);
-        
-        return true;
-    }
-
+    
     final private Boolean validSignalStrength(int strength)
     {
     	return (strength > -900 && strength < 900);
@@ -180,15 +171,15 @@ public final class HomeActivity extends Activity
      * Activity Handler of incoming messages from service.
      */
 	static class IncomingHandler extends Handler {
-		private final WeakReference<HomeActivity> mActivity; 
+		private final WeakReference<SignalDetector> mActivity; 
 
-		IncomingHandler(HomeActivity activity) {
-	        mActivity = new WeakReference<HomeActivity>(activity);
+		IncomingHandler(SignalDetector activity) {
+	        mActivity = new WeakReference<SignalDetector>(activity);
 	    }
 		
 		@Override
         public void handleMessage(Message msg) {
-        	HomeActivity activity = mActivity.get();
+        	SignalDetector activity = mActivity.get();
             switch (msg.what) {
                 case SignalDetectorService.MSG_SIGNAL_UPDATE:
                 	if(activity != null)
@@ -239,6 +230,9 @@ public final class HomeActivity extends Activity
     	return (pci >= 0 && pci <= 503);
     }
 
+    private boolean tradunits = false;
+    private boolean bsmarker = false;
+    
     private void updateGui(signalInfo signal) {
     	bslat = signal.bslat;
     	bslon = signal.bslon;
@@ -270,11 +264,16 @@ public final class HomeActivity extends Activity
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 		TextView evdoStrength = (TextView) findViewById(R.id.evdoSigStrength);
 		
-		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && (signal.cellID < Integer.MAX_VALUE || validPhysicalCellID(signal.physCellID))) {
-			if(validPhysicalCellID(signal.physCellID)) {
-				servingid.setText(String.format("%08X %3d", signal.cellID, signal.physCellID));	
+		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+			String eciText = getString(R.string.missing);
+			
+			if(signal.eci < Integer.MAX_VALUE)
+				eciText = String.format("%08X", signal.eci);
+			
+			if(validPhysicalCellID(signal.pci)) {
+				servingid.setText(String.format("%s %03d", eciText, signal.pci));	
 			} else {
-				servingid.setText(String.format("%08X", signal.cellID));
+				servingid.setText(eciText);
 			}
 		} else {
 			servingid.setText(R.string.none);
@@ -349,6 +348,9 @@ public final class HomeActivity extends Activity
     }
     
     private void addBsMarker() {
+    	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+    	bsmarker = sharedPref.getBoolean("show_base_station", false);
+    	
     	if(bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
     		leafletView.loadUrl(String.format("javascript:placeMarker(%f,%f)",
     				bslat, bslon));
@@ -356,39 +358,6 @@ public final class HomeActivity extends Activity
     		leafletView.loadUrl("javascript:clearMarker()");
     }
     
-    public void toggleBsMarker(MenuItem x) {
-    	bsmarker = !bsmarker;
-    	
-    	if(!bsmarker) {
-    		// x.setTitle(R.string.show_base_station);
-    		leafletView.loadUrl("javascript:clearMarker()");
-    	} else {
-    		// x.setTitle(R.string.hide_base_station);
-    		addBsMarker();
-    	}
-    	invalidateOptionsMenu();
-    }    
-    
-    boolean tradunits = false;
-    
-    public void unitsChanged(MenuItem x) {
-    	tradunits = !tradunits;
-    	
-//    	Log.d(TAG, "Units changed.");
-    	
-//    	if(!tradunits) {
-//    		x.setTitle(R.string.traditional_units);
-//    	} else {
-//    		x.setTitle(R.string.metric_units);
-//    	}
-    	
-    	updateUnits();
-    	invalidateOptionsMenu();
-
-    	if(mSignalInfo != null)
-    		updateGui(mSignalInfo);
-    }
-
     private void updateUnits() {
     	if(tradunits) {
     		speedfactor = 2.237;
@@ -401,6 +370,28 @@ public final class HomeActivity extends Activity
     		accuracyfactor = 1.0;
     		accuracylabel = "m";
     	}
+    }
+    
+    public void launchSettings(MenuItem x) {
+    	Intent myIntent = new Intent(this, SettingsActivity.class);
+    	startActivityForResult(myIntent, 0);
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+     // TODO Auto-generated method stub
+     super.onActivityResult(requestCode, resultCode, data);
+     
+     reloadPreferences();
+    }
+
+
+    private void reloadPreferences() {
+    	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+    	bsmarker = sharedPref.getBoolean("show_base_station", false);
+    	tradunits = sharedPref.getBoolean("traditional_units", false);
+    	
+    	updateUnits();
     }
     
     public void exitApp(MenuItem x) {
@@ -423,35 +414,6 @@ public final class HomeActivity extends Activity
         }
     }
 
-    private String STATE_SHOWBS ="showBSlocation";
-    private String STATE_UNITS = "traditionalUnits";
-    
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Save the user's current game state
-        savedInstanceState.putBoolean(STATE_SHOWBS, bsmarker);
-        savedInstanceState.putBoolean(STATE_UNITS, tradunits);
-        
-        // Always call the superclass so it can save the view hierarchy state
-        super.onSaveInstanceState(savedInstanceState);
-    }
-    
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-        // Always call the superclass so it can restore the view hierarchy
-        super.onRestoreInstanceState(savedInstanceState);
-     
-        String countryCode = mTelephonyManager.getSimCountryIso();
-        
-        Log.d(TAG, countryCode);
-        
-        bsmarker = savedInstanceState.getBoolean(STATE_SHOWBS, false);
-        // Default to traditional if US SIM
-        tradunits = savedInstanceState.getBoolean(STATE_UNITS, (countryCode == "us"));
-        
-        invalidateOptionsMenu();
-        updateUnits();
-    }
-    
     /**
      * Dialog to prompt users to enable GPS on the device.
      */
