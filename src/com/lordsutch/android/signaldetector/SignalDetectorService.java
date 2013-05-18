@@ -42,7 +42,7 @@ import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
 public class SignalDetectorService extends Service {
-	public static final String TAG = HomeActivity.class.getSimpleName();
+	public static final String TAG = SignalDetector.class.getSimpleName();
 
 	public static final int MSG_SIGNAL_UPDATE = 1;
 
@@ -74,11 +74,11 @@ public class SignalDetectorService extends Service {
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@Override
 	public IBinder onBind(Intent intent) {
-		Intent resultIntent = new Intent(this, HomeActivity.class);
+		Intent resultIntent = new Intent(this, SignalDetector.class);
     	PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
 
     	mBuilder = new Notification.Builder(this)
-    		    .setSmallIcon(R.drawable.ic_stat_0g)
+	    .setSmallIcon(R.drawable.ic_stat_0g)
     		    .setContentTitle(getString(R.string.signal_detector_is_running))
     		    .setContentText("Loading...")
     		    .setOnlyAlertOnce(true)
@@ -197,8 +197,8 @@ public class SignalDetectorService extends Service {
 		double bearing;
 
 		// LTE
-		int cellID = Integer.MAX_VALUE;
-		int physCellID = Integer.MAX_VALUE;
+		int eci = Integer.MAX_VALUE;
+		int pci = Integer.MAX_VALUE;
 		int tac = Integer.MAX_VALUE;
 		int mcc = Integer.MAX_VALUE;
 		int mnc = Integer.MAX_VALUE;
@@ -347,8 +347,8 @@ public class SignalDetectorService extends Service {
 
     				CellIdentityLte cellid = x.getCellIdentity();
     				if(cellid != null) {
-    					signal.cellID = signal.cellID;
-    					signal.physCellID = cellid.getPci();
+    					signal.eci = cellid.getCi();
+    					signal.pci = cellid.getPci();
     					signal.tac = cellid.getTac();
     					signal.mnc = cellid.getMnc();
     					signal.mcc = cellid.getMcc();
@@ -369,7 +369,7 @@ public class SignalDetectorService extends Service {
 				
 				m = mHTCManager.getClass().getMethod("getSectorId", int.class);
 				cellID = (String) m.invoke(mHTCManager, new Object[] {Integer.valueOf(1)} );
-				signal.cellID = Integer.parseInt(cellID, 16);
+				signal.eci = Integer.parseInt(cellID, 16);
 			} catch (NoSuchMethodException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -406,8 +406,8 @@ public class SignalDetectorService extends Service {
 			}
 		}
 
-		if(signal.cellID < Integer.MAX_VALUE && signal.networkType == TelephonyManager.NETWORK_TYPE_LTE)
-			mBuilder.setContentText(String.format("%s: %08X", getString(R.string.serving_lte_cell_id), signal.cellID));
+		if(signal.eci < Integer.MAX_VALUE && signal.networkType == TelephonyManager.NETWORK_TYPE_LTE)
+			mBuilder.setContentText(String.format("%s: %08X", getString(R.string.serving_lte_cell_id), signal.eci));
 		else
 			mBuilder.setContentText(String.format("%s: %s", getString(R.string.serving_lte_cell_id), getString(R.string.none)));			
 
@@ -454,12 +454,12 @@ public class SignalDetectorService extends Service {
         	// appendLog("location.csv", slat+","+slon, "latitude,longitude");
         	
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-    				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.physCellID) || signal.cellID < Integer.MAX_VALUE)) {
+    				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
     			Log.d(TAG, "Logging LTE cell.");
     			appendLog("ltecells.csv",
     					slat+","+slon+","+
-    							(signal.cellID < Integer.MAX_VALUE ? String.format("%08X", signal.cellID) : "")+","+
-    							(validPhysicalCellID(signal.physCellID) ? String.valueOf(signal.physCellID) : "")+","+
+    							(signal.eci < Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
+    							(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
     							(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
     							String.valueOf(signal.altitude),
     						"latitude,longitude,cellid,physcellid,dBm,altitude");

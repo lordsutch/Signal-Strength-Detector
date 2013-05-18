@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.lordsutch.android.signaldetector"
     android:installLocation="auto"
-    android:versionCode="4"
-    android:versionName="1.4" xmlns:tools="http://schemas.android.com/tools">
+    android:versionCode="5"
+    android:versionName="1.5" >
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
+    
     <uses-sdk
         android:minSdkVersion="16"
         android:targetSdkVersion="17" />
@@ -28,25 +29,27 @@
         android:label="@string/app_name"
         android:logo="@drawable/ic_launcher" >
         <activity
-            android:name="com.lordsutch.android.signaldetector.HomeActivity"
+            android:name="com.lordsutch.android.signaldetector.SignalDetector"
             android:label="@string/app_name"
             android:noHistory="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
             </intent-filter>
         </activity>
 
         <service
-            android:name="com.lordsutch.android.signaldetector.SignalDetectorService"
+            android:name="SignalDetectorService"
             android:enabled="true"
             android:exported="false" >
         </service>
 
         <uses-library
             name="com.sec.android.app.multiwindow"
-            required="false" tools:ignore="MissingPrefix"/>
+            required="false"
+            tools:ignore="MissingPrefix" />
 
         <meta-data
             android:name="com.sec.android.support.multiwindow"
@@ -63,6 +66,15 @@
         <meta-data
             android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H"
             android:value="598.0dip" />
+
+        <activity
+            android:name="com.lordsutch.android.signaldetector.SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName="com.lordsutch.android.signaldetector.SignalDetector" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.lordsutch.android.signaldetector.HomeActivity" />
+        </activity>
     </application>
 
 </manifest>
