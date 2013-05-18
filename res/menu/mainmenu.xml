@@ -3,12 +3,15 @@
 
     <item android:id="@+id/settings" 
         android:icon="@drawable/ic_action_settings"
-        android:showAsAction="ifRoom|withText" android:title="@string/title_activity_settings"></item>
+        android:showAsAction="ifRoom|withText" 
+        android:onClick="launchSettings"
+        android:title="@string/title_activity_settings"></item>
 
         <item
         android:id="@+id/exit"
         android:checkable="false"
         android:onClick="exitApp"
-        android:title="@string/exit" android:showAsAction="ifRoom|withText" />
+        android:title="@string/exit" 
+        android:showAsAction="ifRoom|withText" />
     
 </menu>
