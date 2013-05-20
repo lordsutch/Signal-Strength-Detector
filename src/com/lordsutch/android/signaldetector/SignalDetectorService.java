@@ -461,8 +461,9 @@ public class SignalDetectorService extends Service {
     							(signal.eci < Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
     							(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
     							(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
-    							String.valueOf(signal.altitude),
-    						"latitude,longitude,cellid,physcellid,dBm,altitude");
+    							String.format("%.1f", signal.altitude)+","+
+    							(signal.tac < Integer.MAX_VALUE ? String.format("%04X", signal.tac) : ""),
+    						"latitude,longitude,cellid,physcellid,dBm,altitude,tac");
     		}
     		if(signal.sid >= 22404 && signal.sid <= 22451)
     		{
@@ -471,7 +472,7 @@ public class SignalDetectorService extends Service {
 
     			Log.d(TAG, "Logging ESMR cell.");
     			appendLog("esmrcells.csv", 
-    					String.format("%s,%s,%d,%d,%d,%s,%s,%s,%f", slat, slon, signal.sid, signal.nid, signal.bsid,
+    					String.format("%s,%s,%d,%d,%d,%s,%s,%s,%.1f", slat, slon, signal.sid, signal.nid, signal.bsid,
     							(validSignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
     							bslatstr, bslonstr, signal.altitude), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude");
     		}
