@@ -44,9 +44,7 @@ public final class SignalDetector extends Activity
 	    
     private static WebView leafletView = null;
     
-    private TelephonyManager mTelephonyManager;
-    
-	/** Called when the activity is first created. */
+    /** Called when the activity is first created. */
 	@SuppressLint("SetJavaScriptEnabled")
 	@Override
     public void onCreate(Bundle savedInstanceState)
@@ -56,8 +54,6 @@ public final class SignalDetector extends Activity
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        mTelephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);        
 
     	leafletView = (WebView) findViewById(R.id.leafletView);
