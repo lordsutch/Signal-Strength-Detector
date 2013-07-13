@@ -41,6 +41,13 @@ import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.location.LocationClient;
+// import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+
 public class SignalDetectorService extends Service {
 	public static final String TAG = SignalDetector.class.getSimpleName();
 
@@ -219,6 +226,8 @@ public class SignalDetectorService extends Service {
 		
 		int phoneType = TelephonyManager.PHONE_TYPE_NONE;
 		int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
+		
+		boolean roaming = false;
 	}
 	
 	private static long FIVE_SECONDS = 5*1000;
@@ -297,7 +306,7 @@ public class SignalDetectorService extends Service {
     	
 		signal.phoneType = mManager.getPhoneType();
 		signal.networkType = mManager.getNetworkType();
-		
+		signal.roaming = mManager.isNetworkRoaming();
 		signal.operator = mManager.getNetworkOperator();
 
 		if(mCellLocation instanceof CdmaCellLocation) {

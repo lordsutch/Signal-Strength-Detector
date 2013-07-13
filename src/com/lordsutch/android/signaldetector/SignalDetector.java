@@ -283,6 +283,9 @@ public final class SignalDetector extends Activity
 			strength.setText(R.string.no_signal);
 		}
 
+		TextView network = (TextView) findViewById(R.id.networkString);
+		network.setText(networkString(signal.networkType) + (signal.roaming ? getString(R.string.roamingInd) : ""));
+		
 		if(validSignalStrength(signal.cdmaSigStrength) && signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
 			strengthLabel.setText(R.string._1xrtt_signal_strength);
 			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u202FdBm");
@@ -329,6 +332,41 @@ public final class SignalDetector extends Activity
 		if(Math.abs(signal.latitude) <= 200)
 			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing);
     	addBsMarker();
+    }
+    
+    private String networkString(int networkType) {
+    	switch(networkType) {
+    		case TelephonyManager.NETWORK_TYPE_EHRPD:
+    			return "eHRPD";
+    		case TelephonyManager.NETWORK_TYPE_EVDO_0:
+    			return "EVDO Rel. 0";
+       		case TelephonyManager.NETWORK_TYPE_EVDO_A:
+    			return "EVDO Rev. A";
+       		case TelephonyManager.NETWORK_TYPE_EVDO_B:
+    			return "EVDO Rev. B";
+       		case TelephonyManager.NETWORK_TYPE_GPRS:
+       			return "GPRS";
+       		case TelephonyManager.NETWORK_TYPE_EDGE:
+       			return "EDGE";
+       		case TelephonyManager.NETWORK_TYPE_UMTS:
+       			return "UMTS";
+       		case TelephonyManager.NETWORK_TYPE_HSDPA:
+       		case TelephonyManager.NETWORK_TYPE_HSUPA:
+       		case TelephonyManager.NETWORK_TYPE_HSPA:
+       			return "HSPA";
+       		case TelephonyManager.NETWORK_TYPE_HSPAP:
+       			return "HSPA+";
+       		case TelephonyManager.NETWORK_TYPE_CDMA:
+       			return "CDMA";
+       		case TelephonyManager.NETWORK_TYPE_1xRTT:
+       			return "1xRTT";
+       		case TelephonyManager.NETWORK_TYPE_IDEN:
+       			return "iDEN";
+       		case TelephonyManager.NETWORK_TYPE_LTE:
+       			return "LTE";
+       		default:
+       			return "Unknown";
+    	}
     }
     
 	private boolean isEVDONetwork(int networkType) {

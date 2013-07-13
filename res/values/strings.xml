@@ -50,5 +50,7 @@
     <string name="pref_title_base_station">Show base station location</string>
     <string name="pref_description_base_station">Map marker will show reported base station location. May be inaccurate. (CDMA networks only.)</string>
     <string name="pref_description_base_station_off">Reported base station location will not be shown on the map.</string>
-    <string name="missing">missing</string>    
+    <string name="missing">missing</string>
+    <string name="current_network">Current Network</string>    
+    <string name="roamingInd">&#160;(roaming)</string>
 </resources>

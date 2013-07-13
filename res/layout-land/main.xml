@@ -47,6 +47,21 @@
             android:textIsSelectable="true" />
 
         <TextView
+            android:id="@+id/TextView03"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/current_network"
+            android:textColor="@android:color/holo_blue_dark" />
+
+        <TextView
+            android:id="@+id/networkString"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/none"
+            android:textColor="@android:color/primary_text_dark"
+            android:textIsSelectable="true" />
+
+        <TextView
             android:id="@+id/textView2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -102,14 +117,16 @@
             android:id="@+id/cdmaSigs"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2" android:weightSum="2"
-            android:orientation="horizontal" >
+            android:columnCount="2"
+            android:orientation="horizontal"
+            android:weightSum="2" >
 
             <TextView
                 android:id="@+id/cdmaSigStrength"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left" android:layout_weight="1"
+                android:layout_gravity="left"
+                android:layout_weight="1"
                 android:text="@string/no_signal"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true" />

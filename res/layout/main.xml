@@ -59,8 +59,31 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true" />
+
         </TableRow>
 
+
+            <TableRow
+                android:id="@+id/TableRow01"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+
+                <TextView
+                    android:id="@+id/TextView03"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5sp"
+                    android:text="@string/current_network"
+                    android:textColor="@android:color/primary_text_dark" />
+
+                <TextView
+                    android:id="@+id/networkString"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/primary_text_dark"
+                    android:textIsSelectable="true" />
+            </TableRow>
+        
         <TableRow
             android:id="@+id/tableRow2"
             android:layout_width="wrap_content"
