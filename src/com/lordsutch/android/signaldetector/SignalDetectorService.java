@@ -41,12 +41,13 @@ import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.location.LocationClient;
-// import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
+//import com.google.android.gms.common.ConnectionResult;
+//import com.google.android.gms.common.GooglePlayServicesClient;
+//import com.google.android.gms.common.GooglePlayServicesUtil;
+//import com.google.android.gms.location.LocationClient;
+//import com.google.android.gms.location.LocationRequest;
+
+//import com.google.android.gms.location.LocationListener;
 
 public class SignalDetectorService extends Service {
 	public static final String TAG = SignalDetector.class.getSimpleName();

@@ -52,5 +52,8 @@
     <string name="pref_description_base_station_off">Reported base station location will not be shown on the map.</string>
     <string name="missing">missing</string>
     <string name="current_network">Current Network</string>    
-    <string name="roamingInd">&#160;(roaming)</string>
+    <string name="roamingInd">&#160;(roaming)</string>    
+    <string name="clear_map_tile_cache">Clear map tile cache.</string>    
+    <string name="clear_map_cache">Clear map cache</string>    
+    <string name="map_tile_cache_cleared">Map tile cache cleared.</string>
 </resources>

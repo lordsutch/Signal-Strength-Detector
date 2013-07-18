@@ -20,6 +20,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
@@ -42,7 +44,7 @@ public final class SignalDetector extends Activity
 	public static final String TAG = SignalDetector.class.getSimpleName();
 	public static final String EMAIL = "lordsutch@gmail.com";
 	    
-    private static WebView leafletView = null;
+    public static WebView leafletView = null;
     
     /** Called when the activity is first created. */
 	@SuppressLint("SetJavaScriptEnabled")
@@ -51,7 +53,7 @@ public final class SignalDetector extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);        
@@ -85,7 +87,7 @@ public final class SignalDetector extends Activity
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
-    	
+    	    	
     	reloadPreferences();
     }
     
@@ -419,6 +421,9 @@ public final class SignalDetector extends Activity
      reloadPreferences();
     }
 
+    public void clearMapCache() {
+    	leafletView.clearCache(true);
+    }
 
     private void reloadPreferences() {
     	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);

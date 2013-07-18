@@ -15,5 +15,7 @@
         android:title="@string/pref_title_base_station" android:summaryOn="@string/pref_description_base_station"
         android:summaryOff="@string/pref_description_base_station_off" 
         />
+	<Preference android:summary="@string/clear_map_tile_cache" android:title="@string/clear_map_cache" android:key="clear_cache"
+	    android:persistent="false"/>
 	            
 </PreferenceScreen>
