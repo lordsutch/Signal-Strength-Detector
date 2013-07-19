@@ -240,7 +240,7 @@ public final class SignalDetector extends Activity
 
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
-		latlon.setText(String.format("%3.6f\u00b0%s %3.6f\u00b0%s (±%.0f\u202F%s)",
+		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (±%.0f\u202F%s)",
 				Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
 				Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
 				signal.accuracy * accuracyfactor, accuracylabel));
