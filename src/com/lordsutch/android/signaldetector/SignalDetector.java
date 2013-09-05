@@ -297,26 +297,26 @@ public final class SignalDetector extends Activity
 			} else {
 				servingid.setText(eciText);
 			}
-
-            if(signal.otherCells != null) {
-                ArrayList<String> otherSitesList = new ArrayList<String>();
-                for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
-                    if (validPhysicalCellID(otherCell.pci) && validSignalStrength(otherCell.lteSigStrength)) {
-                        otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
-                                otherCell.pci, otherCell.lteSigStrength));
-                    }
-                }
-                if(otherSitesList.isEmpty())
-                    otherSites.setText(R.string.none);
-                else
-                    otherSites.setText(TextUtils.join("; ", otherSitesList));
-            }
 		} else {
 			servingid.setText(R.string.none);
-            otherSites.setText(R.string.none);
 		}
-		
-		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
+
+        if(signal.otherCells != null) {
+            ArrayList<String> otherSitesList = new ArrayList<String>();
+            for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
+                if (validPhysicalCellID(otherCell.pci) && validSignalStrength(otherCell.lteSigStrength)) {
+                    otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
+                            otherCell.pci, otherCell.lteSigStrength));
+                }
+            }
+            if(otherSitesList.isEmpty())
+                otherSites.setText(R.string.none);
+            else
+                otherSites.setText(TextUtils.join("; ", otherSitesList));
+        }
+
+
+        if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
 			getActionBar().setLogo(R.drawable.ic_launcher);
 			strength.setText(String.valueOf(signal.lteSigStrength) + "\u202FdBm");
 		} else {
