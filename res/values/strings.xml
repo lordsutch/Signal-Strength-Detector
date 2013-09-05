@@ -56,4 +56,5 @@
     <string name="clear_map_tile_cache">Clear map tile cache.</string>    
     <string name="clear_map_cache">Clear map cache</string>    
     <string name="map_tile_cache_cleared">Map tile cache cleared.</string>
+    <string name="other_lte_sites">Other LTE Sites</string>
 </resources>

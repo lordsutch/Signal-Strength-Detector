@@ -21,6 +21,7 @@ import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -38,6 +39,9 @@ import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+
+import static com.lordsutch.android.signaldetector.SignalDetectorService.*;
 
 public final class SignalDetector extends Activity
 {
@@ -197,7 +201,7 @@ public final class SignalDetector extends Activity
         public void handleMessage(Message msg) {
         	SignalDetector activity = mActivity.get();
             switch (msg.what) {
-                case SignalDetectorService.MSG_SIGNAL_UPDATE:
+                case MSG_SIGNAL_UPDATE:
                 	if(activity != null)
                 		activity.updateSigInfo((signalInfo) msg.obj);
                     break;
@@ -279,20 +283,37 @@ public final class SignalDetector extends Activity
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
 		TextView evdoStrength = (TextView) findViewById(R.id.evdoSigStrength);
-		
+
+        TextView otherSites = (TextView) findViewById(R.id.otherLteSites);
+
 		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
 			String eciText = getString(R.string.missing);
 			
 			if(signal.eci < Integer.MAX_VALUE)
-				eciText = String.format("%08X", signal.eci);
+				eciText = String.format("GCI:\u00a0%08X", signal.eci);
 			
 			if(validPhysicalCellID(signal.pci)) {
-				servingid.setText(String.format("%s %03d", eciText, signal.pci));	
+				servingid.setText(String.format("%s PCI:\u00a0%03d", eciText, signal.pci));
 			} else {
 				servingid.setText(eciText);
 			}
+
+            if(signal.otherCells != null) {
+                ArrayList<String> otherSitesList = new ArrayList<String>();
+                for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
+                    if (validPhysicalCellID(otherCell.pci) && validSignalStrength(otherCell.lteSigStrength)) {
+                        otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
+                                otherCell.pci, otherCell.lteSigStrength));
+                    }
+                }
+                if(otherSitesList.isEmpty())
+                    otherSites.setText(R.string.none);
+                else
+                    otherSites.setText(TextUtils.join("; ", otherSitesList));
+            }
 		} else {
 			servingid.setText(R.string.none);
+            otherSites.setText(R.string.none);
 		}
 		
 		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
