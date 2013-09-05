@@ -1,16 +1,7 @@
 package com.lordsutch.android.signaldetector;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import android.annotation.TargetApi;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.Notification.Builder;
 import android.app.NotificationManager;
@@ -18,10 +9,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,15 +29,28 @@ import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
-//import com.google.android.gms.common.ConnectionResult;
-//import com.google.android.gms.common.GooglePlayServicesClient;
-//import com.google.android.gms.common.GooglePlayServicesUtil;
-//import com.google.android.gms.location.LocationClient;
-//import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
+import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 
-//import com.google.android.gms.location.LocationListener;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 
-public class SignalDetectorService extends Service {
+public class SignalDetectorService extends Service implements
+	ConnectionCallbacks, OnConnectionFailedListener {
 	public static final String TAG = SignalDetector.class.getSimpleName();
 
 	public static final int MSG_SIGNAL_UPDATE = 1;
@@ -61,12 +62,14 @@ public class SignalDetectorService extends Service {
 	private SignalStrength mSignalStrength;
 	private TelephonyManager mManager;
 	private Object mHTCManager;
-	private LocationManager mLocationManager;
     private Location mLocation = null;    
     private List<CellInfo> mCellInfo = null;
     private NotificationManager mNotifyMgr;
-    
+    private PendingIntent pintent = null;
+
     IBinder mBinder = new LocalBinder();      // interface for clients that bind
+
+	private LocationClient mLocationClient;
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -85,8 +88,7 @@ public class SignalDetectorService extends Service {
 		Intent resultIntent = new Intent(this, SignalDetector.class);
     	PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
 
-    	mBuilder = new Notification.Builder(this)
-	    .setSmallIcon(R.drawable.ic_stat_0g)
+    	mBuilder = new Notification.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
     		    .setContentTitle(getString(R.string.signal_detector_is_running))
     		    .setContentText("Loading...")
     		    .setOnlyAlertOnce(true)
@@ -96,41 +98,33 @@ public class SignalDetectorService extends Service {
     	startForeground(mNotificationId, mBuilder.build());
 
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mHTCManager = getSystemService("htctelephony");
     	
     	// Register the listener with the telephony manager
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
-    		PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
+    		PhoneStateListener.LISTEN_CELL_LOCATION);
     	
-    	Criteria gpsCriteria = new Criteria();
-    	gpsCriteria.setCostAllowed(false);
-    	gpsCriteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-    	
-    	String provider = mLocationManager.getBestProvider(gpsCriteria, true);    	
-    	Log.d(TAG, "Registering "+provider);
-		mLocationManager.requestLocationUpdates(provider, 1000, (float) 0, mLocListener);
-		Location mLoc = mLocationManager.getLastKnownLocation(provider);    	
-		if(mLoc != null) {
-    		updateLocations(mLoc);
-			mLocation = mLoc;
-		}
+        mLocationClient = new LocationClient(this, this, this);
+        mLocationClient.connect();
     	mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    	
-    	return mBinder;
+
+        if(pintent == null) {
+            Calendar cal = Calendar.getInstance();
+
+            Intent xintent = new Intent(this, SignalDetectorService.class);
+            pintent = PendingIntent.getService(this, 0, xintent, 0);
+
+            AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+            // Start every 30 seconds
+            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30*1000, pintent);
+        }
+        return mBinder;
 	}
 
     private void appendLog(String logfile, String text, String header)
     {       
     	Boolean newfile = false;
     	File filesdir = getExternalFilesDir(null);
-    	
-//    	try {
-//			Log.d(TAG, filesdir.getCanonicalPath()+" "+logfile);
-//		} catch (IOException e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		}
     	
     	File logFile = new File(filesdir, logfile);
     	if (!logFile.exists())
@@ -188,6 +182,11 @@ public class SignalDetectorService extends Service {
     {
     	return (pci >= 0 && pci <= 503);
     }
+
+    class otherLteCell {
+        int pci = Integer.MAX_VALUE;
+        int lteSigStrength = Integer.MAX_VALUE;
+    }
         
 	class signalInfo {
 		// Location location = null;
@@ -229,7 +228,9 @@ public class SignalDetectorService extends Service {
 		int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
 		
 		boolean roaming = false;
-	}
+
+        List<otherLteCell> otherCells = null;
+    }
 	
 	private static long FIVE_SECONDS = 5*1000;
 	private LinkedList<Location> locs = new LinkedList<Location>();
@@ -282,6 +283,10 @@ public class SignalDetectorService extends Service {
 	}
 
 	private double lastValidSpeed = 0.0;
+
+	private String lteLine;
+
+	private String ESMRLine;
 	
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	private void updatelog(boolean log) {
@@ -342,24 +347,40 @@ public class SignalDetectorService extends Service {
 		signal.evdoSigStrength = mSignalStrength.getEvdoDbm();
 		
 		signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113+2*signal.gsmSigStrength : -9999);
-		
+
+        mCellInfo = mManager.getAllCellInfo();
     	if(mCellInfo != null) {
+            signal.otherCells = new ArrayList<otherLteCell>();
+
     		for(CellInfo item : mCellInfo) {
     			if(item != null && item instanceof CellInfoLte) {
     				CellInfoLte x = (CellInfoLte) item;
-    				CellSignalStrengthLte cstr = x.getCellSignalStrength();
-    				if(cstr != null)
-    					signal.lteSigStrength = cstr.getDbm();
+                    if(item.isRegistered()) {
+                        CellSignalStrengthLte cstr = x.getCellSignalStrength();
+                        if(cstr != null)
+                            signal.lteSigStrength = cstr.getDbm();
 
-    				CellIdentityLte cellid = x.getCellIdentity();
-    				if(cellid != null) {
-    					signal.eci = cellid.getCi();
-    					signal.pci = cellid.getPci();
-    					signal.tac = cellid.getTac();
-    					signal.mnc = cellid.getMnc();
-    					signal.mcc = cellid.getMcc();
-    					gotID = true;
-    				}
+                        CellIdentityLte cellid = x.getCellIdentity();
+                        if(cellid != null) {
+                            signal.eci = cellid.getCi();
+                            signal.pci = cellid.getPci();
+                            signal.tac = cellid.getTac();
+                            signal.mnc = cellid.getMnc();
+                            signal.mcc = cellid.getMcc();
+                            gotID = true;
+                        }
+                    } else {
+                        otherLteCell otherCell = new otherLteCell();
+
+                        CellSignalStrengthLte cstr = x.getCellSignalStrength();
+                        if(cstr != null)
+                            otherCell.lteSigStrength = cstr.getDbm();
+                        CellIdentityLte cellid = x.getCellIdentity();
+                        if(cellid != null) {
+                            otherCell.pci = cellid.getPci();
+                        }
+                        signal.otherCells.add(otherCell);
+                    }
     			}
     		}
     	}
@@ -461,26 +482,33 @@ public class SignalDetectorService extends Service {
         	
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
     				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
-    			Log.d(TAG, "Logging LTE cell.");
-    			appendLog("ltecells.csv",
-    					slat+","+slon+","+
-    							(signal.eci < Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
-    							(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
-    							(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
-    							String.format("%.1f", signal.altitude)+","+
-    							(signal.tac < Integer.MAX_VALUE ? String.format("%04X", signal.tac) : ""),
-    						"latitude,longitude,cellid,physcellid,dBm,altitude,tac");
+    			String newLteLine = slat+","+slon+","+
+						(signal.eci < Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
+						(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
+						(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
+						String.format("%.0f", signal.altitude)+","+
+						(signal.tac < Integer.MAX_VALUE ? String.format("%04X", signal.tac) : "")+","+
+						String.format("%.0f", signal.accuracy);
+    			if(lteLine == null || !newLteLine.equals(lteLine)) {
+    				Log.d(TAG, "Logging LTE cell.");
+    				appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy");
+    				lteLine = newLteLine;
+    			}
     		}
     		if(signal.sid >= 22404 && signal.sid <= 22451)
     		{
     			String bslatstr = (signal.bslat <= 200 ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
     			String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
-    			Log.d(TAG, "Logging ESMR cell.");
-    			appendLog("esmrcells.csv", 
-    					String.format("%s,%s,%d,%d,%d,%s,%s,%s,%.1f", slat, slon, signal.sid, signal.nid, signal.bsid,
-    							(validSignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
-    							bslatstr, bslonstr, signal.altitude), "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude");
+    			String newESMRLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%s,%s,%.0f,%.0f", slat, slon, signal.sid, signal.nid, signal.bsid,
+						(validSignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
+						bslatstr, bslonstr, signal.altitude, signal.accuracy);
+    			if(ESMRLine == null || !newESMRLine.equals(ESMRLine)) {
+    				Log.d(TAG, "Logging ESMR cell.");
+    				appendLog("esmrcells.csv", newESMRLine,
+    						"latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy");
+    				ESMRLine = newESMRLine;
+    			}
     		}
     	}
     	
@@ -508,24 +536,6 @@ public class SignalDetectorService extends Service {
         		updatelog(true);
         	}
     	}
-
-		@Override
-		public void onProviderDisabled(String provider) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void onProviderEnabled(String provider) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void onStatusChanged(String provider, int status, Bundle extras) {
-			// TODO Auto-generated method stub
-			
-		}
     };
     
     // Listener for signal strength.
@@ -541,17 +551,6 @@ public class SignalDetectorService extends Service {
 			updatelog(true);
     	}
     	
-    	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-		@Override
-    	public void onCellInfoChanged(List<CellInfo> mInfo)
-    	{
-    		mCellInfo = mInfo;
-    		if(mCellInfo != null) {
-    			Log.d(TAG, mCellInfo.toString());
-    		}
-			updatelog(true);
-    	}
-
     	@Override
     	public void onSignalStrengthsChanged(SignalStrength sStrength)
     	{
@@ -566,9 +565,40 @@ public class SignalDetectorService extends Service {
 	@Override
     public void onDestroy() {
         // The service is no longer used and is being destroyed
-        mLocationManager.removeUpdates(mLocListener);
+		mLocationClient.removeLocationUpdates(mLocListener);
+		mLocationClient.disconnect();
         mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
 		stopForeground(true);
+
+        super.onDestroy();
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        if(pintent != null) {
+            AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+            alarm.cancel(pintent);
+            pintent = null;
+        }
+
+        super.onUnbind(intent);
+        return true;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        super.onRebind(intent);
+
+        if(pintent == null) {
+            Calendar cal = Calendar.getInstance();
+
+            Intent xintent = new Intent(this, SignalDetectorService.class);
+            pintent = PendingIntent.getService(this, 0, xintent, 0);
+
+            AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+            // Start every 30 seconds
+            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30*1000, pintent);
+        }
     }
 
 	private Messenger pushMessenger = null;
@@ -579,5 +609,36 @@ public class SignalDetectorService extends Service {
 			Log.d(TAG, pushMessenger.toString());
 
 		updatelog(false);
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onConnected(Bundle arg0) {
+        LocationRequest mLocationRequest = LocationRequest.create();
+        // Use high accuracy
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        // Set the update interval to 1 second
+        mLocationRequest.setInterval(1000);
+        // Set the fastest update interval to 0.5 seconds
+        mLocationRequest.setFastestInterval(500);
+        mLocationRequest.setSmallestDisplacement(0);
+
+        mLocationClient.requestLocationUpdates(mLocationRequest, mLocListener);
+
+        Location mLoc = mLocationClient.getLastLocation();
+        if(mLoc != null) {
+            updateLocations(mLoc);
+            mLocation = mLoc;
+        }
+    }
+
+	@Override
+	public void onDisconnected() {
+		mLocationClient.connect(); // Try to reconnect
 	}
 }

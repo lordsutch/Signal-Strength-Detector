@@ -1,7 +1,6 @@
 package com.lordsutch.android.signaldetector;
 
 // Android Packages
-import java.lang.ref.WeakReference;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -14,14 +13,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
-import android.preference.Preference;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
@@ -36,8 +32,12 @@ import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
+
+import java.lang.ref.WeakReference;
 
 public final class SignalDetector extends Activity
 {
@@ -76,9 +76,6 @@ public final class SignalDetector extends Activity
     	});
     	webSettings.setDomStorageEnabled(true);
     	 
-    	// Set cache size to 2 mb by default. should be more than enough
-    	webSettings.setAppCacheMaxSize(1024*1024*2);
-    	 
     	// This next one is crazy. It's the DEFAULT location for your app's cache
     	// But it didn't work for me without this line.
     	// UPDATE: no hardcoded path. Thanks to Kevin Hawkins
@@ -87,12 +84,11 @@ public final class SignalDetector extends Activity
     	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
-    	    	
     	reloadPreferences();
     }
     
-	SignalDetectorService mService;
-	boolean mBound = false;
+	private SignalDetectorService mService;
+	private boolean mBound = false;
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -100,33 +96,55 @@ public final class SignalDetector extends Activity
 		inflater.inflate(R.menu.mainmenu, menu);
 
 		return true;
-	}	
-	
+	}
+
+    // Define a DialogFragment that displays the error dialog
+    public static class ErrorDialogFragment extends DialogFragment {
+        // Global field to contain the error dialog
+        private Dialog mDialog;
+        // Default constructor. Sets the dialog field to null
+        public ErrorDialogFragment() {
+            super();
+            mDialog = null;
+        }
+        // Set the dialog to display
+        public void setDialog(Dialog dialog) {
+            mDialog = dialog;
+        }
+        // Return a Dialog to the DialogFragment.
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            return mDialog;
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
-        
-        // This verification should be done during onStart() because the system calls
-        // this method when the user returns to the activity, which ensures the desired
-        // location provider is enabled each time the activity resumes from the stopped state.
-        LocationManager locationManager =
-                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        final boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-        if (!gpsEnabled) {
-            // Build an alert dialog here that requests that the user enable
-            // the location services, then when the user clicks the "OK" button,
-            // call enableLocationSettings()
-            new EnableGpsDialogFragment().show(getFragmentManager(), "enableLocationSettings");
-        }
-        
+        checkGooglePlayServicesAvailability();
+
         // Bind cell tracking service
         Intent intent = new Intent(this, SignalDetectorService.class);
         
         startService(intent);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
     }
-    
+
+    public void checkGooglePlayServicesAvailability()
+    {
+        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+        if(resultCode != ConnectionResult.SUCCESS)
+        {
+            Dialog dialog = GooglePlayServicesUtil.getErrorDialog(resultCode, this, 69);
+            if(dialog != null) {
+                dialog.show();
+            }
+        }
+
+        Log.d("GooglePlayServicesUtil Check", "Result is: " + resultCode);
+    }
+
     @Override
     protected void onResume() {
     	super.onResume();
@@ -157,7 +175,7 @@ public final class SignalDetector extends Activity
         }
     };
     
-    final private Boolean validSignalStrength(int strength)
+    private Boolean validSignalStrength(int strength)
     {
     	return (strength > -900 && strength < 900);
     }
@@ -240,7 +258,7 @@ public final class SignalDetector extends Activity
 
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
-		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (±%.0f\u202F%s)",
+		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (Â±%.0f\u202f%s)",
 				Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
 				Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
 				signal.accuracy * accuracyfactor, accuracylabel));
@@ -415,10 +433,8 @@ public final class SignalDetector extends Activity
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-     // TODO Auto-generated method stub
-     super.onActivityResult(requestCode, resultCode, data);
-     
-     reloadPreferences();
+        super.onActivityResult(requestCode, resultCode, data);
+        reloadPreferences();
     }
 
     public void clearMapCache() {
@@ -451,6 +467,7 @@ public final class SignalDetector extends Activity
         	unbindService(mConnection);
         	mBound = false;
         }
+//        System.gc();
     }
 
     /**

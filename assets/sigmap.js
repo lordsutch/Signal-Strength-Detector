@@ -14,7 +14,11 @@ var mapquest = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y
 var mqaerial = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg',
                            {maxZoom: 18, subdomains: "1234", attribution: 'Portions Courtesy <a href="http://www.nasa.gov/">NASA</a>/<a href="http://www.jpl.nasa.gov/">JPL-Caltech</a> and <a href="http://www.fsa.usda.gov/">USDA Farm Service Agency</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'});
 
-var baseLayers = {'Mapquest Open' : mapquest,
+var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
+                           {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
+
+var baseLayers = {'US Shields' : shields,
+                  'Mapquest Open' : mapquest,
                   'Mapquest Aerial' : mqaerial};
 var overlays = {'Sensorly' : sensorly};
 
@@ -27,11 +31,12 @@ function startmap(lat, lon, newzoom) {
                         zoom: zoom
                        });
 
-    mapquest.addTo(map);
+    shields.addTo(map);
+    sensorly.addTo(map);
     L.control.layers(baseLayers, overlays).addTo(map);
 }
 
-var padding = 0.15;
+var padding = 0.1;
 
 function zoom4speed(speed) {
     kmh = speed*3.6;
@@ -65,19 +70,6 @@ function recenter(lat, lon, radius, speed, bearing) {
         marker.addTo(map);
     }
 
-    if(bearing > 0) {
-        if(arrow) {
-            arrow.setLatLng([lat, lon]);
-            arrow.setIconAngle(bearing);
-        } else {
-            arrow = L.marker([lat, lon], {iconAngle: bearing,
-                                          icon: arrowhead});
-            arrow.addTo(map);
-        }
-    } else if(arrow) {
-        arrow.setLatLng([lat, lon]);
-    }
-    
     if(pmarker) {
         bounds = L.latLngBounds([[lat, lon],
                                  pmarker.getLatLng()]).pad(padding);
@@ -90,6 +82,20 @@ function recenter(lat, lon, radius, speed, bearing) {
         }
 
         map.panTo([lat, lon]);
+    }
+
+    // Add arrow after zoom, not before
+    if(bearing > 0) {
+        if(arrow) {
+            arrow.setLatLng([lat, lon]);
+            arrow.setIconAngle(bearing);
+        } else {
+            arrow = L.marker([lat, lon], {iconAngle: bearing,
+                                          icon: arrowhead});
+            arrow.addTo(map);
+        }
+    } else if(arrow) {
+        arrow.setLatLng([lat, lon]);
     }
 }
 
