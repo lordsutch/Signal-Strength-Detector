@@ -57,17 +57,24 @@ function zoom4speed(speed) {
 arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
                     iconSize: [20, 20], iconAnchor: [10, 10]});
 
-function recenter(lat, lon, radius, speed, bearing) {
+function recenter(lat, lon, radius, speed, bearing, stale) {
     newZoom = zoom4speed(speed);
 
     if(!map) startmap(lat, lon, newZoom);
 
+    radius = radius*1.96
     if(marker) {
         marker.setLatLng([lat, lon]);
-        marker.setRadius(radius);
+        marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
     } else {
         marker = L.circle([lat, lon], radius);
         marker.addTo(map);
+    }
+
+    if(stale) {
+        marker.setStyle({color: "#f00", fillColor: "#f00"})
+    } else {
+        marker.setStyle({color: "#03f", fillColor: "#03f"})
     }
 
     if(pmarker) {
@@ -85,7 +92,7 @@ function recenter(lat, lon, radius, speed, bearing) {
     }
 
     // Add arrow after zoom, not before
-    if(bearing > 0) {
+    if(!stale && bearing > 0) {
         if(arrow) {
             arrow.setLatLng([lat, lon]);
             arrow.setIconAngle(bearing);
