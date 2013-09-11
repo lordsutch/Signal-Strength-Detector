@@ -14,8 +14,8 @@
     <string name="no_signal">no signal</string>
     <string name="none">none</string>
     <string name="cdma_1xrtt_base_station">1xRTT Site</string>
-    <string name="_1xrtt_signal_strength">1xRTT/EVDO Signal</string>
-    <string name="_2g_3g_signal">GSM/UMTS Signal</string>
+    <string name="_1xrtt_signal_strength">Signal</string>
+    <string name="_2g_3g_signal">Signal</string>
     <string name="show_base_station">Show base station</string>
     <string name="hide_base_station">Hide base station</string>
     <string name="_2g_3g_tower">GSM/UMTS Site</string>
@@ -51,10 +51,17 @@
     <string name="pref_description_base_station">Map marker will show reported base station location. May be inaccurate. (CDMA networks only.)</string>
     <string name="pref_description_base_station_off">Reported base station location will not be shown on the map.</string>
     <string name="missing">missing</string>
-    <string name="current_network">Current Network</string>    
-    <string name="roamingInd">&#160;(roaming)</string>    
+    <string name="current_network">Data Network</string>
+    <string name="roamingInd">(roaming)</string>
     <string name="clear_map_tile_cache">Clear map tile cache.</string>    
     <string name="clear_map_cache">Clear map cache</string>    
     <string name="map_tile_cache_cleared">Map tile cache cleared.</string>
     <string name="other_lte_sites">Other LTE Sites</string>
+    <string name="voice_signal">Voice Signal</string>
+    <string name="less_power_summary">Uses less power, at the expense of less-accurate position
+        reporting.
+    </string>
+    <string name="less_power_pref">Reduced GPS usage</string>
+    <string name="less_power_summary_off">More accurate locations, with greater power consumption.
+    </string>
 </resources>
