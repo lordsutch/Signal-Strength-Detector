@@ -26,11 +26,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -275,27 +277,29 @@ public final class SignalDetector extends Activity
 			speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
 		
 		TextView servingid = (TextView) findViewById(R.id.cellid);
-		TextView strength = (TextView) findViewById(R.id.sigstrength);
-
-		TextView strengthLabel = (TextView) findViewById(R.id.sigStrengthLabel);
 		TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
-		
 		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
 		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
-		TextView evdoStrength = (TextView) findViewById(R.id.evdoSigStrength);
-
         TextView otherSites = (TextView) findViewById(R.id.otherLteSites);
 
-		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
-			String eciText = getString(R.string.missing);
-			
-			if(signal.eci < Integer.MAX_VALUE)
-				eciText = String.format("GCI:\u00a0%08X", signal.eci);
-			
-			if(validPhysicalCellID(signal.pci)) {
-				servingid.setText(String.format("%s PCI:\u00a0%03d", eciText, signal.pci));
+        LinearLayout voiceSignalBlock = (LinearLayout) findViewById(R.id.voiceSignalBlock);
+
+        if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+            ArrayList<String> cellIds = new ArrayList<String>();
+
+            if(signal.tac < Integer.MAX_VALUE)
+                cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
+
+            if(signal.eci < Integer.MAX_VALUE)
+                cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
+
+            if(signal.pci < Integer.MAX_VALUE)
+                cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
+
+            if(!cellIds.isEmpty()) {
+				servingid.setText(TextUtils.join(", ", cellIds));
 			} else {
-				servingid.setText(eciText);
+				servingid.setText(R.string.missing);
 			}
 		} else {
 			servingid.setText(R.string.none);
@@ -315,66 +319,97 @@ public final class SignalDetector extends Activity
                 otherSites.setText(TextUtils.join("; ", otherSitesList));
         }
 
-
-        if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE && validSignalStrength(signal.lteSigStrength)) {
-			getActionBar().setLogo(R.drawable.ic_launcher);
-			strength.setText(String.valueOf(signal.lteSigStrength) + "\u202FdBm");
-		} else {
-			getActionBar().setLogo(R.drawable.ic_stat_non4g);
-			strength.setText(R.string.no_signal);
-		}
-
 		TextView network = (TextView) findViewById(R.id.networkString);
-		network.setText(networkString(signal.networkType) + (signal.roaming ? getString(R.string.roamingInd) : ""));
+
+        int voiceSigStrength = Integer.MAX_VALUE;
+        boolean voiceDataSame = true;
+
+        if(signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+            voiceSigStrength = signal.cdmaSigStrength;
+        } else if(signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+            voiceSigStrength = signal.gsmSigStrength;
+        }
+        int dataSigStrength = voiceSigStrength;
+
+        switch(signal.networkType) {
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                if(validSignalStrength(signal.lteSigStrength)) {
+                    getActionBar().setLogo(R.drawable.ic_launcher);
+                    voiceDataSame = false;
+                    dataSigStrength = signal.lteSigStrength;
+                } else {
+                    getActionBar().setLogo(R.drawable.ic_stat_non4g);
+                }
+                break;
+
+            case TelephonyManager.NETWORK_TYPE_EHRPD:
+            case TelephonyManager.NETWORK_TYPE_EVDO_0:
+            case TelephonyManager.NETWORK_TYPE_EVDO_A:
+            case TelephonyManager.NETWORK_TYPE_EVDO_B:
+                getActionBar().setLogo(R.drawable.ic_stat_non4g);
+                if(validSignalStrength(signal.evdoSigStrength)) {
+                    voiceDataSame = false;
+                    dataSigStrength = signal.evdoSigStrength;
+                }
+                break;
+
+            default:
+                getActionBar().setLogo(R.drawable.ic_stat_non4g);
+                break;
+        }
+
+        String netText = String.format("%s %d\u00A0dBm",
+                networkString(signal.networkType),
+                dataSigStrength);
+        if(signal.roaming)
+            netText += " " + getString(R.string.roamingInd);
+
+		network.setText(netText);
+
+        if(!voiceDataSame && validSignalStrength(voiceSigStrength)) {
+            cdmaStrength.setText(String.valueOf(voiceSigStrength) + "\u202FdBm");
+            voiceSignalBlock.setVisibility(View.VISIBLE);
+        } else {
+            voiceSignalBlock.setVisibility(View.GONE);
+        }
 		
-		if(validSignalStrength(signal.cdmaSigStrength) && signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
-			strengthLabel.setText(R.string._1xrtt_signal_strength);
-			cdmaStrength.setText(String.valueOf(signal.cdmaSigStrength) + "\u202FdBm");
-			
-			if(validSignalStrength(signal.evdoSigStrength) && isEVDONetwork(signal.networkType)) {
-				evdoStrength.setText(String.valueOf(signal.evdoSigStrength) + "\u202FdBm");
-			} else {
-				evdoStrength.setText(R.string.no_signal);
-			}
-		} else if (validSignalStrength(signal.gsmSigStrength)) {
-			strengthLabel.setText(R.string._2g_3g_signal);
-			cdmaStrength.setText(String.valueOf(signal.gsmSigStrength) + "\u202FdBm");
-			evdoStrength.setText("");
-    	} else {
-			cdmaStrength.setText(R.string.no_signal);
-			evdoStrength.setText("");
-		}
-		
-		if(signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 && (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
+        ArrayList<String> bsList = new ArrayList<String>();
+
+        if(signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 &&
+                (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
 			bsLabel.setText(R.string.cdma_1xrtt_base_station);
-			cdmaBS.setText(String.format("SID\u00A0%d, NID\u00A0%d, BSID\u00A0%d", signal.sid, signal.nid, signal.bsid));
+
+            bsList.add("SID\u00A0"+signal.sid);
+            bsList.add("NID\u00A0"+signal.nid);
+            bsList.add(String.format("BSID\u00A0%d\u00A0(x%X)", signal.bsid, signal.bsid));
 		} else if(signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
 			bsLabel.setText(R.string._2g_3g_tower);
 
-			String bstext = "MNC\u00A0"+signal.operator;
-			
+            bsList.add("MNC\u00A0"+signal.operator);
 			if(signal.lac > 0)
-				bstext += ", LAC\u00A0"+String.valueOf(signal.lac);
+                bsList.add("LAC\u00A0"+String.valueOf(signal.lac));
 			
 			if(signal.rnc > 0 && signal.rnc != signal.lac)
-				bstext += ", RNC\u00A0"+String.valueOf(signal.rnc);
+                bsList.add("RNC\u00A0"+String.valueOf(signal.rnc));
 				
 			if(signal.cid > 0)
-				bstext += ", CID\u00A0"+String.valueOf(signal.cid);
+                bsList.add("CID\u00A0"+String.valueOf(signal.cid));
 			
 			if(signal.psc > 0)
-				bstext += ", PSC\u00A0"+String.valueOf(signal.psc);
+                bsList.add("PSC\u00A0"+String.valueOf(signal.psc));
+        }
 
-			cdmaBS.setText(bstext);
-		} else {
-			cdmaBS.setText(R.string.none);
-		}
+        if(!bsList.isEmpty())
+            cdmaBS.setText(TextUtils.join(", ", bsList));
+        else
+            cdmaBS.setText(R.string.none);
 
 		if(Math.abs(signal.latitude) <= 200)
-			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing);
+			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing,
+                    signal.fixAge);
     	addBsMarker();
     }
-    
+
     private String networkString(int networkType) {
     	switch(networkType) {
     		case TelephonyManager.NETWORK_TYPE_EHRPD:
@@ -417,9 +452,12 @@ public final class SignalDetector extends Activity
 				networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
 	}
 
-	private static void centerMap(double latitude, double longitude, double accuracy, double speed, double bearing) {
-		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f,%f)",
-				latitude, longitude, accuracy, speed, bearing));
+	private static void centerMap(double latitude, double longitude, double accuracy, double speed,
+                                  double bearing, long fixAge) {
+        boolean staleFix = fixAge > (30*1000); // 30 seconds
+
+		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f,%f,%s)",
+				latitude, longitude, accuracy, speed, bearing, staleFix));
     }
     
     private void addBsMarker() {

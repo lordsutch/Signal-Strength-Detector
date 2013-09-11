@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Binder;
 import android.os.Build;
@@ -17,6 +18,8 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
@@ -27,6 +30,7 @@ import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -44,6 +48,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -184,7 +189,12 @@ public class SignalDetectorService extends Service implements
     }
 
     class otherLteCell {
+        int eci = Integer.MAX_VALUE;
         int pci = Integer.MAX_VALUE;
+        int tac = Integer.MAX_VALUE;
+        int mcc = Integer.MAX_VALUE;
+        int mnc = Integer.MAX_VALUE;
+
         int lteSigStrength = Integer.MAX_VALUE;
     }
         
@@ -198,6 +208,7 @@ public class SignalDetectorService extends Service implements
 		double speed;
 		double avgspeed;
 		double bearing;
+        long fixAge; // in milliseconds
 
 		// LTE
 		int eci = Integer.MAX_VALUE;
@@ -283,11 +294,55 @@ public class SignalDetectorService extends Service implements
 	}
 
 	private double lastValidSpeed = 0.0;
-
 	private String lteLine;
-
 	private String ESMRLine;
-	
+
+    private long THIRTY_SECONDS = (long)(30*1000);
+
+    private int networkIcon(int networkType) {
+        int icon = R.drawable.ic_stat_0g;
+
+        switch(networkType) {
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                icon = R.drawable.ic_stat_4g;
+                break;
+
+            case TelephonyManager.NETWORK_TYPE_UMTS:
+            case TelephonyManager.NETWORK_TYPE_EVDO_0:
+            case TelephonyManager.NETWORK_TYPE_EVDO_A:
+            case TelephonyManager.NETWORK_TYPE_EVDO_B:
+            case TelephonyManager.NETWORK_TYPE_EHRPD:
+            case TelephonyManager.NETWORK_TYPE_HSDPA: /* 3.5G? */
+            case TelephonyManager.NETWORK_TYPE_HSPA:
+            case TelephonyManager.NETWORK_TYPE_HSPAP:
+            case TelephonyManager.NETWORK_TYPE_HSUPA:
+                icon = R.drawable.ic_stat_3g;
+                break;
+
+            case TelephonyManager.NETWORK_TYPE_GPRS:
+            case TelephonyManager.NETWORK_TYPE_EDGE:
+            case TelephonyManager.NETWORK_TYPE_1xRTT:
+            case TelephonyManager.NETWORK_TYPE_CDMA:
+            case TelephonyManager.NETWORK_TYPE_IDEN:
+                icon = R.drawable.ic_stat_2g;
+                break;
+
+            default:
+                icon = R.drawable.ic_stat_0g;
+                break;
+        }
+
+        return icon;
+    }
+
+    private long locationFixAge(Location loc) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            return (loc.getElapsedRealtimeNanos() - SystemClock.elapsedRealtimeNanos())/(1000*1000);
+        } else {
+            return (loc.getTime() - (new Date()).getTime());
+        }
+    }
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	private void updatelog(boolean log) {
     	if(mLocation == null || mSignalStrength == null || mCellLocation == null)
@@ -354,13 +409,13 @@ public class SignalDetectorService extends Service implements
 
     		for(CellInfo item : mCellInfo) {
     			if(item != null && item instanceof CellInfoLte) {
-    				CellInfoLte x = (CellInfoLte) item;
+                    CellSignalStrengthLte cstr = ((CellInfoLte)item).getCellSignalStrength();
+                    CellIdentityLte cellid = ((CellInfoLte)item).getCellIdentity();
+
                     if(item.isRegistered()) {
-                        CellSignalStrengthLte cstr = x.getCellSignalStrength();
                         if(cstr != null)
                             signal.lteSigStrength = cstr.getDbm();
 
-                        CellIdentityLte cellid = x.getCellIdentity();
                         if(cellid != null) {
                             signal.eci = cellid.getCi();
                             signal.pci = cellid.getPci();
@@ -372,12 +427,14 @@ public class SignalDetectorService extends Service implements
                     } else {
                         otherLteCell otherCell = new otherLteCell();
 
-                        CellSignalStrengthLte cstr = x.getCellSignalStrength();
                         if(cstr != null)
                             otherCell.lteSigStrength = cstr.getDbm();
-                        CellIdentityLte cellid = x.getCellIdentity();
                         if(cellid != null) {
+                            otherCell.eci = cellid.getCi();
                             otherCell.pci = cellid.getPci();
+                            otherCell.tac = cellid.getTac();
+                            otherCell.mnc = cellid.getMnc();
+                            otherCell.mcc = cellid.getMcc();
                         }
                         signal.otherCells.add(otherCell);
                     }
@@ -430,73 +487,92 @@ public class SignalDetectorService extends Service implements
 			} catch (InvocationTargetException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+            }
 		}
 
-		if(signal.eci < Integer.MAX_VALUE && signal.networkType == TelephonyManager.NETWORK_TYPE_LTE)
-			mBuilder.setContentText(String.format("%s: %08X", getString(R.string.serving_lte_cell_id), signal.eci));
-		else
-			mBuilder.setContentText(String.format("%s: %s", getString(R.string.serving_lte_cell_id), getString(R.string.none)));			
+        String cellIdInfo = getString(R.string.none);
+        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
+              ((signal.eci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
+            ArrayList<String> cellIds = new ArrayList<String>();
 
-		int icon = R.drawable.ic_stat_0g;
-		
-		switch(signal.networkType) {
-		case TelephonyManager.NETWORK_TYPE_LTE:
-			icon = R.drawable.ic_stat_4g;
-			break;
-			
-		case TelephonyManager.NETWORK_TYPE_UMTS:
-		case TelephonyManager.NETWORK_TYPE_EVDO_0:
-		case TelephonyManager.NETWORK_TYPE_EVDO_A:
-		case TelephonyManager.NETWORK_TYPE_EVDO_B:
-		case TelephonyManager.NETWORK_TYPE_EHRPD:
-		case TelephonyManager.NETWORK_TYPE_HSDPA: /* 3.5G? */
-		case TelephonyManager.NETWORK_TYPE_HSPA:
-		case TelephonyManager.NETWORK_TYPE_HSPAP:
-		case TelephonyManager.NETWORK_TYPE_HSUPA:
-			icon = R.drawable.ic_stat_3g;
-			break;
-		
-		case TelephonyManager.NETWORK_TYPE_GPRS:
-		case TelephonyManager.NETWORK_TYPE_EDGE:
-		case TelephonyManager.NETWORK_TYPE_1xRTT:
-		case TelephonyManager.NETWORK_TYPE_CDMA:
-		case TelephonyManager.NETWORK_TYPE_IDEN:
-			icon = R.drawable.ic_stat_2g;
-			break;
-			
-		default:
-			icon = R.drawable.ic_stat_0g;
-			break;
-		}
-		
-		mBuilder.setSmallIcon(icon);
+            if(signal.tac < Integer.MAX_VALUE)
+                cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
+
+            if(signal.eci < Integer.MAX_VALUE)
+                cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
+
+            if(signal.pci < Integer.MAX_VALUE)
+                cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
+
+            if(cellIds.isEmpty())
+                cellIdInfo = getString(R.string.missing);
+            else
+                cellIdInfo = TextUtils.join(", ", cellIds);
+        }
+        mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellIdInfo)
+		    .setSmallIcon(networkIcon(signal.networkType));
+
     	mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
-    	if(log) {
+        signal.fixAge = locationFixAge(mLocation);
+        if(signal.fixAge >= THIRTY_SECONDS) {
+            mLocation = mLocationClient.getLastLocation();
+            signal.fixAge = locationFixAge(mLocation);
+        }
+
+        if(log && (signal.fixAge < THIRTY_SECONDS)) {
         	String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
         	String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
-        	// Log.d(TAG, "Logging location.");
-        	// appendLog("location.csv", slat+","+slon, "latitude,longitude");
-        	
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
     				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
     			String newLteLine = slat+","+slon+","+
-						(signal.eci < Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
+						(signal.eci != Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
 						(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
 						(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
 						String.format("%.0f", signal.altitude)+","+
-						(signal.tac < Integer.MAX_VALUE ? String.format("%04X", signal.tac) : "")+","+
+						(signal.tac != Integer.MAX_VALUE ? String.format("%04X", signal.tac) : "")+","+
 						String.format("%.0f", signal.accuracy);
     			if(lteLine == null || !newLteLine.equals(lteLine)) {
     				Log.d(TAG, "Logging LTE cell.");
     				appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy");
     				lteLine = newLteLine;
     			}
+
+                // Log other detected cells too!
     		}
-    		if(signal.sid >= 22404 && signal.sid <= 22451)
-    		{
+
+            if(mCellInfo != null) {
+                for(CellInfo item : mCellInfo) {
+                    if(item instanceof CellInfoLte) {
+                        CellIdentityLte mIdentity = ((CellInfoLte)item).getCellIdentity();
+                        CellSignalStrengthLte mSS = ((CellInfoLte)item).getCellSignalStrength();
+
+                        int tac = mIdentity.getTac();
+                        int eci = mIdentity.getCi();
+                        int pci = mIdentity.getPci();
+                        int mcc = mIdentity.getMcc();
+                        int mnc = mIdentity.getMnc();
+                        int rsrp = mSS.getDbm();
+
+                        String cellLine = slat+","+slon+","+
+                                String.format("%.0f", signal.accuracy)+","+
+                                String.format("%.0f", signal.altitude)+","+
+                                (mcc != Integer.MAX_VALUE ? String.valueOf(mcc) : "")+","+
+                                (mnc != Integer.MAX_VALUE ? String.valueOf(mnc) : "")+","+
+                                (tac != Integer.MAX_VALUE ? String.format("%04X", tac) : "")+","+
+                                (eci != Integer.MAX_VALUE ? String.format("%08X", eci) : "")+","+
+                                (validPhysicalCellID(pci) ? String.valueOf(pci) : "")+","+
+                                (validSignalStrength(rsrp) ? String.valueOf(rsrp) : "")+","+
+                                (item.isRegistered() ? "1" : "0");
+
+                        appendLog("cellinfolte.csv", cellLine,
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered");
+                    }
+                }
+            }
+
+            if(signal.sid >= 22404 && signal.sid <= 22451) {
     			String bslatstr = (signal.bslat <= 200 ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
     			String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
@@ -619,9 +695,14 @@ public class SignalDetectorService extends Service implements
 
 	@Override
 	public void onConnected(Bundle arg0) {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
+
+        boolean lessPower = sharedPref.getBoolean("low_power", false);
+
         LocationRequest mLocationRequest = LocationRequest.create();
-        // Use high accuracy
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        // Use specified accuracy
+        mLocationRequest.setPriority(lessPower ? LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY:
+                LocationRequest.PRIORITY_HIGH_ACCURACY);
         // Set the update interval to 1 second
         mLocationRequest.setInterval(1000);
         // Set the fastest update interval to 0.5 seconds
