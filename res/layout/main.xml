@@ -7,22 +7,21 @@
     android:background="@android:color/black"
     android:gravity="fill"
     android:orientation="vertical"
-    android:padding="3dp" >
+    android:padding="3dp">
 
     <TableLayout
         android:id="@+id/TableLayout1"
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentTop="false"
         android:paddingBottom="5dp"
-        android:shrinkColumns="1"
-        android:stretchColumns="0,1" >
+        android:stretchColumns="1"
+        android:layout_gravity="top"
+        android:layout_alignParentStart="false"
+        android:shrinkColumns="1">
 
-        <TableRow
-            android:id="@+id/tableRow1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+        <TableRow>
 
             <TextView
                 android:id="@+id/textView1"
@@ -38,13 +37,10 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true"
-                android:layout_column="2" />
+                android:layout_column="1" />
         </TableRow>
 
-        <TableRow
-            android:id="@+id/tableRow6"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+        <TableRow>
 
             <TextView
                 android:id="@+id/textview6"
@@ -60,37 +56,31 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true"
-                android:layout_column="2" />
+                android:layout_column="1" />
 
         </TableRow>
 
 
-            <TableRow
-                android:id="@+id/TableRow01"
+        <TableRow>
+
+            <TextView
+                android:id="@+id/TextView03"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5sp"
+                android:text="@string/current_network"
+                android:textColor="@android:color/primary_text_dark" />
 
-                <TextView
-                    android:id="@+id/TextView03"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="5sp"
-                    android:text="@string/current_network"
-                    android:textColor="@android:color/primary_text_dark" />
+            <TextView
+                android:id="@+id/networkString"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true"
+                android:layout_column="1" />
+        </TableRow>
 
-                <TextView
-                    android:id="@+id/networkString"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@android:color/primary_text_dark"
-                    android:textIsSelectable="true"
-                    android:layout_column="2" />
-            </TableRow>
-        
-        <TableRow
-            android:id="@+id/tableRow2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+        <TableRow>
 
             <TextView
                 android:id="@+id/textView2"
@@ -106,35 +96,11 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true"
-                android:layout_column="2" />
+                android:layout_column="1"
+                android:layout_weight="1" />
         </TableRow>
 
-        <TableRow
-            android:id="@+id/tableRow3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
-
-            <TextView
-                android:id="@+id/TextView01"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:text="@string/lte_signal_strength"
-                android:textColor="@android:color/primary_text_dark" />
-
-            <TextView
-                android:id="@+id/sigstrength"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:layout_column="2"
-                android:text="@string/none" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent">
+        <TableRow>
 
             <TextView
                 android:id="@+id/textView"
@@ -150,14 +116,11 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true"
-                android:layout_column="2"
+                android:layout_column="1"
                 android:text="@string/none" />
         </TableRow>
 
-        <TableRow
-            android:id="@+id/tableRow4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
+        <TableRow>
 
             <TextView
                 android:id="@+id/bsLabel"
@@ -173,49 +136,30 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true"
-                android:layout_column="2" />
+                android:layout_column="1"
+                android:layout_weight="1" />
         </TableRow>
 
-        <TableRow
-            android:id="@+id/tableRow5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
+        <TableRow android:id="@+id/voiceSignalBlock">
 
             <TextView
                 android:id="@+id/sigStrengthLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="5sp"
-                android:text="@string/_1xrtt_signal_strength"
+                android:text="Voice Signal"
                 android:textColor="@android:color/primary_text_dark" />
-
-            <LinearLayout
-            android:id="@+id/cdmaSigs"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:columnCount="2" android:weightSum="2"
-            android:orientation="horizontal"
-                android:layout_column="2">
 
             <TextView
                 android:id="@+id/cdmaSigStrength"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left" android:layout_weight="1"
+                android:singleLine="false"
                 android:text="@string/no_signal"
+                android:layout_column="1"
                 android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true" />
-
-            <TextView
-                android:id="@+id/evdoSigStrength"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:layout_weight="1"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true" />
-
-        </LinearLayout>
+                android:textIsSelectable="true"
+                android:layout_weight="1" />
         </TableRow>
     </TableLayout>
 
@@ -225,6 +169,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
+        android:layout_gravity="bottom"
         android:layout_below="@+id/TableLayout1" />
 
 </RelativeLayout>

@@ -16,9 +16,8 @@
         android:layout_weight="2">
 
         <LinearLayout
-            android:id="@+id/LinearLayout1"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingRight="3dp" >
 
@@ -81,21 +80,6 @@
                 android:textIsSelectable="true" />
 
             <TextView
-                android:id="@+id/TextView01"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/lte_signal_strength"
-                android:textColor="@android:color/holo_blue_dark" />
-
-            <TextView
-                android:id="@+id/sigstrength"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/no_signal"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true" />
-
-            <TextView
                 android:id="@+id/textView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -126,40 +110,29 @@
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true" />
 
-            <TextView
-                android:id="@+id/sigStrengthLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/_1xrtt_signal_strength"
-                android:textColor="@android:color/holo_blue_dark" />
-
             <LinearLayout
-                android:id="@+id/cdmaSigs"
+                android:orientation="vertical"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:columnCount="2"
-                android:orientation="horizontal"
-                android:weightSum="2" >
+                android:layout_height="fill_parent"
+                android:id="@id/voiceSignalBlock">
+
+                <TextView
+                    android:id="@+id/sigStrengthLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/voice_signal"
+                    android:textColor="@android:color/holo_blue_dark" />
 
                 <TextView
                     android:id="@+id/cdmaSigStrength"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="left"
-                    android:layout_weight="1"
                     android:text="@string/no_signal"
                     android:textColor="@android:color/primary_text_dark"
                     android:textIsSelectable="true" />
-
-                <TextView
-                    android:id="@+id/evdoSigStrength"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="left"
-                    android:layout_weight="1"
-                    android:textColor="@android:color/primary_text_dark"
-                    android:textIsSelectable="true" />
             </LinearLayout>
+
         </LinearLayout>
     </ScrollView>
 
