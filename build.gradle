@@ -8,17 +8,13 @@ buildscript {
 }
 apply plugin: 'android'
 
-dependencies {
-    compile project(':lib-google-play-services')
-}
-
 android {
-    compileSdkVersion 18
-    buildToolsVersion "18"
+    compileSdkVersion 19
+    buildToolsVersion "19"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 18
+        targetSdkVersion 19
     }
     sourceSets {
         main {

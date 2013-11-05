@@ -5,24 +5,28 @@ var oldspeed = 0;
 var pmarker = null;
 var arrow = null;
 
-var sensorly = L.tileLayer('http://tiles3.api.sensorly.com/tile/web/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=512',
-                           {maxZoom: 18, tileSize: 512, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
+var sensorlySprint = L.tileLayer('http://tiles3.api.sensorly.com/tile/web/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
+                           {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
+
+var sensorlyTMobileUS = L.tileLayer('http://tiles3.api.sensorly.com/tile/web/lte_310260/{z}/{x}/{x}/{y}/{y}.png?s=256',
+                           {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
 var mapquest = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpg',
                            {maxZoom: 18, subdomains: "1234", attribution: 'Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'});
 
 var mqaerial = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg',
-                           {maxZoom: 18, subdomains: "1234", attribution: 'Portions Courtesy <a href="http://www.nasa.gov/">NASA</a>/<a href="http://www.jpl.nasa.gov/">JPL-Caltech</a> and <a href="http://www.fsa.usda.gov/">USDA Farm Service Agency</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'});
+                           {maxZoom: 18, subdomains: "1234", detectRetina: true, attribution: 'Portions Courtesy <a href="http://www.nasa.gov/">NASA</a>/<a href="http://www.jpl.nasa.gov/">JPL-Caltech</a> and <a href="http://www.fsa.usda.gov/">USDA Farm Service Agency</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'});
 
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
-                           {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
+                           {maxZoom: 17, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
 
 var baseLayers = {'US Shields' : shields,
                   'Mapquest Open' : mapquest,
                   'Mapquest Aerial' : mqaerial};
-var overlays = {'Sensorly' : sensorly};
+var overlays = {'Sprint LTE' : sensorlySprint,
+    'T-Mobile US LTE' : sensorlyTMobileUS};
 
-function startmap(lat, lon, newzoom) {
+function startmap(lat, lon, newzoom, operator) {
     zoom = newzoom;
     map = L.map('map', {center: [lat, lon],
                         // fadeAnimation: false,
@@ -32,7 +36,10 @@ function startmap(lat, lon, newzoom) {
                        });
 
     shields.addTo(map);
-    sensorly.addTo(map);
+    if(operator == '310260')
+        sensorlyTMobileUS.addTo(map);
+    else
+        sensorlySprint.addTo(map);
     L.control.layers(baseLayers, overlays).addTo(map);
 }
 
@@ -57,10 +64,10 @@ function zoom4speed(speed) {
 arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
                     iconSize: [20, 20], iconAnchor: [10, 10]});
 
-function recenter(lat, lon, radius, speed, bearing, stale) {
+function recenter(lat, lon, radius, speed, bearing, stale, operator) {
     newZoom = zoom4speed(speed);
 
-    if(!map) startmap(lat, lon, newZoom);
+    if(!map) startmap(lat, lon, newZoom, operator);
 
     radius = radius*1.96
     if(marker) {

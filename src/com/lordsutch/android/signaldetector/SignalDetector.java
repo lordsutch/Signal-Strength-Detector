@@ -3,6 +3,7 @@ package com.lordsutch.android.signaldetector;
 // Android Packages
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -13,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -35,8 +37,6 @@ import android.webkit.WebView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
@@ -51,7 +51,8 @@ public final class SignalDetector extends Activity
 	public static final String EMAIL = "lordsutch@gmail.com";
 	    
     public static WebView leafletView = null;
-    
+    private TelephonyManager mTelephonyManager = null;
+
     /** Called when the activity is first created. */
 	@SuppressLint("SetJavaScriptEnabled")
 	@Override
@@ -62,7 +63,9 @@ public final class SignalDetector extends Activity
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);        
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
     	leafletView = (WebView) findViewById(R.id.leafletView);
     	leafletView.loadUrl("file:///android_asset/leaflet.html");
@@ -128,27 +131,24 @@ public final class SignalDetector extends Activity
     protected void onStart() {
         super.onStart();
 
-        checkGooglePlayServicesAvailability();
+        bindSDService();
+    }
 
+    private void bindSDService() {
         // Bind cell tracking service
         Intent intent = new Intent(this, SignalDetectorService.class);
-        
+
         startService(intent);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
     }
 
-    public void checkGooglePlayServicesAvailability()
-    {
-        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-        if(resultCode != ConnectionResult.SUCCESS)
-        {
-            Dialog dialog = GooglePlayServicesUtil.getErrorDialog(resultCode, this, 69);
-            if(dialog != null) {
-                dialog.show();
-            }
+    private void unbindSDService() {
+        if(mBound) {
+            unbindService(mConnection);
+            mBound = false;
         }
-
-        Log.d("GooglePlayServicesUtil Check", "Result is: " + resultCode);
+        Intent intent = new Intent(this, SignalDetectorService.class);
+        stopService(intent);
     }
 
     @Override
@@ -247,7 +247,7 @@ public final class SignalDetector extends Activity
     	}
     }
     
-    final private Boolean validPhysicalCellID(int pci)
+    private Boolean validPhysicalCellID(int pci)
     {
     	return (pci >= 0 && pci <= 503);
     }
@@ -330,6 +330,7 @@ public final class SignalDetector extends Activity
             voiceSigStrength = signal.gsmSigStrength;
         }
         int dataSigStrength = voiceSigStrength;
+        boolean lteMode = false;
 
         switch(signal.networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
@@ -337,6 +338,7 @@ public final class SignalDetector extends Activity
                     getActionBar().setLogo(R.drawable.ic_launcher);
                     voiceDataSame = false;
                     dataSigStrength = signal.lteSigStrength;
+                    lteMode = true;
                 } else {
                     getActionBar().setLogo(R.drawable.ic_stat_non4g);
                 }
@@ -358,9 +360,15 @@ public final class SignalDetector extends Activity
                 break;
         }
 
-        String netText = String.format("%s %d\u00A0dBm",
-                networkString(signal.networkType),
-                dataSigStrength);
+        String netText = networkString(signal.networkType);
+        if(lteMode && validMnc(signal.mcc) && validMnc(signal.mnc)) {
+            netText += String.format(" %03d%03d", signal.mcc, signal.mnc);
+        }
+
+        if(validSignalStrength(dataSigStrength)) {
+            netText += String.format(" %d\u202FdBm", dataSigStrength);
+        }
+
         if(signal.roaming)
             netText += " " + getString(R.string.roamingInd);
 
@@ -410,6 +418,10 @@ public final class SignalDetector extends Activity
     	addBsMarker();
     }
 
+    private boolean validMnc(int mcc) {
+        return (mcc >= 0 && mcc <= 999);
+    }
+
     private String networkString(int networkType) {
     	switch(networkType) {
     		case TelephonyManager.NETWORK_TYPE_EHRPD:
@@ -452,23 +464,35 @@ public final class SignalDetector extends Activity
 				networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
 	}
 
-	private static void centerMap(double latitude, double longitude, double accuracy, double speed,
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    // Use evaluateJavascript if available (KITKAT+), otherwise hack
+    private void execJavascript(String script) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+            leafletView.evaluateJavascript(script, null);
+        else
+            leafletView.loadUrl("javascript:"+script);
+    }
+
+	private void centerMap(double latitude, double longitude, double accuracy, double speed,
                                   double bearing, long fixAge) {
         boolean staleFix = fixAge > (30*1000); // 30 seconds
 
-		leafletView.loadUrl(String.format("javascript:recenter(%f,%f,%f,%f,%f,%s)",
-				latitude, longitude, accuracy, speed, bearing, staleFix));
+        String operator = mTelephonyManager.getSimOperator();
+        if(operator == null)
+            operator = mTelephonyManager.getNetworkOperator();
+
+        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,%s);",
+				latitude, longitude, accuracy, speed, bearing, staleFix, operator));
     }
-    
+
     private void addBsMarker() {
     	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
     	bsmarker = sharedPref.getBoolean("show_base_station", false);
     	
     	if(bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
-    		leafletView.loadUrl(String.format("javascript:placeMarker(%f,%f)",
-    				bslat, bslon));
-    	else
-    		leafletView.loadUrl("javascript:clearMarker()");
+    		execJavascript(String.format("placeMarker(%f,%f);", bslat, bslon));
+        else
+    		execJavascript("clearMarker();");
     }
     
     private void updateUnits() {
@@ -494,6 +518,8 @@ public final class SignalDetector extends Activity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         reloadPreferences();
+        unbindSDService();
+        bindSDService();
     }
 
     public void clearMapCache() {
@@ -509,13 +535,7 @@ public final class SignalDetector extends Activity
     }
     
     public void exitApp(MenuItem x) {
-    	if(mBound) {
-    		unbindService(mConnection);
-    		mBound = false;
-    	}
-
-    	Intent intent = new Intent(this, SignalDetectorService.class);
-        stopService(intent);
+        unbindSDService();
     	finish();
     }
 

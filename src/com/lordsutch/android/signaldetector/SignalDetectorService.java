@@ -10,7 +10,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,13 +36,6 @@ import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
-import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -54,8 +50,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
-public class SignalDetectorService extends Service implements
-	ConnectionCallbacks, OnConnectionFailedListener {
+public class SignalDetectorService extends Service {
 	public static final String TAG = SignalDetector.class.getSimpleName();
 
 	public static final int MSG_SIGNAL_UPDATE = 1;
@@ -67,14 +62,14 @@ public class SignalDetectorService extends Service implements
 	private SignalStrength mSignalStrength;
 	private TelephonyManager mManager;
 	private Object mHTCManager;
-    private Location mLocation = null;    
-    private List<CellInfo> mCellInfo = null;
+    private Location mLocation = null;
     private NotificationManager mNotifyMgr;
     private PendingIntent pintent = null;
 
     IBinder mBinder = new LocalBinder();      // interface for clients that bind
 
-	private LocationClient mLocationClient;
+    private boolean loggingEnabled = false;
+    private LocationManager mLocationManager;
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -104,13 +99,13 @@ public class SignalDetectorService extends Service implements
 
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         mHTCManager = getSystemService("htctelephony");
-    	
+
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
     	// Register the listener with the telephony manager
     	mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
     		PhoneStateListener.LISTEN_CELL_LOCATION);
     	
-        mLocationClient = new LocationClient(this, this, this);
-        mLocationClient.connect();
     	mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         if(pintent == null) {
@@ -123,6 +118,24 @@ public class SignalDetectorService extends Service implements
             // Start every 30 seconds
             alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30*1000, pintent);
         }
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
+
+        boolean lessPower = sharedPref.getBoolean("low_power", false);
+        loggingEnabled = sharedPref.getBoolean("logging", true);
+
+        Criteria mCriteria = new Criteria();
+        mCriteria.setCostAllowed(false);
+        mCriteria.setBearingRequired(lessPower ? false : true);
+        mCriteria.setAccuracy(lessPower ? Criteria.ACCURACY_COARSE : Criteria.ACCURACY_FINE);
+        mCriteria.setSpeedRequired(false);
+
+        String provider = mLocationManager.getBestProvider(mCriteria, true);
+        Log.d(TAG, "Using GPS provider "+provider);
+
+        mLocationManager.requestLocationUpdates(provider, 500, 1, mLocListener);
+        mLocation = mLocationManager.getLastKnownLocation(provider);
+
         return mBinder;
 	}
 
@@ -178,12 +191,12 @@ public class SignalDetectorService extends Service implements
     	return strength;
     }
     
-    final private Boolean validSignalStrength(int strength)
+    private Boolean validSignalStrength(int strength)
     {
     	return (strength > -900 && strength < 900);
     }
     
-    final private Boolean validPhysicalCellID(int pci)
+    private Boolean validPhysicalCellID(int pci)
     {
     	return (pci >= 0 && pci <= 503);
     }
@@ -297,8 +310,6 @@ public class SignalDetectorService extends Service implements
 	private String lteLine;
 	private String ESMRLine;
 
-    private long THIRTY_SECONDS = (long)(30*1000);
-
     private int networkIcon(int networkType) {
         int icon = R.drawable.ic_stat_0g;
 
@@ -403,7 +414,7 @@ public class SignalDetectorService extends Service implements
 		
 		signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113+2*signal.gsmSigStrength : -9999);
 
-        mCellInfo = mManager.getAllCellInfo();
+        List<CellInfo> mCellInfo = mManager.getAllCellInfo();
     	if(mCellInfo != null) {
             signal.otherCells = new ArrayList<otherLteCell>();
 
@@ -515,12 +526,9 @@ public class SignalDetectorService extends Service implements
     	mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
         signal.fixAge = locationFixAge(mLocation);
-        if(signal.fixAge >= THIRTY_SECONDS) {
-            mLocation = mLocationClient.getLastLocation();
-            signal.fixAge = locationFixAge(mLocation);
-        }
 
-        if(log && (signal.fixAge < THIRTY_SECONDS)) {
+        long THIRTY_SECONDS = (long) (30 * 1000);
+        if(loggingEnabled && log && (signal.fixAge < THIRTY_SECONDS)) {
         	String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
         	String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
@@ -538,8 +546,6 @@ public class SignalDetectorService extends Service implements
     				appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy");
     				lteLine = newLteLine;
     			}
-
-                // Log other detected cells too!
     		}
 
             if(mCellInfo != null) {
@@ -612,6 +618,21 @@ public class SignalDetectorService extends Service implements
         		updatelog(true);
         	}
     	}
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
     };
     
     // Listener for signal strength.
@@ -641,8 +662,7 @@ public class SignalDetectorService extends Service implements
 	@Override
     public void onDestroy() {
         // The service is no longer used and is being destroyed
-		mLocationClient.removeLocationUpdates(mLocListener);
-		mLocationClient.disconnect();
+        mLocationManager.removeUpdates(mLocListener);
         mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
 		stopForeground(true);
 
@@ -685,41 +705,5 @@ public class SignalDetectorService extends Service implements
 			Log.d(TAG, pushMessenger.toString());
 
 		updatelog(false);
-	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult arg0) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onConnected(Bundle arg0) {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
-
-        boolean lessPower = sharedPref.getBoolean("low_power", false);
-
-        LocationRequest mLocationRequest = LocationRequest.create();
-        // Use specified accuracy
-        mLocationRequest.setPriority(lessPower ? LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY:
-                LocationRequest.PRIORITY_HIGH_ACCURACY);
-        // Set the update interval to 1 second
-        mLocationRequest.setInterval(1000);
-        // Set the fastest update interval to 0.5 seconds
-        mLocationRequest.setFastestInterval(500);
-        mLocationRequest.setSmallestDisplacement(0);
-
-        mLocationClient.requestLocationUpdates(mLocationRequest, mLocListener);
-
-        Location mLoc = mLocationClient.getLastLocation();
-        if(mLoc != null) {
-            updateLocations(mLoc);
-            mLocation = mLoc;
-        }
-    }
-
-	@Override
-	public void onDisconnected() {
-		mLocationClient.connect(); // Try to reconnect
 	}
 }

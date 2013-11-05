@@ -64,4 +64,7 @@
     <string name="less_power_pref">Reduced GPS usage</string>
     <string name="less_power_summary_off">More accurate locations, with greater power consumption.
     </string>
+    <string name="logging_pref">Log cellular sites</string>
+    <string name="logging_pref_on">Log base station information on user storage.</string>
+    <string name="logging_pref_off">Logging disabled.</string>
 </resources>
