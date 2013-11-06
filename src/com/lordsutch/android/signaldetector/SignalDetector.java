@@ -480,8 +480,10 @@ public final class SignalDetector extends Activity
         String operator = mTelephonyManager.getSimOperator();
         if(operator == null)
             operator = mTelephonyManager.getNetworkOperator();
+        if(operator == null)
+            operator = "";
 
-        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,%s);",
+        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\");",
 				latitude, longitude, accuracy, speed, bearing, staleFix, operator));
     }
 
