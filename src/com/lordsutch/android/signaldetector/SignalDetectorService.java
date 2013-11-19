@@ -108,7 +108,7 @@ public class SignalDetectorService extends Service {
     	
     	mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        if(pintent == null) {
+        if(false && pintent == null) {
             Calendar cal = Calendar.getInstance();
 
             Intent xintent = new Intent(this, SignalDetectorService.class);
@@ -125,15 +125,16 @@ public class SignalDetectorService extends Service {
         loggingEnabled = sharedPref.getBoolean("logging", true);
 
         Criteria mCriteria = new Criteria();
+        mCriteria.setAltitudeRequired(false);
         mCriteria.setCostAllowed(false);
-        mCriteria.setBearingRequired(lessPower ? false : true);
+        mCriteria.setBearingRequired(!lessPower);
+        mCriteria.setSpeedRequired(!lessPower);
         mCriteria.setAccuracy(lessPower ? Criteria.ACCURACY_COARSE : Criteria.ACCURACY_FINE);
-        mCriteria.setSpeedRequired(false);
 
         String provider = mLocationManager.getBestProvider(mCriteria, true);
         Log.d(TAG, "Using GPS provider "+provider);
 
-        mLocationManager.requestLocationUpdates(provider, 500, 1, mLocListener);
+        mLocationManager.requestLocationUpdates(provider, 1000, 0, mLocListener);
         mLocation = mLocationManager.getLastKnownLocation(provider);
 
         return mBinder;
@@ -191,11 +192,16 @@ public class SignalDetectorService extends Service {
     	return strength;
     }
     
-    private Boolean validSignalStrength(int strength)
+    private Boolean validRSSISignalStrength(int strength) // RSSI
     {
-    	return (strength > -900 && strength < 900);
+    	return (strength > -120 && strength < 0);
     }
-    
+
+    private Boolean validLTESignalStrength(int strength)
+    {
+        return (strength > -200 && strength < 0);
+    }
+
     private Boolean validPhysicalCellID(int pci)
     {
     	return (pci >= 0 && pci <= 503);
@@ -360,7 +366,7 @@ public class SignalDetectorService extends Service {
     		return;
 
 		Boolean gotID = false;
-		
+
     	signalInfo signal = new signalInfo();
 
     	signal.latitude = mLocation.getLatitude();
@@ -384,8 +390,6 @@ public class SignalDetectorService extends Service {
 		if(mCellLocation instanceof CdmaCellLocation) {
 			CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
 
-			Log.d(TAG, x.toString());
-			
 			signal.bsid = x.getBaseStationId();
 			signal.nid = x.getNetworkId();
 			signal.sid = x.getSystemId();
@@ -396,9 +400,7 @@ public class SignalDetectorService extends Service {
 		
 		if(mCellLocation instanceof GsmCellLocation) {
 			GsmCellLocation x = (GsmCellLocation) mCellLocation;
-			
-			Log.d(TAG, x.toString());
-			
+
 			signal.lac = x.getLac();
 			signal.psc = x.getPsc();
 			signal.cid = x.getCid();
@@ -453,7 +455,7 @@ public class SignalDetectorService extends Service {
     		}
     	}
     	
-    	if(!validSignalStrength(signal.lteSigStrength))
+    	if(!validLTESignalStrength(signal.lteSigStrength))
     		signal.lteSigStrength = parseSignalStrength();
     	
 		if(!gotID && mHTCManager != null) {
@@ -480,7 +482,7 @@ public class SignalDetectorService extends Service {
 			}
 		}
 		
-		if(!validSignalStrength(signal.lteSigStrength)) {
+		if(!validLTESignalStrength(signal.lteSigStrength)) {
 			Method m;
 
 			try {
@@ -533,11 +535,11 @@ public class SignalDetectorService extends Service {
         	String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-    				(validSignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
+    				(validLTESignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
     			String newLteLine = slat+","+slon+","+
 						(signal.eci != Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
 						(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
-						(validSignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
+						(validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
 						String.format("%.0f", signal.altitude)+","+
 						(signal.tac != Integer.MAX_VALUE ? String.format("%04X", signal.tac) : "")+","+
 						String.format("%.0f", signal.accuracy);
@@ -569,7 +571,7 @@ public class SignalDetectorService extends Service {
                                 (tac != Integer.MAX_VALUE ? String.format("%04X", tac) : "")+","+
                                 (eci != Integer.MAX_VALUE ? String.format("%08X", eci) : "")+","+
                                 (validPhysicalCellID(pci) ? String.valueOf(pci) : "")+","+
-                                (validSignalStrength(rsrp) ? String.valueOf(rsrp) : "")+","+
+                                (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "")+","+
                                 (item.isRegistered() ? "1" : "0");
 
                         appendLog("cellinfolte.csv", cellLine,
@@ -583,7 +585,7 @@ public class SignalDetectorService extends Service {
     			String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
     			String newESMRLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%s,%s,%.0f,%.0f", slat, slon, signal.sid, signal.nid, signal.bsid,
-						(validSignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
+						(validRSSISignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
 						bslatstr, bslonstr, signal.altitude, signal.accuracy);
     			if(ESMRLine == null || !newESMRLine.equals(ESMRLine)) {
     				Log.d(TAG, "Logging ESMR cell.");
@@ -685,7 +687,7 @@ public class SignalDetectorService extends Service {
     public void onRebind(Intent intent) {
         super.onRebind(intent);
 
-        if(pintent == null) {
+        if(false && pintent == null) {
             Calendar cal = Calendar.getInstance();
 
             Intent xintent = new Intent(this, SignalDetectorService.class);

@@ -29,6 +29,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -36,6 +37,7 @@ import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
@@ -59,10 +61,11 @@ public final class SignalDetector extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        getWindow().requestFeature(Window.FEATURE_PROGRESS);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.main);
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -72,17 +75,22 @@ public final class SignalDetector extends Activity
     	
     	WebSettings webSettings = leafletView.getSettings();
     	// webSettings.setAllowFileAccessFromFileURLs(true);
-    	webSettings.setJavaScriptEnabled(true);    	   
+    	webSettings.setJavaScriptEnabled(true);
 
-    	// Enable client caching
+        final Activity activity = this;
+
     	leafletView.setWebChromeClient(new WebChromeClient() {
-    	      @Override
-    	      public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
-    	                   WebStorage.QuotaUpdater quotaUpdater)
-    	      {
-    	            quotaUpdater.updateQuota(spaceNeeded * 2);
-    	      }
-    	});
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
+            }
+
+            // Enable client caching
+            @Override
+            public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
+                                                 WebStorage.QuotaUpdater quotaUpdater) {
+                quotaUpdater.updateQuota(spaceNeeded * 2);
+            }
+        });
     	webSettings.setDomStorageEnabled(true);
     	 
     	// This next one is crazy. It's the DEFAULT location for your app's cache
@@ -181,12 +189,17 @@ public final class SignalDetector extends Activity
         }
     };
     
-    private Boolean validSignalStrength(int strength)
+    private Boolean validLTESignalStrength(int strength)
     {
-    	return (strength > -900 && strength < 900);
+    	return (strength > -200 && strength < 0);
     }
-    
-	private double bslat = 999;
+
+    private Boolean validRSSISignalStrength(int strength)
+    {
+        return (strength > -120 && strength < 0);
+    }
+
+    private double bslat = 999;
 	private double bslon = 999;
     
     /**
@@ -264,7 +277,7 @@ public final class SignalDetector extends Activity
 
 		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 		
-		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (±%.0f\u202f%s)",
+		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
 				Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
 				Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
 				signal.accuracy * accuracyfactor, accuracylabel));
@@ -308,7 +321,7 @@ public final class SignalDetector extends Activity
         if(signal.otherCells != null) {
             ArrayList<String> otherSitesList = new ArrayList<String>();
             for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
-                if (validPhysicalCellID(otherCell.pci) && validSignalStrength(otherCell.lteSigStrength)) {
+                if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
                     otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
                             otherCell.pci, otherCell.lteSigStrength));
                 }
@@ -334,7 +347,7 @@ public final class SignalDetector extends Activity
 
         switch(signal.networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
-                if(validSignalStrength(signal.lteSigStrength)) {
+                if(validLTESignalStrength(signal.lteSigStrength)) {
                     getActionBar().setLogo(R.drawable.ic_launcher);
                     voiceDataSame = false;
                     dataSigStrength = signal.lteSigStrength;
@@ -349,7 +362,7 @@ public final class SignalDetector extends Activity
             case TelephonyManager.NETWORK_TYPE_EVDO_A:
             case TelephonyManager.NETWORK_TYPE_EVDO_B:
                 getActionBar().setLogo(R.drawable.ic_stat_non4g);
-                if(validSignalStrength(signal.evdoSigStrength)) {
+                if(validRSSISignalStrength(signal.evdoSigStrength)) {
                     voiceDataSame = false;
                     dataSigStrength = signal.evdoSigStrength;
                 }
@@ -365,7 +378,7 @@ public final class SignalDetector extends Activity
             netText += String.format(" %03d%03d", signal.mcc, signal.mnc);
         }
 
-        if(validSignalStrength(dataSigStrength)) {
+        if(validLTESignalStrength(dataSigStrength)) {
             netText += String.format(" %d\u202FdBm", dataSigStrength);
         }
 
@@ -374,7 +387,7 @@ public final class SignalDetector extends Activity
 
 		network.setText(netText);
 
-        if(!voiceDataSame && validSignalStrength(voiceSigStrength)) {
+        if(!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
             cdmaStrength.setText(String.valueOf(voiceSigStrength) + "\u202FdBm");
             voiceSignalBlock.setVisibility(View.VISIBLE);
         } else {
@@ -419,7 +432,7 @@ public final class SignalDetector extends Activity
     }
 
     private boolean validMnc(int mcc) {
-        return (mcc >= 0 && mcc <= 999);
+        return (mcc > 0 && mcc <= 999);
     }
 
     private String networkString(int networkType) {
