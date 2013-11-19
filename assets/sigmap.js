@@ -17,14 +17,22 @@ var mapquest = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y
 var mqaerial = L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg',
                            {maxZoom: 18, subdomains: "1234", detectRetina: true, attribution: 'Portions Courtesy <a href="http://www.nasa.gov/">NASA</a>/<a href="http://www.jpl.nasa.gov/">JPL-Caltech</a> and <a href="http://www.fsa.usda.gov/">USDA Farm Service Agency</a>. Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'});
 
+var usgsAerial = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_large_scale/{z}/{x}/{y}.jpg',
+                             {maxZoom: 18, subdomains: "abc", detectRetina: true, attribution: 'Courtesy USGS/NAIP.'});
+
+var usgsTopos = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_scanned_topos/{z}/{x}/{y}.png',
+                            {minZoom: 12, maxZoom: 18, subdomains: "abc", detectRetina: true, attribution: 'Courtesy USGS.'});
+
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
                            {maxZoom: 17, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
 
 var baseLayers = {'US Shields' : shields,
                   'Mapquest Open' : mapquest,
-                  'Mapquest Aerial' : mqaerial};
+                  'Mapquest Aerial' : mqaerial,
+                  'USGS Topos' : usgsTopos,
+                  'USGS/NAIP Aerial' : usgsAerial};
 var overlays = {'Sprint LTE' : sensorlySprint,
-    'T-Mobile US LTE' : sensorlyTMobileUS};
+                'T-Mobile US LTE' : sensorlyTMobileUS};
 
 function startmap(lat, lon, newzoom, operator) {
     zoom = newzoom;
@@ -61,55 +69,77 @@ function zoom4speed(speed) {
     }
 }
 
-arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
+var arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
                     iconSize: [20, 20], iconAnchor: [10, 10]});
+
+
+// based on http://stackoverflow.com/questions/2187657/calculate-second-point-knowing-the-starting-point-and-distance
+function zoomLoc(lat, lon, speed, bearing) {
+    var theta  = Math.PI*bearing/180;
+
+    var R = speed*300; // location in 5 minutes, in meters
+
+    var dx = R*Math.sin(theta);
+    var dy = R*Math.cos(theta);
+
+    var dlon = dx/(111320*Math.cos(Math.PI*lat/180));
+    var dlat = dy/110540;
+
+    return L.latLng([lat+dlat, lon+dlon]);
+}
 
 function recenter(lat, lon, radius, speed, bearing, stale, operator) {
     newZoom = zoom4speed(speed);
 
+    // Random stuff
+    //if(Math.random()*15 < 1) {
+    //    newZoom += Math.round(Math.random()*2-1);
+    //    lat += Math.random()*0.02-0.01;
+    //    lon += Math.random()*0.02-0.01;
+    //}
+
     if(!map) startmap(lat, lon, newZoom, operator);
 
-    radius = radius*1.96
-    if(marker) {
-        marker.setLatLng([lat, lon]);
-        marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
-    } else {
-        marker = L.circle([lat, lon], radius);
+    pos = L.latLng([lat, lon]);
+
+    radius = radius*1.96;
+    if(!marker) {
+        marker = L.circle(pos, radius);
         marker.addTo(map);
     }
 
     if(stale) {
-        marker.setStyle({color: "#f00", fillColor: "#f00"})
+        marker.setStyle({color: "#f00", fillColor: "#f00"});
     } else {
-        marker.setStyle({color: "#03f", fillColor: "#03f"})
+        marker.setStyle({color: "#03f", fillColor: "#03f"});
     }
 
-    if(pmarker) {
-        bounds = L.latLngBounds([[lat, lon],
-                                 pmarker.getLatLng()]).pad(padding);
-        map.fitBounds(bounds);
-    } else {
-        if(zoom != newZoom && speed != oldspeed) {
-            map.setZoom(newZoom);
-            zoom = newZoom;
-            oldspeed = speed;
-        }
+    marker.setLatLng(pos);
+    marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
+    marker.redraw();
 
-        map.panTo([lat, lon]);
-    }
-
-    // Add arrow after zoom, not before
     if(!stale && bearing > 0) {
         if(arrow) {
-            arrow.setLatLng([lat, lon]);
+            arrow.setLatLng(pos);
             arrow.setIconAngle(bearing);
+            arrow.update();
         } else {
-            arrow = L.marker([lat, lon], {iconAngle: bearing,
-                                          icon: arrowhead});
+            arrow = L.marker(pos, {iconAngle: bearing, icon: arrowhead});
             arrow.addTo(map);
         }
     } else if(arrow) {
-        arrow.setLatLng([lat, lon]);
+        arrow.setLatLng(pos);
+        arrow.update();
+    }
+
+    if(pmarker) {
+        bounds = L.latLngBounds([pos, zoomLoc(lat, lon, speed, bearing),
+                                 pmarker.getLatLng()]).pad(padding);
+        map.fitBounds(bounds);
+    } else {
+        // bounds = L.latLngBounds([pos, zoomLoc(lat, lon, speed, bearing)]).pad(padding);
+        //map.fitBounds(bounds);
+        map.panTo([lat, lon]);
     }
 }
 
