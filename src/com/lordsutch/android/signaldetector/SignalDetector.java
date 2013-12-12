@@ -31,6 +31,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
@@ -50,8 +51,7 @@ import static com.lordsutch.android.signaldetector.SignalDetectorService.*;
 public final class SignalDetector extends Activity
 {
 	public static final String TAG = SignalDetector.class.getSimpleName();
-	public static final String EMAIL = "lordsutch@gmail.com";
-	    
+
     public static WebView leafletView = null;
     private TelephonyManager mTelephonyManager = null;
 
@@ -61,7 +61,7 @@ public final class SignalDetector extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        getWindow().requestFeature(Window.FEATURE_PROGRESS);
+        // getWindow().requestFeature(Window.FEATURE_PROGRESS);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.main);
@@ -71,17 +71,24 @@ public final class SignalDetector extends Activity
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
     	leafletView = (WebView) findViewById(R.id.leafletView);
-    	leafletView.loadUrl("file:///android_asset/leaflet.html");
-    	
+
     	WebSettings webSettings = leafletView.getSettings();
-    	// webSettings.setAllowFileAccessFromFileURLs(true);
+    	webSettings.setAllowFileAccessFromFileURLs(true);
     	webSettings.setJavaScriptEnabled(true);
+        webSettings.setLoadsImagesAutomatically(true);
 
         final Activity activity = this;
 
-    	leafletView.setWebChromeClient(new WebChromeClient() {
+        leafletView.setWebChromeClient(new WebChromeClient() {
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
+            }
+
+            public boolean onConsoleMessage(ConsoleMessage cm) {
+                Log.d(TAG, cm.message() + " -- From line "
+                        + cm.lineNumber() + " of "
+                        + cm.sourceId());
+                return true;
             }
 
             // Enable client caching
@@ -91,17 +98,23 @@ public final class SignalDetector extends Activity
                 quotaUpdater.updateQuota(spaceNeeded * 2);
             }
         });
-    	webSettings.setDomStorageEnabled(true);
+
+        webSettings.setDomStorageEnabled(true);
     	 
-    	// This next one is crazy. It's the DEFAULT location for your app's cache
-    	// But it didn't work for me without this line.
-    	// UPDATE: no hardcoded path. Thanks to Kevin Hawkins
+    	/*
+    	This next one is crazy. It's the DEFAULT location for your app's cache
+    	But it didn't work for me without this line.
+    	UPDATE: no hardcoded path. Thanks to Kevin Hawkins */
     	String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
     	webSettings.setAppCachePath(appCachePath);
-    	webSettings.setAllowFileAccess(true);
     	webSettings.setAppCacheEnabled(true);
     	webSettings.setBuiltInZoomControls(false);
-    	reloadPreferences();
+        webSettings.setAllowFileAccess(true);
+
+        leafletView.loadUrl("file:///android_asset/leaflet.html");
+        // leafletView.loadUrl("http://www.openstreetmap.org/");
+
+        reloadPreferences();
     }
     
 	private SignalDetectorService mService;
@@ -164,6 +177,7 @@ public final class SignalDetector extends Activity
     	super.onResume();
 
     	Log.d(TAG, "Resuming");
+        // leafletView.reload();
         if(mSignalInfo != null)
         	updateGui(mSignalInfo);
     }
@@ -480,14 +494,15 @@ public final class SignalDetector extends Activity
     @TargetApi(Build.VERSION_CODES.KITKAT)
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
+        Log.d(TAG, script);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
         else
-            leafletView.loadUrl("javascript:"+script);
+            leafletView.loadUrl("javascript:" + script);
     }
 
 	private void centerMap(double latitude, double longitude, double accuracy, double speed,
-                                  double bearing, long fixAge) {
+                           double bearing, long fixAge) {
         boolean staleFix = fixAge > (30*1000); // 30 seconds
 
         String operator = mTelephonyManager.getSimOperator();
