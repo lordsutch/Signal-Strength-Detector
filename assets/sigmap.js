@@ -4,6 +4,7 @@ var zoom = 12;
 var oldspeed = 0;
 var pmarker = null;
 var arrow = null;
+var lastZoom = 0;
 
 var sensorlySprint = L.tileLayer('http://tiles3.api.sensorly.com/tile/web/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
@@ -77,7 +78,7 @@ var arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
 function zoomLoc(lat, lon, speed, bearing) {
     var theta  = Math.PI*bearing/180;
 
-    var R = speed*300; // location in 5 minutes, in meters
+    var R = speed*150; // location in 2.5 minutes, in meters
 
     var dx = R*Math.sin(theta);
     var dy = R*Math.cos(theta);
@@ -98,7 +99,10 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator) {
     //    lon += Math.random()*0.02-0.01;
     //}
 
-    if(!map) startmap(lat, lon, newZoom, operator);
+    if(!map) {
+        startmap(lat, lon, newZoom, operator);
+        lastZoom = Date.now();
+    }
 
     pos = L.latLng([lat, lon]);
 
@@ -133,13 +137,19 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator) {
     }
 
     if(pmarker) {
-        bounds = L.latLngBounds([pos, zoomLoc(lat, lon, speed, bearing),
+        bounds = L.latLngBounds([pos, // zoomLoc(lat, lon, speed, bearing),
                                  pmarker.getLatLng()]).pad(padding);
         map.fitBounds(bounds);
+        lastZoom = 0;
     } else {
         // bounds = L.latLngBounds([pos, zoomLoc(lat, lon, speed, bearing)]).pad(padding);
-        //map.fitBounds(bounds);
-        map.panTo([lat, lon]);
+        // map.fitBounds(bounds);
+        if((Date.now() - lastZoom) >= 5000) { // 5 sec
+            map.setView(pos, newZoom);
+            lastZoom = Date.now();
+        } else {
+            map.panTo(pos);
+        }
     }
 }
 
@@ -164,4 +174,5 @@ function clearMarker() {
 
     map.removeLayer(pmarker);
     pmarker = null;
+    lastZoom = Date.now();
 }
