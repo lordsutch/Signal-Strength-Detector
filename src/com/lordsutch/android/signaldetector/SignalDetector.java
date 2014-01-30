@@ -213,6 +213,11 @@ public final class SignalDetector extends Activity
         return (strength > -120 && strength < 0);
     }
 
+    private Boolean validCellID(int eci)
+    {
+        return (eci >= 0 && eci <= 0x0FFFFFFF);
+    }
+
     private double bslat = 999;
 	private double bslon = 999;
     
@@ -314,13 +319,13 @@ public final class SignalDetector extends Activity
         if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             ArrayList<String> cellIds = new ArrayList<String>();
 
-            if(signal.tac < Integer.MAX_VALUE)
+            if(validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
 
-            if(signal.eci < Integer.MAX_VALUE)
+            if(validCellID(signal.eci))
                 cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
 
-            if(signal.pci < Integer.MAX_VALUE)
+            if(validPhysicalCellID(signal.pci))
                 cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
 
             if(!cellIds.isEmpty()) {
@@ -443,6 +448,10 @@ public final class SignalDetector extends Activity
 			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing,
                     signal.fixAge);
     	addBsMarker();
+    }
+
+    private boolean validTAC(int tac) {
+        return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
 
     private boolean validMnc(int mcc) {

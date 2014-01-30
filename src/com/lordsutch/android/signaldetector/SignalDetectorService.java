@@ -207,6 +207,15 @@ public class SignalDetectorService extends Service {
     	return (pci >= 0 && pci <= 503);
     }
 
+    private Boolean validCellID(int eci)
+    {
+        return (eci >= 0 && eci <= 0x0FFFFFFF);
+    }
+
+    private boolean validTAC(int tac) {
+        return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
+    }
+
     class otherLteCell {
         int eci = Integer.MAX_VALUE;
         int pci = Integer.MAX_VALUE;
@@ -508,13 +517,13 @@ public class SignalDetectorService extends Service {
               ((signal.eci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
             ArrayList<String> cellIds = new ArrayList<String>();
 
-            if(signal.tac < Integer.MAX_VALUE)
+            if(validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
 
-            if(signal.eci < Integer.MAX_VALUE)
+            if(validCellID(signal.eci))
                 cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
 
-            if(signal.pci < Integer.MAX_VALUE)
+            if(validPhysicalCellID(signal.pci))
                 cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
 
             if(cellIds.isEmpty())
@@ -537,11 +546,11 @@ public class SignalDetectorService extends Service {
     		if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
     				(validLTESignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
     			String newLteLine = slat+","+slon+","+
-						(signal.eci != Integer.MAX_VALUE ? String.format("%08X", signal.eci) : "")+","+
+						(validCellID(signal.eci) ? String.format("%08X", signal.eci) : "")+","+
 						(validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "")+","+
 						(validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "")+","+
 						String.format("%.0f", signal.altitude)+","+
-						(signal.tac != Integer.MAX_VALUE ? String.format("%04X", signal.tac) : "")+","+
+						(validTAC(signal.tac) ? String.format("%04X", signal.tac) : "")+","+
 						String.format("%.0f", signal.accuracy);
     			if(lteLine == null || !newLteLine.equals(lteLine)) {
     				Log.d(TAG, "Logging LTE cell.");
@@ -568,8 +577,8 @@ public class SignalDetectorService extends Service {
                                 String.format("%.0f", signal.altitude)+","+
                                 (mcc != Integer.MAX_VALUE ? String.valueOf(mcc) : "")+","+
                                 (mnc != Integer.MAX_VALUE ? String.valueOf(mnc) : "")+","+
-                                (tac != Integer.MAX_VALUE ? String.format("%04X", tac) : "")+","+
-                                (eci != Integer.MAX_VALUE ? String.format("%08X", eci) : "")+","+
+                                (validTAC(tac) ? String.format("%04X", tac) : "")+","+
+                                (validCellID(eci)  ? String.format("%08X", eci) : "")+","+
                                 (validPhysicalCellID(pci) ? String.valueOf(pci) : "")+","+
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "")+","+
                                 (item.isRegistered() ? "1" : "0");
