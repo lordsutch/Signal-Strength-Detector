@@ -19,9 +19,9 @@ var usgsTopos = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_scanned_topos
                             {minZoom: 12, maxZoom: 18, subdomains: "abc", detectRetina: true, attribution: 'Courtesy USGS.'});
 
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
-                           {maxZoom: 17, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
+                           {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
 
-var sensorlySprint = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310sprint/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
+var sensorlySprint = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
 var sensorlyTMobileUS = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310260/{z}/{x}/{x}/{y}/{y}.png?s=256',
