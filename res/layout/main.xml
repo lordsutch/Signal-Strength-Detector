@@ -14,12 +14,12 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="false"
-        android:layout_alignParentTop="false"
-        android:paddingBottom="5dp"
-        android:stretchColumns="1"
-        android:layout_gravity="top"
         android:layout_alignParentStart="false"
-        android:shrinkColumns="1">
+        android:layout_alignParentTop="false"
+        android:layout_gravity="top"
+        android:paddingBottom="5dp"
+        android:shrinkColumns="1"
+        android:stretchColumns="1">
 
         <TableRow>
 
@@ -35,9 +35,9 @@
                 android:id="@+id/positionLatLon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_column="1"
                 android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:layout_column="1" />
+                android:textIsSelectable="true" />
         </TableRow>
 
         <TableRow>
@@ -54,9 +54,9 @@
                 android:id="@+id/speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_column="1"
                 android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:layout_column="1" />
+                android:textIsSelectable="true" />
 
         </TableRow>
 
@@ -75,12 +75,12 @@
                 android:id="@+id/networkString"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_column="1"
                 android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:layout_column="1" />
+                android:textIsSelectable="true" />
         </TableRow>
 
-        <TableRow>
+        <TableRow android:id="@+id/lteBlock">
 
             <TextView
                 android:id="@+id/textView2"
@@ -94,13 +94,13 @@
                 android:id="@+id/cellid"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
                 android:layout_column="1"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true" />
         </TableRow>
 
-        <TableRow>
+        <TableRow android:id="@+id/lteOtherBlock">
 
             <TextView
                 android:id="@+id/textView"
@@ -114,13 +114,13 @@
                 android:id="@+id/otherLteSites"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
                 android:layout_column="1"
-                android:text="@string/none" />
+                android:text="@string/none"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true" />
         </TableRow>
 
-        <TableRow>
+        <TableRow android:id="@+id/preLteBlock">
 
             <TextView
                 android:id="@+id/bsLabel"
@@ -134,10 +134,10 @@
                 android:id="@+id/cdma_sysinfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
                 android:layout_column="1"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:textColor="@android:color/primary_text_dark"
+                android:textIsSelectable="true" />
         </TableRow>
 
         <TableRow android:id="@+id/voiceSignalBlock">
@@ -154,12 +154,12 @@
                 android:id="@+id/cdmaSigStrength"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_weight="1"
                 android:singleLine="false"
                 android:text="@string/no_signal"
-                android:layout_column="1"
                 android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:layout_weight="1" />
+                android:textIsSelectable="true" />
         </TableRow>
     </TableLayout>
 
@@ -169,7 +169,7 @@
         android:layout_height="fill_parent"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
-        android:layout_gravity="bottom"
-        android:layout_below="@+id/TableLayout1" />
+        android:layout_below="@+id/TableLayout1"
+        android:layout_gravity="bottom" />
 
 </RelativeLayout>

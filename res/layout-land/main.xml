@@ -7,19 +7,19 @@
     android:background="@android:color/black"
     android:gravity="fill"
     android:orientation="horizontal"
-    android:padding="3dp" >
+    android:padding="3dp">
 
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:id="@+id/scrollView"
         android:layout_weight="2">
 
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingRight="3dp" >
+            android:paddingRight="3dp">
 
             <TextView
                 android:id="@+id/textView1"
@@ -64,57 +64,78 @@
                 android:textColor="@android:color/primary_text_dark"
                 android:textIsSelectable="true" />
 
-            <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/serving_lte_cell_id"
-                android:textColor="@android:color/holo_blue_dark" />
-
-            <TextView
-                android:id="@+id/cellid"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/none"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true" />
-
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:text="@string/other_lte_sites"
-                android:textColor="@android:color/holo_blue_dark" />
-
-            <TextView
-                android:id="@+id/otherLteSites"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true"
-                android:text="@string/none" />
-
-            <TextView
-                android:id="@+id/bsLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/cdma_1xrtt_base_station"
-                android:textColor="@android:color/holo_blue_dark" />
-
-            <TextView
-                android:id="@+id/cdma_sysinfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/none"
-                android:textColor="@android:color/primary_text_dark"
-                android:textIsSelectable="true" />
-
             <LinearLayout
-                android:orientation="vertical"
+                android:id="@id/lteBlock"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                android:id="@id/voiceSignalBlock">
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/serving_lte_cell_id"
+                    android:textColor="@android:color/holo_blue_dark" />
+
+                <TextView
+                    android:id="@+id/cellid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/none"
+                    android:textColor="@android:color/primary_text_dark"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@id/lteOtherBlock"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5sp"
+                    android:text="@string/other_lte_sites"
+                    android:textColor="@android:color/holo_blue_dark" />
+
+                <TextView
+                    android:id="@+id/otherLteSites"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/none"
+                    android:textColor="@android:color/primary_text_dark"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@id/preLteBlock"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/bsLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/cdma_1xrtt_base_station"
+                    android:textColor="@android:color/holo_blue_dark" />
+
+                <TextView
+                    android:id="@+id/cdma_sysinfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/none"
+                    android:textColor="@android:color/primary_text_dark"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@id/voiceSignalBlock"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/sigStrengthLabel"

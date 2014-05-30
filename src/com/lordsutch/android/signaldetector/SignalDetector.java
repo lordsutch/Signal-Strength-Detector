@@ -29,7 +29,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
@@ -45,21 +44,22 @@ import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 
-import static com.lordsutch.android.signaldetector.SignalDetectorService.*;
+import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
-public final class SignalDetector extends Activity
-{
-	public static final String TAG = SignalDetector.class.getSimpleName();
+public final class SignalDetector extends Activity {
+    public static final String TAG = SignalDetector.class.getSimpleName();
 
     public static WebView leafletView = null;
     private TelephonyManager mTelephonyManager = null;
 
-    /** Called when the activity is first created. */
-	@SuppressLint("SetJavaScriptEnabled")
-	@Override
-    public void onCreate(Bundle savedInstanceState)
-    {
+    /**
+     * Called when the activity is first created.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // getWindow().requestFeature(Window.FEATURE_PROGRESS);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -70,11 +70,11 @@ public final class SignalDetector extends Activity
 
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
-    	leafletView = (WebView) findViewById(R.id.leafletView);
+        leafletView = (WebView) findViewById(R.id.leafletView);
 
-    	WebSettings webSettings = leafletView.getSettings();
-    	webSettings.setAllowFileAccessFromFileURLs(true);
-    	webSettings.setJavaScriptEnabled(true);
+        WebSettings webSettings = leafletView.getSettings();
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setJavaScriptEnabled(true);
         webSettings.setLoadsImagesAutomatically(true);
 
         final Activity activity = this;
@@ -100,15 +100,15 @@ public final class SignalDetector extends Activity
         });
 
         webSettings.setDomStorageEnabled(true);
-    	 
+
     	/*
-    	This next one is crazy. It's the DEFAULT location for your app's cache
+        This next one is crazy. It's the DEFAULT location for your app's cache
     	But it didn't work for me without this line.
     	UPDATE: no hardcoded path. Thanks to Kevin Hawkins */
-    	String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
-    	webSettings.setAppCachePath(appCachePath);
-    	webSettings.setAppCacheEnabled(true);
-    	webSettings.setBuiltInZoomControls(false);
+        String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
+        webSettings.setAppCachePath(appCachePath);
+        webSettings.setAppCacheEnabled(true);
+        webSettings.setBuiltInZoomControls(false);
         webSettings.setAllowFileAccess(true);
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
@@ -116,31 +116,34 @@ public final class SignalDetector extends Activity
 
         reloadPreferences();
     }
-    
-	private SignalDetectorService mService;
-	private boolean mBound = false;
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.mainmenu, menu);
+    private SignalDetectorService mService;
+    private boolean mBound = false;
 
-		return true;
-	}
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.mainmenu, menu);
+
+        return true;
+    }
 
     // Define a DialogFragment that displays the error dialog
     public static class ErrorDialogFragment extends DialogFragment {
         // Global field to contain the error dialog
         private Dialog mDialog;
+
         // Default constructor. Sets the dialog field to null
         public ErrorDialogFragment() {
             super();
             mDialog = null;
         }
+
         // Set the dialog to display
         public void setDialog(Dialog dialog) {
             mDialog = dialog;
         }
+
         // Return a Dialog to the DialogFragment.
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -164,7 +167,7 @@ public final class SignalDetector extends Activity
     }
 
     private void unbindSDService() {
-        if(mBound) {
+        if (mBound) {
             unbindService(mConnection);
             mBound = false;
         }
@@ -174,12 +177,12 @@ public final class SignalDetector extends Activity
 
     @Override
     protected void onResume() {
-    	super.onResume();
+        super.onResume();
 
-    	Log.d(TAG, "Resuming");
+        Log.d(TAG, "Resuming");
         // leafletView.reload();
-        if(mSignalInfo != null)
-        	updateGui(mSignalInfo);
+        if (mSignalInfo != null)
+            updateGui(mSignalInfo);
     }
 
     private void enableLocationSettings() {
@@ -202,42 +205,39 @@ public final class SignalDetector extends Activity
             mBound = false;
         }
     };
-    
-    private Boolean validLTESignalStrength(int strength)
-    {
-    	return (strength > -200 && strength < 0);
+
+    private Boolean validLTESignalStrength(int strength) {
+        return (strength > -200 && strength < 0);
     }
 
-    private Boolean validRSSISignalStrength(int strength)
-    {
+    private Boolean validRSSISignalStrength(int strength) {
         return (strength > -120 && strength < 0);
     }
 
-    private Boolean validCellID(int eci)
-    {
+    private Boolean validCellID(int eci) {
         return (eci >= 0 && eci <= 0x0FFFFFFF);
     }
 
     private double bslat = 999;
-	private double bslon = 999;
-    
+    private double bslon = 999;
+
     /**
      * Activity Handler of incoming messages from service.
      */
-	static class IncomingHandler extends Handler {
-		private final WeakReference<SignalDetector> mActivity; 
+    static class IncomingHandler extends Handler {
+        private final WeakReference<SignalDetector> mActivity;
 
-		IncomingHandler(SignalDetector activity) {
-	        mActivity = new WeakReference<SignalDetector>(activity);
-	    }
-		
-		@Override
+        IncomingHandler(SignalDetector activity) {
+            mActivity = new WeakReference<SignalDetector>(activity);
+        }
+
+        @Override
         public void handleMessage(Message msg) {
-        	SignalDetector activity = mActivity.get();
+            SignalDetector activity = mActivity.get();
             switch (msg.what) {
                 case MSG_SIGNAL_UPDATE:
-                	if(activity != null)
-                		activity.updateSigInfo((signalInfo) msg.obj);
+                    if (activity != null)
+                        activity.updateSigInfo((signalInfo) msg.obj);
                     break;
                 default:
                     super.handleMessage(msg);
@@ -248,125 +248,134 @@ public final class SignalDetector extends Activity
     final Messenger mMessenger = new Messenger(new IncomingHandler(this));
 
     private signalInfo mSignalInfo = null;
-    
+
     public void updateSigInfo(signalInfo signal) {
-    	mSignalInfo = signal;
-    	updateGui(signal);
+        mSignalInfo = signal;
+        updateGui(signal);
     }
-    
+
     double speedfactor = 3.6;
     String speedlabel = "km/h";
-    
+
     double accuracyfactor = 1.0;
     String accuracylabel = "m";
-    
+
     double bearing = 0.0;
-    
+
     private String directionForBearing(double bearing) {
-    	if(bearing > 0) {
-    		int index = (int) Math.ceil((bearing + 11.25)/22.5);
+        if (bearing > 0) {
+            int index = (int) Math.ceil((bearing + 11.25) / 22.5);
 
-    		int dir[] = {0, R.string.bearing_north, R.string.bearing_nne, R.string.bearing_northeast, 
-    				R.string.bearing_ene, R.string.bearing_east, R.string.bearing_ese, R.string.bearing_southeast,
-    				R.string.bearing_sse, R.string.bearing_south, R.string.bearing_ssw, R.string.bearing_southwest,
-    				R.string.bearing_wsw, R.string.bearing_west, R.string.bearing_wnw, R.string.bearing_northwest,
-    				R.string.bearing_nnw, R.string.bearing_north};
+            int dir[] = {0, R.string.bearing_north, R.string.bearing_nne, R.string.bearing_northeast,
+                    R.string.bearing_ene, R.string.bearing_east, R.string.bearing_ese, R.string.bearing_southeast,
+                    R.string.bearing_sse, R.string.bearing_south, R.string.bearing_ssw, R.string.bearing_southwest,
+                    R.string.bearing_wsw, R.string.bearing_west, R.string.bearing_wnw, R.string.bearing_northwest,
+                    R.string.bearing_nnw, R.string.bearing_north};
 
-    		return getResources().getString(dir[index]);
-    	}
-    	else {
-    		return "";
-    	}
+            return getResources().getString(dir[index]);
+        } else {
+            return "";
+        }
     }
-    
-    private Boolean validPhysicalCellID(int pci)
-    {
-    	return (pci >= 0 && pci <= 503);
+
+    private Boolean validPhysicalCellID(int pci) {
+        return (pci >= 0 && pci <= 503);
     }
 
     private boolean tradunits = false;
     private boolean bsmarker = false;
-    
+
     private void updateGui(signalInfo signal) {
-    	bslat = signal.bslat;
-    	bslon = signal.bslon;
-    	
-    	if(signal.bearing > 0.0)
-    		bearing = signal.bearing;
+        bslat = signal.bslat;
+        bslon = signal.bslon;
 
-		TextView latlon = (TextView) findViewById(R.id.positionLatLon);
-		
-		latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
-				Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
-				Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
-				signal.accuracy * accuracyfactor, accuracylabel));
+        if (signal.bearing > 0.0)
+            bearing = signal.bearing;
 
-		TextView speed = (TextView) findViewById(R.id.speed);
-		
-		if(bearing > 0.0)
-			speed.setText(String.format("%3.1f %s %s", signal.speed * speedfactor, speedlabel, directionForBearing(bearing)));
-		else
-			speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
-		
-		TextView servingid = (TextView) findViewById(R.id.cellid);
-		TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
-		TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
-		TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
+        TextView latlon = (TextView) findViewById(R.id.positionLatLon);
+
+        latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
+                Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
+                Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
+                signal.accuracy * accuracyfactor, accuracylabel));
+
+        TextView speed = (TextView) findViewById(R.id.speed);
+
+        if (bearing > 0.0)
+            speed.setText(String.format("%3.1f %s %s", signal.speed * speedfactor, speedlabel,
+                    directionForBearing(bearing)));
+        else
+            speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
+
+        TextView servingid = (TextView) findViewById(R.id.cellid);
+        TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
+        TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
+        TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
         TextView otherSites = (TextView) findViewById(R.id.otherLteSites);
 
         LinearLayout voiceSignalBlock = (LinearLayout) findViewById(R.id.voiceSignalBlock);
+        LinearLayout lteBlock = (LinearLayout) findViewById(R.id.lteBlock);
+        LinearLayout lteOtherBlock = (LinearLayout) findViewById(R.id.lteOtherBlock);
+        LinearLayout preLteBlock = (LinearLayout) findViewById(R.id.preLteBlock);
 
-        if(signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             ArrayList<String> cellIds = new ArrayList<String>();
 
-            if(validTAC(signal.tac))
+            if (validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
 
-            if(validCellID(signal.eci))
+            if (validCellID(signal.eci))
                 cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
 
-            if(validPhysicalCellID(signal.pci))
+            if (validPhysicalCellID(signal.pci))
                 cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
 
-            if(!cellIds.isEmpty()) {
-				servingid.setText(TextUtils.join(", ", cellIds));
-			} else {
-				servingid.setText(R.string.missing);
-			}
-		} else {
-			servingid.setText(R.string.none);
-		}
+            if (!cellIds.isEmpty()) {
+                servingid.setText(TextUtils.join(", ", cellIds));
+            } else {
+                servingid.setText(R.string.missing);
+            }
+            lteBlock.setVisibility(View.VISIBLE);
+            lteOtherBlock.setVisibility(View.VISIBLE);
+        } else {
+            servingid.setText(R.string.none);
+            lteBlock.setVisibility(View.GONE);
+            lteOtherBlock.setVisibility(View.GONE);
+        }
 
-        if(signal.otherCells != null) {
+        if (signal.otherCells != null) {
             ArrayList<String> otherSitesList = new ArrayList<String>();
+
+            Collections.sort(otherSitesList);
+
             for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
                     otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
                             otherCell.pci, otherCell.lteSigStrength));
                 }
             }
-            if(otherSitesList.isEmpty())
+            if (otherSitesList.isEmpty())
                 otherSites.setText(R.string.none);
             else
                 otherSites.setText(TextUtils.join("; ", otherSitesList));
         }
 
-		TextView network = (TextView) findViewById(R.id.networkString);
+        TextView network = (TextView) findViewById(R.id.networkString);
 
         int voiceSigStrength = Integer.MAX_VALUE;
         boolean voiceDataSame = true;
 
-        if(signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+        if (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
             voiceSigStrength = signal.cdmaSigStrength;
-        } else if(signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+        } else if (signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
             voiceSigStrength = signal.gsmSigStrength;
         }
         int dataSigStrength = voiceSigStrength;
         boolean lteMode = false;
 
-        switch(signal.networkType) {
+        switch (signal.networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
-                if(validLTESignalStrength(signal.lteSigStrength)) {
+                if (validLTESignalStrength(signal.lteSigStrength)) {
                     getActionBar().setLogo(R.drawable.ic_launcher);
                     voiceDataSame = false;
                     dataSigStrength = signal.lteSigStrength;
@@ -381,7 +390,7 @@ public final class SignalDetector extends Activity
             case TelephonyManager.NETWORK_TYPE_EVDO_A:
             case TelephonyManager.NETWORK_TYPE_EVDO_B:
                 getActionBar().setLogo(R.drawable.ic_stat_non4g);
-                if(validRSSISignalStrength(signal.evdoSigStrength)) {
+                if (validRSSISignalStrength(signal.evdoSigStrength)) {
                     voiceDataSame = false;
                     dataSigStrength = signal.evdoSigStrength;
                 }
@@ -393,61 +402,64 @@ public final class SignalDetector extends Activity
         }
 
         String netText = networkString(signal.networkType);
-        if(lteMode && validMnc(signal.mcc) && validMnc(signal.mnc)) {
+        if (lteMode && validMnc(signal.mcc) && validMnc(signal.mnc)) {
             netText += String.format(" %03d%03d", signal.mcc, signal.mnc);
         }
 
-        if(validLTESignalStrength(dataSigStrength)) {
+        if (validLTESignalStrength(dataSigStrength)) {
             netText += String.format(" %d\u202FdBm", dataSigStrength);
         }
 
-        if(signal.roaming)
+        if (signal.roaming)
             netText += " " + getString(R.string.roamingInd);
 
-		network.setText(netText);
+        network.setText(netText);
 
-        if(!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
+        if (!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
             cdmaStrength.setText(String.valueOf(voiceSigStrength) + "\u202FdBm");
             voiceSignalBlock.setVisibility(View.VISIBLE);
         } else {
             voiceSignalBlock.setVisibility(View.GONE);
         }
-		
+
         ArrayList<String> bsList = new ArrayList<String>();
 
-        if(signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 &&
+        if (signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 &&
                 (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
-			bsLabel.setText(R.string.cdma_1xrtt_base_station);
+            bsLabel.setText(R.string.cdma_1xrtt_base_station);
 
-            bsList.add("SID\u00A0"+signal.sid);
-            bsList.add("NID\u00A0"+signal.nid);
+            bsList.add("SID\u00A0" + signal.sid);
+            bsList.add("NID\u00A0" + signal.nid);
             bsList.add(String.format("BSID\u00A0%d\u00A0(x%X)", signal.bsid, signal.bsid));
-		} else if(signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-			bsLabel.setText(R.string._2g_3g_tower);
+        } else if (signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+            bsLabel.setText(R.string._2g_3g_tower);
 
-            bsList.add("MNC\u00A0"+signal.operator);
-			if(signal.lac > 0)
-                bsList.add("LAC\u00A0"+String.valueOf(signal.lac));
-			
-			if(signal.rnc > 0 && signal.rnc != signal.lac)
-                bsList.add("RNC\u00A0"+String.valueOf(signal.rnc));
-				
-			if(signal.cid > 0)
-                bsList.add("CID\u00A0"+String.valueOf(signal.cid));
-			
-			if(signal.psc > 0)
-                bsList.add("PSC\u00A0"+String.valueOf(signal.psc));
+            bsList.add("MNC\u00A0" + signal.operator);
+            if (signal.lac > 0)
+                bsList.add("LAC\u00A0" + String.valueOf(signal.lac));
+
+            if (signal.rnc > 0 && signal.rnc != signal.lac)
+                bsList.add("RNC\u00A0" + String.valueOf(signal.rnc));
+
+            if (signal.cid > 0)
+                bsList.add("CID\u00A0" + String.valueOf(signal.cid));
+
+            if (signal.psc > 0)
+                bsList.add("PSC\u00A0" + String.valueOf(signal.psc));
         }
 
-        if(!bsList.isEmpty())
+        if (!bsList.isEmpty()) {
             cdmaBS.setText(TextUtils.join(", ", bsList));
-        else
+            preLteBlock.setVisibility(View.VISIBLE);
+        } else {
             cdmaBS.setText(R.string.none);
+            preLteBlock.setVisibility(View.GONE);
+        }
 
-		if(Math.abs(signal.latitude) <= 200)
-			centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing,
+        if (Math.abs(signal.latitude) <= 200)
+            centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing,
                     signal.fixAge);
-    	addBsMarker();
+        addBsMarker();
     }
 
     private boolean validTAC(int tac) {
@@ -459,100 +471,100 @@ public final class SignalDetector extends Activity
     }
 
     private String networkString(int networkType) {
-    	switch(networkType) {
-    		case TelephonyManager.NETWORK_TYPE_EHRPD:
-    			return "eHRPD";
-    		case TelephonyManager.NETWORK_TYPE_EVDO_0:
-    			return "EVDO Rel. 0";
-       		case TelephonyManager.NETWORK_TYPE_EVDO_A:
-    			return "EVDO Rev. A";
-       		case TelephonyManager.NETWORK_TYPE_EVDO_B:
-    			return "EVDO Rev. B";
-       		case TelephonyManager.NETWORK_TYPE_GPRS:
-       			return "GPRS";
-       		case TelephonyManager.NETWORK_TYPE_EDGE:
-       			return "EDGE";
-       		case TelephonyManager.NETWORK_TYPE_UMTS:
-       			return "UMTS";
-       		case TelephonyManager.NETWORK_TYPE_HSDPA:
-       		case TelephonyManager.NETWORK_TYPE_HSUPA:
-       		case TelephonyManager.NETWORK_TYPE_HSPA:
-       			return "HSPA";
-       		case TelephonyManager.NETWORK_TYPE_HSPAP:
-       			return "HSPA+";
-       		case TelephonyManager.NETWORK_TYPE_CDMA:
-       			return "CDMA";
-       		case TelephonyManager.NETWORK_TYPE_1xRTT:
-       			return "1xRTT";
-       		case TelephonyManager.NETWORK_TYPE_IDEN:
-       			return "iDEN";
-       		case TelephonyManager.NETWORK_TYPE_LTE:
-       			return "LTE";
-       		default:
-       			return "Unknown";
-    	}
+        switch (networkType) {
+            case TelephonyManager.NETWORK_TYPE_EHRPD:
+                return "eHRPD";
+            case TelephonyManager.NETWORK_TYPE_EVDO_0:
+                return "EVDO Rel. 0";
+            case TelephonyManager.NETWORK_TYPE_EVDO_A:
+                return "EVDO Rev. A";
+            case TelephonyManager.NETWORK_TYPE_EVDO_B:
+                return "EVDO Rev. B";
+            case TelephonyManager.NETWORK_TYPE_GPRS:
+                return "GPRS";
+            case TelephonyManager.NETWORK_TYPE_EDGE:
+                return "EDGE";
+            case TelephonyManager.NETWORK_TYPE_UMTS:
+                return "UMTS";
+            case TelephonyManager.NETWORK_TYPE_HSDPA:
+            case TelephonyManager.NETWORK_TYPE_HSUPA:
+            case TelephonyManager.NETWORK_TYPE_HSPA:
+                return "HSPA";
+            case TelephonyManager.NETWORK_TYPE_HSPAP:
+                return "HSPA+";
+            case TelephonyManager.NETWORK_TYPE_CDMA:
+                return "CDMA";
+            case TelephonyManager.NETWORK_TYPE_1xRTT:
+                return "1xRTT";
+            case TelephonyManager.NETWORK_TYPE_IDEN:
+                return "iDEN";
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                return "LTE";
+            default:
+                return "Unknown";
+        }
     }
-    
-	private boolean isEVDONetwork(int networkType) {
-		return(networkType == TelephonyManager.NETWORK_TYPE_EHRPD ||
-				networkType == TelephonyManager.NETWORK_TYPE_EVDO_0 ||
-				networkType == TelephonyManager.NETWORK_TYPE_EVDO_A ||
-				networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
-	}
+
+    private boolean isEVDONetwork(int networkType) {
+        return (networkType == TelephonyManager.NETWORK_TYPE_EHRPD ||
+                networkType == TelephonyManager.NETWORK_TYPE_EVDO_0 ||
+                networkType == TelephonyManager.NETWORK_TYPE_EVDO_A ||
+                networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
+    }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
         Log.d(TAG, script);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
         else
             leafletView.loadUrl("javascript:" + script);
     }
 
-	private void centerMap(double latitude, double longitude, double accuracy, double speed,
+    private void centerMap(double latitude, double longitude, double accuracy, double speed,
                            double bearing, long fixAge) {
-        boolean staleFix = fixAge > (30*1000); // 30 seconds
+        boolean staleFix = fixAge > (30 * 1000); // 30 seconds
 
         String operator = mTelephonyManager.getSimOperator();
-        if(operator == null)
+        if (operator == null)
             operator = mTelephonyManager.getNetworkOperator();
-        if(operator == null)
+        if (operator == null)
             operator = "";
 
         execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\");",
-				latitude, longitude, accuracy, speed, bearing, staleFix, operator));
+                latitude, longitude, accuracy, speed, bearing, staleFix, operator));
     }
 
     private void addBsMarker() {
-    	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-    	bsmarker = sharedPref.getBoolean("show_base_station", false);
-    	
-    	if(bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
-    		execJavascript(String.format("placeMarker(%f,%f);", bslat, bslon));
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        bsmarker = sharedPref.getBoolean("show_base_station", false);
+
+        if (bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
+            execJavascript(String.format("placeMarker(%f,%f);", bslat, bslon));
         else
-    		execJavascript("clearMarker();");
+            execJavascript("clearMarker();");
     }
-    
+
     private void updateUnits() {
-    	if(tradunits) {
-    		speedfactor = 2.237;
-    		speedlabel = "mph";
-    		accuracyfactor = 3.28084;
-    		accuracylabel = "ft";
-    	} else {
-    		speedfactor = 3.6;
-    		speedlabel = "km/h";
-    		accuracyfactor = 1.0;
-    		accuracylabel = "m";
-    	}
+        if (tradunits) {
+            speedfactor = 2.237;
+            speedlabel = "mph";
+            accuracyfactor = 3.28084;
+            accuracylabel = "ft";
+        } else {
+            speedfactor = 3.6;
+            speedlabel = "km/h";
+            accuracyfactor = 1.0;
+            accuracylabel = "m";
+        }
     }
-    
+
     public void launchSettings(MenuItem x) {
-    	Intent myIntent = new Intent(this, SettingsActivity.class);
-    	startActivityForResult(myIntent, 0);
+        Intent myIntent = new Intent(this, SettingsActivity.class);
+        startActivityForResult(myIntent, 0);
     }
-    
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -562,28 +574,28 @@ public final class SignalDetector extends Activity
     }
 
     public void clearMapCache() {
-    	leafletView.clearCache(true);
+        leafletView.clearCache(true);
     }
 
     private void reloadPreferences() {
-    	SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-    	bsmarker = sharedPref.getBoolean("show_base_station", false);
-    	tradunits = sharedPref.getBoolean("traditional_units", false);
-    	
-    	updateUnits();
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        bsmarker = sharedPref.getBoolean("show_base_station", false);
+        tradunits = sharedPref.getBoolean("traditional_units", false);
+
+        updateUnits();
     }
-    
+
     public void exitApp(MenuItem x) {
         unbindSDService();
-    	finish();
+        finish();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mBound) {
-        	unbindService(mConnection);
-        	mBound = false;
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
         }
 //        System.gc();
     }
@@ -592,7 +604,7 @@ public final class SignalDetector extends Activity
      * Dialog to prompt users to enable GPS on the device.
      */
     @SuppressLint("ValidFragment")
-	public class EnableGpsDialogFragment extends DialogFragment {
+    public class EnableGpsDialogFragment extends DialogFragment {
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             return new AlertDialog.Builder(getActivity())

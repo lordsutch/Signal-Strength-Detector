@@ -56,7 +56,7 @@
     <string name="clear_map_tile_cache">Clear map tile cache.</string>    
     <string name="clear_map_cache">Clear map cache</string>    
     <string name="map_tile_cache_cleared">Map tile cache cleared.</string>
-    <string name="other_lte_sites">Other LTE Sites</string>
+    <string name="other_lte_sites">Neighbors</string>
     <string name="voice_signal">Voice Signal</string>
     <string name="less_power_summary">Uses less power, at the expense of less-accurate position
         reporting.
