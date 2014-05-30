@@ -14,20 +14,20 @@ public class SettingsFragment extends PreferenceFragment {
 
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.preferences);
-        
+
         Preference myPref = findPreference("clear_cache");
         myPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-            	if(SignalDetector.leafletView != null) {
-            		SignalDetector.leafletView.clearCache(true);
-            		
-            		Context context = getActivity();
-            		CharSequence text = context.getString(R.string.map_tile_cache_cleared);
-            		int duration = Toast.LENGTH_SHORT;
+                if (SignalDetector.leafletView != null) {
+                    SignalDetector.leafletView.clearCache(true);
 
-            		Toast.makeText(context, text, duration).show();
-            	}
+                    Context context = getActivity();
+                    CharSequence text = context.getString(R.string.map_tile_cache_cleared);
+                    int duration = Toast.LENGTH_SHORT;
+
+                    Toast.makeText(context, text, duration).show();
+                }
                 return false;
             }
         });
