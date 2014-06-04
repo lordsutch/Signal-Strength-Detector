@@ -45,6 +45,7 @@ import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
@@ -346,7 +347,16 @@ public final class SignalDetector extends Activity {
         if (signal.otherCells != null) {
             ArrayList<String> otherSitesList = new ArrayList<String>();
 
-            Collections.sort(otherSitesList);
+            Collections.sort(signal.otherCells, new Comparator<SignalDetectorService.otherLteCell>() {
+                @Override
+                public int compare(SignalDetectorService.otherLteCell lhs, SignalDetectorService.otherLteCell rhs) {
+                    int c1 = rhs.lteSigStrength - lhs.lteSigStrength;
+                    if(c1 == 0) { // Fall back to compare PCI
+                        return rhs.pci - lhs.pci;
+                    }
+                    return c1;
+                }
+            });
 
             for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
