@@ -311,8 +311,9 @@ public class SignalDetectorService extends Service {
     }
 
     private double lastValidSpeed = 0.0;
-    private String lteLine;
-    private String ESMRLine;
+    private String lteLine = null;
+    private String CdmaLine = null;
+    private String GSMLine = null;
 
     private int networkIcon(int networkType) {
         int icon = R.drawable.ic_stat_0g;
@@ -531,7 +532,8 @@ public class SignalDetectorService extends Service {
             String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
             if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-                    (validLTESignalStrength(signal.lteSigStrength) || validPhysicalCellID(signal.pci) || signal.eci < Integer.MAX_VALUE)) {
+                    (validLTESignalStrength(signal.lteSigStrength) ||
+                            validPhysicalCellID(signal.pci) || validCellID(signal.eci))) {
                 String newLteLine = slat + "," + slon + "," +
                         (validCellID(signal.eci) ? String.format("%08X", signal.eci) : "") + "," +
                         (validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "") + "," +
@@ -576,18 +578,27 @@ public class SignalDetectorService extends Service {
                 }
             }
 
-            if (signal.sid >= 22404 && signal.sid <= 22451) {
+            if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid)) {
                 String bslatstr = (signal.bslat <= 200 ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
                 String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
-                String newESMRLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%s,%s,%.0f,%.0f", slat, slon, signal.sid, signal.nid, signal.bsid,
-                        (validRSSISignalStrength(signal.cdmaSigStrength) ? String.valueOf(signal.cdmaSigStrength) : ""),
+                String newCdmaLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%d,%s,%s,%.0f,%.0f",
+                        slat, slon, signal.sid, signal.nid, signal.bsid, signal.cdmaSigStrength,
                         bslatstr, bslonstr, signal.altitude, signal.accuracy);
-                if (ESMRLine == null || !newESMRLine.equals(ESMRLine)) {
-                    Log.d(TAG, "Logging ESMR cell.");
-                    appendLog("esmrcells.csv", newESMRLine,
-                            "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy");
-                    ESMRLine = newESMRLine;
+                if (CdmaLine == null || !newCdmaLine.equals(CdmaLine)) {
+                    Log.d(TAG, "Logging CDMA cell.");
+                    appendLog(((signal.sid >= 22404) && (signal.sid <= 22451)) ? "esmrcells.csv" : "cdmacells.csv",
+                            newCdmaLine, "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy");
+                    CdmaLine = newCdmaLine;
+                }
+            } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid)) {
+                String newGSMLine = String.format(Locale.US, "%s,%s,%.0f,%.0f,%d,%d,%d,%d,%s", slat, slon,
+                        signal.altitude, signal.accuracy,
+                        signal.cid, signal.rnc, signal.lac, signal.psc, signal.gsmSigStrength);
+                if (GSMLine == null || !newGSMLine.equals(GSMLine)) {
+                    Log.d(TAG, "Logging GSM cell.");
+                    appendLog("gsmcells.csv", newGSMLine, "latitude,longitude,altitude,accuracy,cid,rnc,lac,psc,rssi");
+                    GSMLine = newGSMLine;
                 }
             }
         }
@@ -603,6 +614,14 @@ public class SignalDetectorService extends Service {
                 e.printStackTrace();
             }
         }
+    }
+
+    private boolean validSID(int sid) { // CDMA System Identifier
+        return sid >= 0 && sid <= 0x7fff;
+    }
+
+    private boolean validCID(int cid) { // GSM cell ID
+        return cid >= 0 && cid <= 0xffff;
     }
 
     private final LocationListener mLocListener = new LocationListener() {
