@@ -179,7 +179,7 @@ public final class SignalDetector extends Activity {
     protected void onResume() {
         super.onResume();
 
-        Log.d(TAG, "Resuming");
+//        Log.d(TAG, "Resuming");
         // leafletView.reload();
         if (mSignalInfo != null)
             updateGui(mSignalInfo);
@@ -515,7 +515,7 @@ public final class SignalDetector extends Activity {
     @TargetApi(Build.VERSION_CODES.KITKAT)
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
-        Log.d(TAG, script);
+//        Log.d(TAG, script);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
         else
