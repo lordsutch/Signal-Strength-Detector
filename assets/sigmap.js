@@ -57,7 +57,7 @@ function startmap(lat, lon, newzoom, operator) {
     shields.addTo(map);
     if(operator == '310260')
         sensorlyTMobileUS.addTo(map);
-    else if(operator == '310410')
+    else if(operator == '310410' || operator == '310150')
         sensorlyATT.addTo(map);
     else if(operator == '310010')
         sensorlyVerizon.addTo(map);
