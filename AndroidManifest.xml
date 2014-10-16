@@ -3,12 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.lordsutch.android.signaldetector"
     android:installLocation="auto"
-    android:versionCode="8"
-    android:versionName="1.8" >
-
-    <uses-sdk
-        android:minSdkVersion="16"
-        android:targetSdkVersion="19" />
+    android:versionName="1.9" >
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -20,6 +15,9 @@
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
+
+    <uses-feature android:name="android.software.webview"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -50,8 +48,8 @@
         </service>
 
         <uses-library
-            name="com.sec.android.app.multiwindow"
-            required="false"
+            android:name="com.sec.android.app.multiwindow"
+            android:required="false"
             tools:ignore="MissingPrefix" />
 
         <meta-data
