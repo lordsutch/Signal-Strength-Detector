@@ -46,7 +46,9 @@ var overlays = {'Sprint LTE' : sensorlySprint,
                 };
 
 function startmap(lat, lon, newzoom, operator) {
-    zoom = newzoom;
+    if(newzoom)
+        zoom = newzoom;
+
     map = L.map('map', {center: [lat, lon],
                         // fadeAnimation: false,
                         // zoomAnimation: false,
@@ -71,24 +73,23 @@ function startmap(lat, lon, newzoom, operator) {
 var padding = 0.1;
 
 function zoom4speed(speed) {
-    kmh = speed*3.6;
+    speed = speed*3.6; // Convert to km/h from m/s
 
-    if (kmh <= 20) {
-        return 17;
-    } else if (kmh <= 35) {
-        return 16;
-    } else if (kmh <= 65) {
-        return 15;
-    } else if (kmh <= 95) {
-        return 14;
-    } else {
-        return 13;
-    }
+    if(speed >= 83)
+        return 13
+    else if (speed >= 63)
+        return 14
+    else if (speed >= 43)
+        return 15
+    else if (speed >= 23)
+        return 16
+    else if (speed >= 5)
+        return 17
+
+    return undefined; // Don't zoom
 }
 
-var arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg",
-                    iconSize: [20, 20], iconAnchor: [10, 10]});
-
+var arrowhead = L.icon({iconUrl: "images/Arrow_Blue_Up_001.svg", iconSize: [20, 20], iconAnchor: [10, 10]});
 
 // based on http://stackoverflow.com/questions/2187657/calculate-second-point-knowing-the-starting-point-and-distance
 function zoomLoc(lat, lon, speed, bearing) {
