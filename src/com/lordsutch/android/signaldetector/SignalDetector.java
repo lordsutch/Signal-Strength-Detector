@@ -164,7 +164,7 @@ public final class SignalDetector extends Activity {
         Intent intent = new Intent(this, SignalDetectorService.class);
 
         startService(intent);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
     private void unbindSDService() {
@@ -352,7 +352,7 @@ public final class SignalDetector extends Activity {
                 public int compare(SignalDetectorService.otherLteCell lhs, SignalDetectorService.otherLteCell rhs) {
                     int c1 = rhs.lteSigStrength - lhs.lteSigStrength;
                     if(c1 == 0) { // Fall back to compare PCI
-                        return rhs.pci - lhs.pci;
+                        return lhs.pci - rhs.pci;
                     }
                     return c1;
                 }

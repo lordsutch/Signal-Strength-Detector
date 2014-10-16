@@ -98,6 +98,7 @@ public class SignalDetectorService extends Service {
         startForeground(mNotificationId, mBuilder.build());
 
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        //noinspection ResourceType
         mHTCManager = getSystemService("htctelephony");
 
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -316,7 +317,7 @@ public class SignalDetectorService extends Service {
     private String GSMLine = null;
 
     private int networkIcon(int networkType) {
-        int icon = R.drawable.ic_stat_0g;
+        int icon;
 
         switch (networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
