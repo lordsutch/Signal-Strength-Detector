@@ -1,16 +1,24 @@
 package com.lordsutch.android.signaldetector;
 
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.preference.PreferenceActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
 
-public class SettingsActivity extends ActionBarActivity {
+public class SettingsActivity extends PreferenceActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Display the fragment as the main content.
-        getFragmentManager().beginTransaction()
-                .replace(android.R.id.content, new SettingsFragment())
-                .commit();
+        setContentView(R.layout.settings_activity);
+
+        Toolbar actionbar = (Toolbar) findViewById(R.id.toolbar);
+        actionbar.setTitle("Settings");
+        actionbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SettingsActivity.this.finish();
+            }
+        });
     }
 }

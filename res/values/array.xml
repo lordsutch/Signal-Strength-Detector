@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="mapLayerValues">
+        <item>shields</item>
+        <item>mapquest</item>
+        <item>usgs-aerial</item>
+        <item>topos</item>
+    </string-array>
+
+    <string-array name="mapLayers">
+        <item>OSM Shields</item>
+        <item>MapQuest Open (OSM)</item>
+        <item>Aerial (USGS/NAIP)</item>
+        <item>USGS Topgraphic Maps</item>
+    </string-array>
+</resources>
