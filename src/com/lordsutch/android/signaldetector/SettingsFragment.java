@@ -19,9 +19,8 @@ public class SettingsFragment extends PreferenceFragment {
         myPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                if (SignalDetector.leafletView != null) {
-                    SignalDetector.leafletView.clearCache(true);
-
+                if (SignalDetector.mapView != null) {
+                    SignalDetector.mapView.getTileProvider().clearTileDiskCache();
                     Context context = getActivity();
                     CharSequence text = context.getString(R.string.map_tile_cache_cleared);
                     int duration = Toast.LENGTH_SHORT;
