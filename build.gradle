@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.13.2'
+        classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -13,18 +13,22 @@ repositories {
 }
 
 dependencies {
-    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:0.4.0@aar'){
-        transitive=true
-    }
+//    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:0.5.1@aar'){
+//        transitive=true
+//    }
+//    compile ('com.cocoahero.android:geojson:1.0.0@aar'){
+//        transitive=true
+//    }
+    compile "com.android.support:appcompat-v7:21.0.+"
 }
 
 android {
-    compileSdkVersion 20
-    buildToolsVersion "20"
+    compileSdkVersion 21
+    buildToolsVersion "21"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 20
+        targetSdkVersion 21
         versionCode 9
     }
     sourceSets {
