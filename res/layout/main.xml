@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:layout_gravity="fill"
-    android:background="@android:color/black"
+    android:background="@android:color/white"
     android:gravity="fill"
-    android:orientation="vertical"
-    android:padding="3dp">
+    android:orientation="vertical">
 
     <TableLayout
         android:id="@+id/TableLayout1"
@@ -17,7 +17,7 @@
         android:layout_alignParentStart="false"
         android:layout_alignParentTop="false"
         android:layout_gravity="top"
-        android:paddingBottom="5dp"
+        android:padding="4dp"
         android:shrinkColumns="1"
         android:stretchColumns="1">
 
@@ -27,17 +27,17 @@
                 android:id="@+id/textView1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/location"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/positionLatLon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="1"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
 
@@ -47,17 +47,17 @@
                 android:id="@+id/textview6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/speed"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="1"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
 
         </TableRow>
@@ -69,17 +69,17 @@
                 android:id="@+id/TextView03"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/current_network"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/networkString"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="1"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
 
@@ -89,10 +89,10 @@
                 android:id="@+id/textView2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/serving_lte_cell_id"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/cellid"
@@ -100,7 +100,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_weight="1"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
 
@@ -110,10 +110,10 @@
                 android:id="@+id/textView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/other_lte_sites"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/otherLteSites"
@@ -121,7 +121,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:text="@string/none"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
 
@@ -131,10 +131,10 @@
                 android:id="@+id/bsLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/cdma_1xrtt_base_station"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/cdma_sysinfo"
@@ -142,7 +142,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_weight="1"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
 
@@ -152,10 +152,10 @@
                 android:id="@+id/sigStrengthLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="5sp"
-                android:layout_marginEnd="5sp"
+                android:layout_marginRight="6sp"
+                android:layout_marginEnd="6sp"
                 android:text="@string/voice_signal"
-                android:textColor="@android:color/primary_text_dark" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/cdmaSigStrength"
@@ -165,10 +165,23 @@
                 android:layout_weight="1"
                 android:singleLine="false"
                 android:text="@string/no_signal"
-                android:textColor="@android:color/primary_text_dark"
+                android:textColor="@android:color/black"
                 android:textIsSelectable="true" />
         </TableRow>
     </TableLayout>
+
+    <!--
+    <com.mapbox.mapboxsdk.views.MapView
+        android:id="@+id/mapview"
+        mapbox:mapid="Your MapBox mapid"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/TableLayout1"
+        android:layout_gravity="bottom" />
+        -->
 
     <WebView
         android:id="@+id/leafletView"
