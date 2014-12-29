@@ -58,6 +58,7 @@ public final class SignalDetector extends ActionBarActivity {
 //    public static MapView mapView = null;
     private TelephonyManager mTelephonyManager = null;
     private String baseLayer = "shields";
+    private String coverageLayer = "provider";
 
     /**
      * Called when the activity is first created.
@@ -128,13 +129,7 @@ public final class SignalDetector extends ActionBarActivity {
         webSettings.setAllowFileAccess(true);
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
-
-        leafletView.setWebViewClient(new WebViewClient() {
-            public void onPageFinished(WebView view, String url) {
-                // do your stuff here
-                reloadPreferences();
-            }
-        });
+        reloadPreferences();
     }
 
     private SignalDetectorService mService;
@@ -591,11 +586,13 @@ public final class SignalDetector extends ActionBarActivity {
                            double bearing, long fixAge) {
         boolean staleFix = fixAge > (30 * 1000); // 30 seconds
 
-        String operator = mTelephonyManager.getSimOperator();
-        if (operator == null)
-            operator = mTelephonyManager.getNetworkOperator();
-        if (operator == null)
-            operator = "";
+        if(coverageLayer == "provider") {
+            coverageLayer = mTelephonyManager.getSimOperator();
+            if (coverageLayer == null)
+                coverageLayer = mTelephonyManager.getNetworkOperator();
+            if (coverageLayer == null)
+                coverageLayer = "";
+        }
 
 /*
         mapView.setCenter(new LatLng(latitude, longitude));
@@ -604,9 +601,8 @@ public final class SignalDetector extends ActionBarActivity {
             mapView.setZoom(zoom);
         // TODO Add markers here
 */
-
-        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\");",
-                latitude, longitude, accuracy, speed, bearing, staleFix, operator));
+        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\",\"%s\");",
+                latitude, longitude, accuracy, speed, bearing, staleFix, coverageLayer, baseLayer));
     }
 
 //    private Marker baseMarker = null;
@@ -715,19 +711,13 @@ public final class SignalDetector extends ActionBarActivity {
 
         if(layer.equalsIgnoreCase("provider")) {
             layer = mTelephonyManager.getSimOperator();
+            if (layer == null)
+                layer = mTelephonyManager.getNetworkOperator();
             layerName = mTelephonyManager.getSimOperatorName();
         }
 
-        String providerFragment;
-        if(layer.equals("310010")) {
-            providerFragment = "lte_310verizon";
-        } else if(layer.equals("310120") || layer.equals("")) {
-            providerFragment = "lte_310sprint";
-        } else {
-            providerFragment = "lte_"+layer;
-        }
-
-        execJavascript("setCoverageLayer("+providerFragment+")");
+        coverageLayer = layer;
+        execJavascript("setCoverageLayer(\""+layer+"\")");
 /*
         ITileLayer source = new WebSourceTileLayer("coverage",
                 "http://tiles-day.cdn.sensorly.net/tile/any/"+providerFragment+"/{z}/{x}/{x}/{y}/{y}.png?s=256")
@@ -743,7 +733,8 @@ public final class SignalDetector extends ActionBarActivity {
     }
 
     protected void setMapView(String layer) {
-        execJavascript("setBaseLayer("+layer+")");
+        baseLayer = layer;
+        execJavascript("setBaseLayer(\""+layer+"\")");
 /*
 
         ITileLayer source = null;

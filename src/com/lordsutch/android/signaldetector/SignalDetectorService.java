@@ -212,6 +212,7 @@ public class SignalDetectorService extends Service {
         int tac = Integer.MAX_VALUE;
         int mcc = Integer.MAX_VALUE;
         int mnc = Integer.MAX_VALUE;
+        int lteBand = 0;
 
         int lteSigStrength = Integer.MAX_VALUE;
     }
@@ -316,6 +317,44 @@ public class SignalDetectorService extends Service {
     private String lteLine = null;
     private String CdmaLine = null;
     private String GSMLine = null;
+
+    private int guessLteBand(int mcc, int mnc, int gci) {
+        int sector = gci % 0x100;
+
+        if(mcc == 311 && (mnc == 490 || mnc == 870))
+            return 41; // Legacy Clear sites are on band 41
+        else if(mcc == 310 && mnc == 120) {
+            // Sprint
+            int b41 = gci & 0x00100000; // 3rd digit is odd if B41
+            if(b41 > 0)
+                return 41;
+
+            if(sector >= 0x19 && sector <= 0x1b)
+                return 26;
+            return 25;
+        } else if (mcc == 310 && (mnc == 410 || mnc == 150)) {
+            // AT&T
+            if(sector >= 0x00 && sector <= 0x02)
+                return 5;
+            else if(sector >= 0x08 && sector <= 0x0a)
+                return 2;
+            else if(sector >= 0x16 && sector <= 0x19)
+                return 4;
+            return 17;
+        } else if (mcc == 310 && mnc == 260) {
+            // T-Mobile
+            //if(sector >= 0x00 && sector <= 0x03)
+            return 0;
+        } else if (mcc == 311 && mnc == 480) {
+            // Verizon
+            if(sector == 0x0c || sector == 0x16 || sector == 0x20)
+                return 4;
+            else if(sector == 0x0e || sector == 0x18 || sector == 0x22)
+                return 2;
+            return 13;
+        }
+        return 0;
+    }
 
     private int networkIcon(int networkType) {
         int icon;
@@ -434,6 +473,7 @@ public class SignalDetectorService extends Service {
                             signal.tac = cellid.getTac();
                             signal.mnc = cellid.getMnc();
                             signal.mcc = cellid.getMcc();
+                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.eci);
                             gotID = true;
                         }
                     } else {
@@ -447,6 +487,7 @@ public class SignalDetectorService extends Service {
                             otherCell.tac = cellid.getTac();
                             otherCell.mnc = cellid.getMnc();
                             otherCell.mcc = cellid.getMcc();
+                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.eci);
                         }
                         signal.otherCells.add(otherCell);
                     }
@@ -542,10 +583,12 @@ public class SignalDetectorService extends Service {
                         (validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "") + "," +
                         String.format("%.0f", signal.altitude) + "," +
                         (validTAC(signal.tac) ? String.format("%04X", signal.tac) : "") + "," +
-                        String.format("%.0f", signal.accuracy);
+                        String.format("%.0f", signal.accuracy) + "," +
+                        (validCellID(signal.eci) ? String.format("%06X", signal.eci/256) : "") + "," +
+                        (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
-                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy");
+                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band");
                     lteLine = newLteLine;
                 }
             }
@@ -572,10 +615,12 @@ public class SignalDetectorService extends Service {
                                 (validCellID(eci) ? String.format("%08X", eci) : "") + "," +
                                 (validPhysicalCellID(pci) ? String.valueOf(pci) : "") + "," +
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "") + "," +
-                                (item.isRegistered() ? "1" : "0");
+                                (item.isRegistered() ? "1" : "0") + "," +
+                                (validCellID(signal.eci) ? String.format("%06X", signal.eci/256) : "") + "," +
+                                (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
 
                         appendLog("cellinfolte.csv", cellLine,
-                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered");
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band");
                     }
                 }
             }
