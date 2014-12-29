@@ -16,7 +16,7 @@ var usgsAerial = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_large_scale/
                              {maxZoom: 18, subdomains: "abc", detectRetina: true, attribution: 'Courtesy USGS/NAIP.'});
 
 var usgsTopos = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_scanned_topos/{z}/{x}/{y}.png',
-                            {minZoom: 12, maxZoom: 18, subdomains: "abc", detectRetina: true, attribution: 'Courtesy USGS.'});
+                            {minZoom: 12, maxZoom: 18, subdomains: "abc", attribution: 'Courtesy USGS.'});
 
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
                            {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
@@ -39,13 +39,54 @@ var baseLayers = {'US Shields' : shields,
                   'USGS Topos' : usgsTopos,
                   'USGS/NAIP Aerial' : usgsAerial};
 
+var baseLayerNames = {
+    'shields' : shields,
+    'mapquest' : mapquest,
+    'topos' : usgsTopos,
+    'usgs-aerial' : usgsAerial
+}
+
 var overlays = {'Sprint LTE' : sensorlySprint,
                 'T-Mobile US LTE' : sensorlyTMobileUS,
                 'Verizon LTE' : sensorlyVerizon,
                 'AT&T LTE' : sensorlyATT,
                 };
 
-function startmap(lat, lon, newzoom, operator) {
+var currentBaseLayer = null;
+var currentOverlayLayer = null;
+
+function setBaseLayer(base) {
+    var baseLayer = baseLayerNames[base]
+
+    if(baseLayer != currentBaseLayer) {
+        map.addLayer(baseLayer, true)
+        if(currentBaseLayer)
+            map.removeLayer(currentBaseLayer)
+        currentBaseLayer = baseLayer
+    }
+}
+
+function setOverlayLayer(operator) {
+    var overlayLayer;
+
+    if(operator == '310260')
+        overlayLayer = sensorlyTMobileUS
+    else if(operator == '310410' || operator == '310150')
+        overlayLayer = sensorlyATT
+    else if(operator == '310010' || operator == '311480')
+        overlayLayer = sensorlyVerizon
+    else // Sprint 1900 (Band 25) is 310120; 2500 (Band 41) is 311490; ESMR (Band 26) is 316010?
+        overlayLayer = sensorlySprint
+
+    if(currentOverlayLayer != overlayLayer) {
+        overlayLayer.addTo(map);
+        if(currentOverlayLayer)
+            map.removeLayer(currentOverlayLayer);
+        currentOverlayLayer = overlayLayer;
+    }
+}
+
+function startmap(lat, lon, newzoom, base, operator) {
     if(newzoom)
         zoom = newzoom;
 
@@ -56,18 +97,11 @@ function startmap(lat, lon, newzoom, operator) {
                         zoom: zoom
                        });
 
-    shields.addTo(map);
-    if(operator == '310260')
-        sensorlyTMobileUS.addTo(map);
-    else if(operator == '310410' || operator == '310150')
-        sensorlyATT.addTo(map);
-    else if(operator == '310010')
-        sensorlyVerizon.addTo(map);
-    else // Sprint 1900 (Band 25) is 310120; 2500 (Band 41) is 311490; ESMR (Band 26) is 316010?
-        sensorlySprint.addTo(map);
+    setBaseLayer(base);
+    setOverlayLayer(operator);
 
     L.control.scale().addTo(map);
-    L.control.layers(baseLayers, overlays).addTo(map);
+//    L.control.layers(baseLayers, overlays).addTo(map);
 }
 
 var padding = 0.1;
@@ -106,18 +140,11 @@ function zoomLoc(lat, lon, speed, bearing) {
     return L.latLng([lat+dlat, lon+dlon]);
 }
 
-function recenter(lat, lon, radius, speed, bearing, stale, operator) {
+function recenter(lat, lon, radius, speed, bearing, stale, operator, base) {
     newZoom = zoom4speed(speed);
 
-    // Random stuff
-    //if(Math.random()*15 < 1) {
-    //    newZoom += Math.round(Math.random()*2-1);
-    //    lat += Math.random()*0.02-0.01;
-    //    lon += Math.random()*0.02-0.01;
-    //}
-
     if(!map) {
-        startmap(lat, lon, newZoom, operator);
+        startmap(lat, lon, newZoom, base, operator);
         lastZoom = Date.now();
     }
 
@@ -154,13 +181,10 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator) {
     }
 
     if(pmarker) {
-        bounds = L.latLngBounds([pos, // zoomLoc(lat, lon, speed, bearing),
-                                 pmarker.getLatLng()]).pad(padding);
+        bounds = L.latLngBounds([pos, pmarker.getLatLng()]).pad(padding);
         map.fitBounds(bounds);
         lastZoom = 0;
     } else {
-        // bounds = L.latLngBounds([pos, zoomLoc(lat, lon, speed, bearing)]).pad(padding);
-        // map.fitBounds(bounds);
         if((Date.now() - lastZoom) >= 5000) { // 5 sec
             map.setView(pos, newZoom);
             lastZoom = Date.now();
@@ -181,8 +205,7 @@ function placeMarker(lat, lon) {
         pmarker.update();
     }
 
-    bounds = L.latLngBounds([marker.getLatLng(),
-                             pmarker.getLatLng()]).pad(padding);
+    bounds = L.latLngBounds([marker.getLatLng(), pmarker.getLatLng()]).pad(padding);
     map.fitBounds(bounds);
 }
 
