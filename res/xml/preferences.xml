@@ -1,37 +1,48 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:defaultValue="shields"
+        android:key="tile_source"
+        android:entries="@array/mapLayers"
+        android:entryValues="@array/mapLayerValues"
+        android:summary="@string/tileSourceSummary"
+        android:title="@string/tileSource" />
+
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="traditional_units"
         android:summary="@string/pref_description_traditional_units"
-        android:title="@string/pref_title_traditional_units" android:summaryOn="@string/pref_description_traditional_units"
         android:summaryOff="@string/pref_description_metric_units"
-        />
+        android:summaryOn="@string/pref_description_traditional_units"
+        android:title="@string/pref_title_traditional_units" />
 
-	<CheckBoxPreference
+    <CheckBoxPreference
         android:defaultValue="false"
         android:key="show_base_station"
         android:summary="@string/pref_description_base_station"
-        android:title="@string/pref_title_base_station" android:summaryOn="@string/pref_description_base_station"
-        android:summaryOff="@string/pref_description_base_station_off" 
-        />
+        android:summaryOff="@string/pref_description_base_station_off"
+        android:summaryOn="@string/pref_description_base_station"
+        android:title="@string/pref_title_base_station" />
 
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="low_power"
         android:summary="@string/less_power_summary"
-        android:title="@string/less_power_pref" android:summaryOn="@string/less_power_summary"
         android:summaryOff="@string/less_power_summary_off"
-        />
+        android:summaryOn="@string/less_power_summary"
+        android:title="@string/less_power_pref" />
 
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="logging"
         android:summary="@string/logging_pref_on"
-        android:title="@string/logging_pref" android:summaryOn="@string/logging_pref_on"
         android:summaryOff="@string/logging_pref_off"
-        />
+        android:summaryOn="@string/logging_pref_on"
+        android:title="@string/logging_pref" />
 
-    <Preference android:summary="@string/clear_map_tile_cache" android:title="@string/clear_map_cache" android:key="clear_cache"
-	    android:persistent="false"/>
-	            
+    <Preference
+        android:key="clear_cache"
+        android:persistent="false"
+        android:summary="@string/clear_map_tile_cache"
+        android:title="@string/clear_map_cache" />
+
 </PreferenceScreen>
