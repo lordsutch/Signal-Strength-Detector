@@ -235,6 +235,7 @@ public class SignalDetectorService extends Service {
         int mcc = Integer.MAX_VALUE;
         int mnc = Integer.MAX_VALUE;
         int lteSigStrength = Integer.MAX_VALUE;
+        int lteBand = 0;
 
         // CDMA2000
         int bsid = -1;

@@ -22,6 +22,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.v7.app.ActionBarActivity;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -35,6 +36,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,11 +51,13 @@ import java.util.Comparator;
 
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
-public final class SignalDetector extends Activity {
+public final class SignalDetector extends ActionBarActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
     public static WebView leafletView = null;
+//    public static MapView mapView = null;
     private TelephonyManager mTelephonyManager = null;
+    private String baseLayer = "shields";
 
     /**
      * Called when the activity is first created.
@@ -70,6 +74,17 @@ public final class SignalDetector extends Activity {
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+
+/*
+        mapView = (MapView) findViewById(R.id.mapview);
+        mapView.setZoom(14);
+
+        UserLocationOverlay userLocationOverlay = new UserLocationOverlay(new GpsLocationProvider(this),
+                mapView);
+        userLocationOverlay.enableMyLocation();
+        userLocationOverlay.setDrawAccuracyEnabled(true);
+        mapView.getOverlays().add(userLocationOverlay);
+*/
 
         leafletView = (WebView) findViewById(R.id.leafletView);
 
@@ -113,9 +128,13 @@ public final class SignalDetector extends Activity {
         webSettings.setAllowFileAccess(true);
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
-        // leafletView.loadUrl("http://www.openstreetmap.org/");
 
-        reloadPreferences();
+        leafletView.setWebViewClient(new WebViewClient() {
+            public void onPageFinished(WebView view, String url) {
+                // do your stuff here
+                reloadPreferences();
+            }
+        });
     }
 
     private SignalDetectorService mService;
@@ -263,6 +282,20 @@ public final class SignalDetector extends Activity {
 
     double bearing = 0.0;
 
+    private Boolean is3digitMnc(int mcc) {
+        return ((mcc >= 310 && mcc <= 316) || // USA
+                mcc == 302 // Canada
+        );
+    }
+
+    private String formatMccMnc(int mcc, int mnc) {
+        if(mnc >= 100 || is3digitMnc(mcc)) {
+            return String.format("%03d%03d", mcc, mnc);
+        } else {
+            return String.format("%03d%02d", mcc, mnc);
+        }
+    }
+
     private String directionForBearing(double bearing) {
         if (bearing > 0) {
             int index = (int) Math.ceil((bearing + 11.25) / 22.5);
@@ -386,12 +419,12 @@ public final class SignalDetector extends Activity {
         switch (signal.networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
                 if (validLTESignalStrength(signal.lteSigStrength)) {
-                    getActionBar().setLogo(R.drawable.ic_launcher);
+//                    getSupportActionBar().setLogo(R.drawable.ic_launcher);
                     voiceDataSame = false;
                     dataSigStrength = signal.lteSigStrength;
                     lteMode = true;
-                } else {
-                    getActionBar().setLogo(R.drawable.ic_stat_non4g);
+//                } else {
+//                    getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
                 }
                 break;
 
@@ -399,7 +432,7 @@ public final class SignalDetector extends Activity {
             case TelephonyManager.NETWORK_TYPE_EVDO_0:
             case TelephonyManager.NETWORK_TYPE_EVDO_A:
             case TelephonyManager.NETWORK_TYPE_EVDO_B:
-                getActionBar().setLogo(R.drawable.ic_stat_non4g);
+//                getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
                 if (validRSSISignalStrength(signal.evdoSigStrength)) {
                     voiceDataSame = false;
                     dataSigStrength = signal.evdoSigStrength;
@@ -407,13 +440,17 @@ public final class SignalDetector extends Activity {
                 break;
 
             default:
-                getActionBar().setLogo(R.drawable.ic_stat_non4g);
+//                getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
                 break;
         }
 
         String netText = networkString(signal.networkType);
         if (lteMode && validMnc(signal.mcc) && validMnc(signal.mnc)) {
-            netText += String.format(" %03d%03d", signal.mcc, signal.mnc);
+            netText += " " + formatMccMnc(signal.mcc, signal.mnc);
+        }
+
+        if (lteMode && signal.lteBand > 0) {
+            netText += String.format(" B%d", signal.lteBand);
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
@@ -526,10 +563,28 @@ public final class SignalDetector extends Activity {
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
 //        Log.d(TAG, script);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
         else
             leafletView.loadUrl("javascript:" + script);
+    }
+
+    private int zoomForSpeed(double speed) {
+        speed = speed*3.6; // Convert to km/h from m/s
+
+        if(speed >= 83)
+            return 13;
+        else if (speed >= 63)
+            return 14;
+        else if (speed >= 43)
+            return 15;
+        else if (speed >= 23)
+            return 16;
+        else if (speed >= 5)
+            return 17;
+
+        return 0; // Don't zoom
     }
 
     private void centerMap(double latitude, double longitude, double accuracy, double speed,
@@ -542,13 +597,39 @@ public final class SignalDetector extends Activity {
         if (operator == null)
             operator = "";
 
+/*
+        mapView.setCenter(new LatLng(latitude, longitude));
+        int zoom = zoomForSpeed(speed);
+        if(zoom > 0)
+            mapView.setZoom(zoom);
+        // TODO Add markers here
+*/
+
         execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\");",
                 latitude, longitude, accuracy, speed, bearing, staleFix, operator));
     }
 
+//    private Marker baseMarker = null;
+
     private void addBsMarker() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         bsmarker = sharedPref.getBoolean("show_base_station", false);
+
+/*
+        LatLng location = new LatLng(bslat, bslon);
+        // TODO Place markers
+        if(bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190) {
+            if(baseMarker == null) {
+                baseMarker = new Marker(mapView, "Base Station", "CDMA base station location.",
+                        location);
+                baseMarker.addTo(mapView);
+            } else {
+                baseMarker.setPoint(location);
+            }
+        } else if (baseMarker != null) {
+            mapView.removeMarker(baseMarker);
+        }
+*/
 
         if (bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
             execJavascript(String.format("placeMarker(%f,%f);", bslat, bslon));
@@ -583,15 +664,14 @@ public final class SignalDetector extends Activity {
         bindSDService();
     }
 
-    public void clearMapCache() {
-        leafletView.clearCache(true);
-    }
-
     private void reloadPreferences() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         bsmarker = sharedPref.getBoolean("show_base_station", false);
         tradunits = sharedPref.getBoolean("traditional_units", false);
+        baseLayer = sharedPref.getString("tile_source", "shields");
 
+        setMapView(baseLayer);
+        addMapOverlays("provider"); // Make a preference too
         updateUnits();
     }
 
@@ -629,4 +709,83 @@ public final class SignalDetector extends Activity {
                     .create();
         }
     }
+
+    protected void addMapOverlays(String layer) {
+        String layerName = layer;
+
+        if(layer.equalsIgnoreCase("provider")) {
+            layer = mTelephonyManager.getSimOperator();
+            layerName = mTelephonyManager.getSimOperatorName();
+        }
+
+        String providerFragment;
+        if(layer.equals("310010")) {
+            providerFragment = "lte_310verizon";
+        } else if(layer.equals("310120") || layer.equals("")) {
+            providerFragment = "lte_310sprint";
+        } else {
+            providerFragment = "lte_"+layer;
+        }
+
+        execJavascript("setCoverageLayer("+providerFragment+")");
+/*
+        ITileLayer source = new WebSourceTileLayer("coverage",
+                "http://tiles-day.cdn.sensorly.net/tile/any/"+providerFragment+"/{z}/{x}/{x}/{y}/{y}.png?s=256")
+                .setName(layerName)
+                .setAttribution("© Sensorly")
+                .setMinimumZoomLevel(1)
+                .setMaximumZoomLevel(18);
+
+//        MapTileLayerBase base = new MapTileLayerBasic(this, source, mapView);
+//        Overlay overlay = new TilesOverlay(base);
+        mapView.addTileSource(source);
+*/
+    }
+
+    protected void setMapView(String layer) {
+        execJavascript("setBaseLayer("+layer+")");
+/*
+
+        ITileLayer source = null;
+
+        if (layer.equalsIgnoreCase("shields")) {
+            source = new WebSourceTileLayer("shields",
+                    "http://tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png")
+                    .setName("Shields")
+                    .setAttribution("© OpenStreetMap")
+                    .setMinimumZoomLevel(1)
+                    .setMaximumZoomLevel(18);
+        } else if(layer.equalsIgnoreCase("mapquest")) {
+            source = new WebSourceTileLayer("mapquest",
+                    "http://otile1.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpg")
+                    .setName("MapQuest Open")
+                    .setAttribution("© OpenStreetMap, MapQuest")
+                    .setMinimumZoomLevel(1)
+                    .setMaximumZoomLevel(18);
+        } else if(layer.equalsIgnoreCase("usgs-aerial")) {
+            source = new WebSourceTileLayer("usgs-aerial",
+                    "http://tile.openstreetmap.us/usgs_large_scale/{z}/{x}/{y}.jpg")
+                    .setName("USGS-NAIP")
+                    .setAttribution("Courtesy USGS/NAIP")
+                    .setMinimumZoomLevel(1)
+                    .setMaximumZoomLevel(18);
+        } else if(layer.equalsIgnoreCase("topos")) {
+            source = new WebSourceTileLayer("topos",
+                    "http://tile.openstreetmap.us/usgs_scanned_topos/{z}/{x}/{y}.jpg")
+                    .setName("USGS-NAIP")
+                    .setAttribution("Courtesy USGS/NAIP")
+                    .setMinimumZoomLevel(12)
+                    .setMaximumZoomLevel(18);
+        }
+
+        if (source != null) {
+            mapView.setTileSource(source);
+            mapView.setScrollableAreaLimit(source.getBoundingBox());
+            mapView.setMinZoomLevel(mapView.getTileProvider().getMinimumZoomLevel());
+            mapView.setMaxZoomLevel(mapView.getTileProvider().getMaximumZoomLevel());
+//            mapView.setCenter(mapView.getTileProvider().getCenterCoordinate());
+//            mapView.setZoom(13);
+*/
+    }
 }
+
