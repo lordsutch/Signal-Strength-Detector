@@ -46,8 +46,10 @@ import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
@@ -277,17 +279,42 @@ public final class SignalDetector extends ActionBarActivity {
 
     double bearing = 0.0;
 
+    // Swiped from https://en.wikipedia.org/wiki/Mobile_country_code
+    private List<Integer> threeDigitMNCList = Arrays.asList(
+            365, // Anguilla
+            344, // Antigua and Barbuda
+            722, // Argentina
+            342, // Barbados
+            348, // British Virgin Islands
+            302, // Canada
+            346, // Cayman Islands
+            732, // Columbia
+            366, // Dominica
+            750, // Falkland Islands
+            352, // Grenada
+            708, // Honduras
+            // India seems to be a mix of 2 and 3 digits?
+            338, // Jamaica
+            // Malaysia has several 3 digit codes, all >= 100
+            334, // Mexico
+            354, // Montserrat
+            330, // Puerto Rico mostly has 3-digit codes over 100
+            356, // Saint Kitts and Nevis
+            358, // Saint Lucia
+            360, // Saint Vincent and the Grenadines
+            376, // Turks and Caicos Islands
+            310, 311, 312, 313, 316 // USA; Guam
+    );
+
     private Boolean is3digitMnc(int mcc) {
-        return ((mcc >= 310 && mcc <= 316) || // USA
-                mcc == 302 // Canada
-        );
+        return threeDigitMNCList.contains(mcc);
     }
 
     private String formatMccMnc(int mcc, int mnc) {
         if(mnc >= 100 || is3digitMnc(mcc)) {
-            return String.format("%03d%03d", mcc, mnc);
+            return String.format("%03d-%03d", mcc, mnc);
         } else {
-            return String.format("%03d%02d", mcc, mnc);
+            return String.format("%03d-%02d", mcc, mnc);
         }
     }
 
