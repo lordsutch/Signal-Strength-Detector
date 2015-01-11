@@ -319,7 +319,7 @@ public class SignalDetectorService extends Service {
     private String GSMLine = null;
 
     private int guessLteBand(int mcc, int mnc, int gci) {
-        int sector = gci % 0x100;
+        int sector = gci & 0xff;
 
         if(mcc == 311 && (mnc == 490 || mnc == 870))
             return 41; // Legacy Clear sites are on band 41
@@ -329,7 +329,8 @@ public class SignalDetectorService extends Service {
             if(b41 > 0)
                 return 41;
 
-            if(sector >= 0x19 && sector <= 0x1b)
+            if((sector >= 0x19 && sector <= 0x1b) || // Ericsson/ALU
+                    (sector >= 0x0f && sector <= 0x11)) // Samsung
                 return 26;
             return 25;
         } else if (mcc == 310 && (mnc == 410 || mnc == 150)) {
