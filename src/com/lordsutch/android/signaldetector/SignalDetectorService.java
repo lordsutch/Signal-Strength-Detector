@@ -207,7 +207,7 @@ public class SignalDetectorService extends Service {
     }
 
     class otherLteCell {
-        int eci = Integer.MAX_VALUE;
+        int gci = Integer.MAX_VALUE;
         int pci = Integer.MAX_VALUE;
         int tac = Integer.MAX_VALUE;
         int mcc = Integer.MAX_VALUE;
@@ -230,7 +230,7 @@ public class SignalDetectorService extends Service {
         long fixAge; // in milliseconds
 
         // LTE
-        int eci = Integer.MAX_VALUE;
+        int gci = Integer.MAX_VALUE;
         int pci = Integer.MAX_VALUE;
         int tac = Integer.MAX_VALUE;
         int mcc = Integer.MAX_VALUE;
@@ -468,12 +468,12 @@ public class SignalDetectorService extends Service {
                             signal.lteSigStrength = cstr.getDbm();
 
                         if (cellid != null) {
-                            signal.eci = cellid.getCi();
+                            signal.gci = cellid.getCi();
                             signal.pci = cellid.getPci();
                             signal.tac = cellid.getTac();
                             signal.mnc = cellid.getMnc();
                             signal.mcc = cellid.getMcc();
-                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.eci);
+                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci);
                             gotID = true;
                         }
                     } else {
@@ -482,12 +482,12 @@ public class SignalDetectorService extends Service {
                         if (cstr != null)
                             otherCell.lteSigStrength = cstr.getDbm();
                         if (cellid != null) {
-                            otherCell.eci = cellid.getCi();
+                            otherCell.gci = cellid.getCi();
                             otherCell.pci = cellid.getPci();
                             otherCell.tac = cellid.getTac();
                             otherCell.mnc = cellid.getMnc();
                             otherCell.mcc = cellid.getMcc();
-                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.eci);
+                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci);
                         }
                         signal.otherCells.add(otherCell);
                     }
@@ -506,7 +506,7 @@ public class SignalDetectorService extends Service {
 
                 m = mHTCManager.getClass().getMethod("getSectorId", int.class);
                 cellID = (String) m.invoke(mHTCManager, new Object[]{Integer.valueOf(1)});
-                signal.eci = Integer.parseInt(cellID, 16);
+                signal.gci = Integer.parseInt(cellID, 16);
             } catch (NoSuchMethodException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -545,14 +545,14 @@ public class SignalDetectorService extends Service {
 
         String cellIdInfo = getString(R.string.none);
         if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-                ((signal.eci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
+                ((signal.gci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
             ArrayList<String> cellIds = new ArrayList<String>();
 
             if (validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
 
-            if (validCellID(signal.eci))
-                cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
+            if (validCellID(signal.gci))
+                cellIds.add(String.format("GCI\u00a0%08X", signal.gci));
 
             if (validPhysicalCellID(signal.pci))
                 cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
@@ -576,15 +576,15 @@ public class SignalDetectorService extends Service {
 
             if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
                     (validLTESignalStrength(signal.lteSigStrength) ||
-                            validPhysicalCellID(signal.pci) || validCellID(signal.eci))) {
+                            validPhysicalCellID(signal.pci) || validCellID(signal.gci))) {
                 String newLteLine = slat + "," + slon + "," +
-                        (validCellID(signal.eci) ? String.format("%08X", signal.eci) : "") + "," +
+                        (validCellID(signal.gci) ? String.format("%08X", signal.gci) : "") + "," +
                         (validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "") + "," +
                         (validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "") + "," +
                         String.format("%.0f", signal.altitude) + "," +
                         (validTAC(signal.tac) ? String.format("%04X", signal.tac) : "") + "," +
                         String.format("%.0f", signal.accuracy) + "," +
-                        (validCellID(signal.eci) ? String.format("%06X", signal.eci/256) : "") + "," +
+                        (validCellID(signal.gci) ? String.format("%06X", signal.gci /256) : "") + "," +
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
@@ -616,7 +616,7 @@ public class SignalDetectorService extends Service {
                                 (validPhysicalCellID(pci) ? String.valueOf(pci) : "") + "," +
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "") + "," +
                                 (item.isRegistered() ? "1" : "0") + "," +
-                                (validCellID(signal.eci) ? String.format("%06X", signal.eci/256) : "") + "," +
+                                (validCellID(signal.gci) ? String.format("%06X", signal.gci /256) : "") + "," +
                                 (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
 
                         appendLog("cellinfolte.csv", cellLine,

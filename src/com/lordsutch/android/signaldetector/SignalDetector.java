@@ -36,7 +36,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -380,8 +379,8 @@ public final class SignalDetector extends ActionBarActivity {
             if (validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
 
-            if (validCellID(signal.eci))
-                cellIds.add(String.format("GCI\u00a0%08X", signal.eci));
+            if (validCellID(signal.gci))
+                cellIds.add(String.format("GCI\u00a0%08X", signal.gci));
 
             if (validPhysicalCellID(signal.pci))
                 cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
