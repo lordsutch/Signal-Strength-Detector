@@ -323,10 +323,10 @@ public class SignalDetectorService extends Service {
 
         if(mcc == 311 && (mnc == 490 || mnc == 870))
             return 41; // Legacy Clear sites are on band 41
-        else if(mcc == 310 && mnc == 120) {
+        else if((mcc == 310 && mnc == 120) ||
+                (mcc == 312 && mnc == 530)) {
             // Sprint
-            int b41 = gci & 0x00100000; // 3rd digit is odd if B41
-            if(b41 > 0)
+            if((gci & 0x00100000) != 0) // 3rd digit is odd if B41
                 return 41;
 
             if((sector >= 0x19 && sector <= 0x1b) || // Ericsson/ALU
