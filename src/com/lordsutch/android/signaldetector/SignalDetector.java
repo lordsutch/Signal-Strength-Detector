@@ -2,6 +2,7 @@ package com.lordsutch.android.signaldetector;
 
 // Android Packages
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -14,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -50,6 +52,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import static android.support.v4.app.ActivityCompat.requestPermissions;
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
 public final class SignalDetector extends ActionBarActivity {
@@ -129,11 +132,27 @@ public final class SignalDetector extends ActionBarActivity {
         webSettings.setBuiltInZoomControls(false);
         webSettings.setAllowFileAccess(true);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
+        }
+
         leafletView.loadUrl("file:///android_asset/leaflet.html");
         reloadPreferences();
     }
 
-    private SignalDetectorService mService;
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        if (requestCode == 0) {
+            if (mService != null && grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                mService.startGPS();
+            }
+        }
+    }
+
+
+    private SignalDetectorService mService = null;
     private boolean mBound = false;
 
     @Override
@@ -244,7 +263,7 @@ public final class SignalDetector extends ActionBarActivity {
         private final WeakReference<SignalDetector> mActivity;
 
         IncomingHandler(SignalDetector activity) {
-            mActivity = new WeakReference<SignalDetector>(activity);
+            mActivity = new WeakReference<>(activity);
         }
 
         @Override
@@ -374,7 +393,7 @@ public final class SignalDetector extends ActionBarActivity {
         LinearLayout preLteBlock = (LinearLayout) findViewById(R.id.preLteBlock);
 
         if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
-            ArrayList<String> cellIds = new ArrayList<String>();
+            ArrayList<String> cellIds = new ArrayList<>();
 
             if (validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
@@ -399,7 +418,7 @@ public final class SignalDetector extends ActionBarActivity {
         }
 
         if (signal.otherCells != null) {
-            ArrayList<String> otherSitesList = new ArrayList<String>();
+            ArrayList<String> otherSitesList = new ArrayList<>();
 
             Collections.sort(signal.otherCells, new Comparator<SignalDetectorService.otherLteCell>() {
                 @Override
@@ -490,7 +509,7 @@ public final class SignalDetector extends ActionBarActivity {
             voiceSignalBlock.setVisibility(View.GONE);
         }
 
-        ArrayList<String> bsList = new ArrayList<String>();
+        ArrayList<String> bsList = new ArrayList<>();
 
         if (signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 &&
                 (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
@@ -612,7 +631,7 @@ public final class SignalDetector extends ActionBarActivity {
                            double bearing, long fixAge) {
         boolean staleFix = fixAge > (30 * 1000); // 30 seconds
 
-        if(coverageLayer == "provider") {
+        if(coverageLayer.equals("provider")) {
             coverageLayer = mTelephonyManager.getSimOperator();
             if (coverageLayer == null)
                 coverageLayer = mTelephonyManager.getNetworkOperator();
@@ -693,7 +712,7 @@ public final class SignalDetector extends ActionBarActivity {
         baseLayer = sharedPref.getString("tile_source", "shields");
 
         setMapView(baseLayer);
-        addMapOverlays("provider"); // Make a preference too
+        addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));
         updateUnits();
     }
 

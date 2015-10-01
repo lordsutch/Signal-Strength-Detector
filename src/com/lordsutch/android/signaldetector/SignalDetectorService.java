@@ -1,6 +1,8 @@
 package com.lordsutch.android.signaldetector;
 
+import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.Notification.Builder;
@@ -10,6 +12,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -49,6 +52,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+
+import static android.support.v4.app.ActivityCompat.requestPermissions;
 
 public class SignalDetectorService extends Service {
     public static final String TAG = SignalDetector.class.getSimpleName();
@@ -122,8 +127,21 @@ public class SignalDetectorService extends Service {
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
 
-        boolean lessPower = sharedPref.getBoolean("low_power", false);
         loggingEnabled = sharedPref.getBoolean("logging", true);
+        startGPS();
+
+        return mBinder;
+    }
+
+    public void startGPS() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
+        boolean lessPower = sharedPref.getBoolean("low_power", false);
 
         Criteria mCriteria = new Criteria();
         mCriteria.setAltitudeRequired(false);
@@ -137,8 +155,6 @@ public class SignalDetectorService extends Service {
 
         mLocationManager.requestLocationUpdates(provider, 1000, 0, mLocListener);
         mLocation = mLocationManager.getLastKnownLocation(provider);
-
-        return mBinder;
     }
 
     private void appendLog(String logfile, String text, String header) {
