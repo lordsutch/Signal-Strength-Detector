@@ -13,4 +13,22 @@
         <item>Aerial (USGS/NAIP)</item>
         <item>USGS Topgraphic Maps</item>
     </string-array>
+
+    <string-array name="sensorlyValues">
+        <item>none</item>
+        <item>provider</item>
+        <item>310120</item>
+        <item>310010</item>
+        <item>310260</item>
+        <item>310410</item>
+    </string-array>
+
+    <string-array name="sensorlyLayers">
+        <item>None</item>
+        <item>Phone carrier</item>
+        <item>Sprint</item>
+        <item>Verizon</item>
+        <item>T-Mobile USA</item>
+        <item>AT&amp;T</item>
+    </string-array>
 </resources>

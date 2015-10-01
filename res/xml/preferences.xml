@@ -7,6 +7,14 @@
         android:summary="@string/tileSourceSummary"
         android:title="@string/tileSource" />
 
+    <ListPreference
+        android:defaultValue="carrier"
+        android:key="overlay_tile_source"
+        android:entries="@array/sensorlyLayers"
+        android:entryValues="@array/sensorlyValues"
+        android:summary="@string/sensorlySummary"
+        android:title="@string/sensorlyTitle" />
+
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="traditional_units"

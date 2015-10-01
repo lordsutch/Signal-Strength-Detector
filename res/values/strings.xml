@@ -69,4 +69,6 @@
     <string name="logging_pref_off">Logging disabled.</string>
     <string name="tileSource">Map tiles source</string>
     <string name="tileSourceSummary">Style of map to use.</string>
+    <string name="sensorlySummary">Signal strength overlay</string>
+    <string name="sensorlyTitle">Signal strength overlay</string>
 </resources>
