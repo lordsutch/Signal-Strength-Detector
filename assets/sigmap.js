@@ -67,9 +67,11 @@ function setBaseLayer(base) {
 }
 
 function setOverlayLayer(operator) {
-    var overlayLayer;
+    var overlayLayer = null;
 
-    if(operator == '310260')
+    if(operator == 'none')
+        overlayLayer = null
+    else if(operator == '310260')
         overlayLayer = sensorlyTMobileUS
     else if(operator == '310410' || operator == '310150')
         overlayLayer = sensorlyATT
@@ -79,7 +81,8 @@ function setOverlayLayer(operator) {
         overlayLayer = sensorlySprint
 
     if(currentOverlayLayer != overlayLayer) {
-        overlayLayer.addTo(map);
+        if(overlayLayer)
+            overlayLayer.addTo(map);
         if(currentOverlayLayer)
             map.removeLayer(currentOverlayLayer);
         currentOverlayLayer = overlayLayer;
