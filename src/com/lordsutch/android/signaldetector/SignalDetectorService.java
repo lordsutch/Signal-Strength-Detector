@@ -75,6 +75,7 @@ public class SignalDetectorService extends Service {
 
     private boolean loggingEnabled = false;
     private LocationManager mLocationManager;
+    private boolean listening = false;
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -106,12 +107,6 @@ public class SignalDetectorService extends Service {
         //noinspection ResourceType
         mHTCManager = getSystemService("htctelephony");
 
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        // Register the listener with the telephony manager
-        mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
-                PhoneStateListener.LISTEN_CELL_LOCATION);
-
         mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (false && pintent == null) {
@@ -135,10 +130,17 @@ public class SignalDetectorService extends Service {
 
     public void startGPS() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
         }
+
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        // Register the listener with the telephony manager
+        mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
+                PhoneStateListener.LISTEN_CELL_LOCATION);
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         boolean lessPower = sharedPref.getBoolean("low_power", false);
@@ -155,6 +157,7 @@ public class SignalDetectorService extends Service {
 
         mLocationManager.requestLocationUpdates(provider, 1000, 0, mLocListener);
         mLocation = mLocationManager.getLastKnownLocation(provider);
+        listening = true;
     }
 
     private void appendLog(String logfile, String text, String header) {
@@ -738,8 +741,15 @@ public class SignalDetectorService extends Service {
     @Override
     public void onDestroy() {
         // The service is no longer used and is being destroyed
-        mLocationManager.removeUpdates(mLocListener);
-        mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+        if(listening) {
+            try {
+                mLocationManager.removeUpdates(mLocListener);
+            } catch (SecurityException e) {
+                e.printStackTrace();
+            }
+            mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+            listening = false;
+        }
         stopForeground(true);
 
         super.onDestroy();
