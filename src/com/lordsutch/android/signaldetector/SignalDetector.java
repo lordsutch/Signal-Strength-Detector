@@ -24,8 +24,8 @@ import android.os.Message;
 import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBarActivity;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -53,10 +53,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static android.support.v4.app.ActivityCompat.requestPermissions;
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
-public final class SignalDetector extends ActionBarActivity {
+public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
     public static WebView leafletView = null;
@@ -82,7 +81,7 @@ public final class SignalDetector extends ActionBarActivity {
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 
 /*
-        mapView = (MapView) findViewById(R.id.mapview);
+        mapView = (MapView) findViewById(R.id.2mapview);
         mapView.setZoom(14);
 
         UserLocationOverlay userLocationOverlay = new UserLocationOverlay(new GpsLocationProvider(this),
@@ -145,7 +144,7 @@ public final class SignalDetector extends ActionBarActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
         if (requestCode == 0) {
             if (mService != null && grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -553,7 +552,7 @@ public final class SignalDetector extends ActionBarActivity {
     }
 
     private boolean validTAC(int tac) {
-        return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
+        return (tac > 0x0000 && tac < 0xFFFF); // 0, 0xFFFF are reserved values
     }
 
     private boolean validMnc(int mcc) {
@@ -712,7 +711,7 @@ public final class SignalDetector extends ActionBarActivity {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         bsmarker = sharedPref.getBoolean("show_base_station", false);
         tradunits = sharedPref.getBoolean("traditional_units", false);
-        baseLayer = sharedPref.getString("tile_source", "shields");
+        baseLayer = sharedPref.getString("tile_source", "osm");
 
         setMapView(baseLayer);
         addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));

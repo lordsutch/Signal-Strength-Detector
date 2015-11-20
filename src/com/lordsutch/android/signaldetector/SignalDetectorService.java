@@ -2,7 +2,6 @@ package com.lordsutch.android.signaldetector;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.Notification.Builder;
@@ -52,8 +51,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-
-import static android.support.v4.app.ActivityCompat.requestPermissions;
 
 public class SignalDetectorService extends Service {
     public static final String TAG = SignalDetector.class.getSimpleName();
@@ -283,7 +280,7 @@ public class SignalDetectorService extends Service {
     }
 
     private static long FIVE_SECONDS = 5 * 1000;
-    private LinkedList<Location> locs = new LinkedList<Location>();
+    private LinkedList<Location> locs = new LinkedList<>();
 
     private double calcAverageSpeed() {
         double totspeed = 0;
@@ -476,7 +473,7 @@ public class SignalDetectorService extends Service {
 
         List<CellInfo> mCellInfo = mManager.getAllCellInfo();
         if (mCellInfo != null) {
-            signal.otherCells = new ArrayList<otherLteCell>();
+            signal.otherCells = new ArrayList<>();
 
             for (CellInfo item : mCellInfo) {
                 if (item != null && item instanceof CellInfoLte) {
@@ -527,16 +524,7 @@ public class SignalDetectorService extends Service {
                 m = mHTCManager.getClass().getMethod("getSectorId", int.class);
                 cellID = (String) m.invoke(mHTCManager, new Object[]{Integer.valueOf(1)});
                 signal.gci = Integer.parseInt(cellID, 16);
-            } catch (NoSuchMethodException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IllegalArgumentException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
+            } catch (NoSuchMethodException | IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
@@ -548,16 +536,7 @@ public class SignalDetectorService extends Service {
             try {
                 m = mSignalStrength.getClass().getMethod("getLteRsrp");
                 signal.lteSigStrength = (Integer) m.invoke(mSignalStrength, (Object[]) null);
-            } catch (NoSuchMethodException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IllegalArgumentException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
+            } catch (NoSuchMethodException | IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
@@ -566,7 +545,7 @@ public class SignalDetectorService extends Service {
         String cellIdInfo = getString(R.string.none);
         if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
                 ((signal.gci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
-            ArrayList<String> cellIds = new ArrayList<String>();
+            ArrayList<String> cellIds = new ArrayList<>();
 
             if (validTAC(signal.tac))
                 cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
