@@ -18,6 +18,9 @@ var usgsAerial = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_large_scale/
 var usgsTopos = L.tileLayer('http://{s}.tile.openstreetmap.us/usgs_scanned_topos/{z}/{x}/{y}.png',
                             {minZoom: 12, maxZoom: 18, subdomains: "abc", attribution: 'Courtesy USGS.'});
 
+var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        {maxZoom: 18, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'})
+
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
                            {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
 
@@ -37,9 +40,11 @@ var baseLayers = {'US Shields' : shields,
                   'Mapquest Open' : mapquest,
                   'Mapquest Aerial' : mqaerial,
                   'USGS Topos' : usgsTopos,
-                  'USGS/NAIP Aerial' : usgsAerial};
+                  'USGS/NAIP Aerial' : usgsAerial,
+                  'OpenStreetMap' : osm};
 
 var baseLayerNames = {
+    'osm' : osm,
     'shields' : shields,
     'mapquest' : mapquest,
     'topos' : usgsTopos,
@@ -59,10 +64,11 @@ function setBaseLayer(base) {
     var baseLayer = baseLayerNames[base]
 
     if(baseLayer != currentBaseLayer) {
-        map.addLayer(baseLayer, true)
+        baseLayer.addTo(map)
         if(currentBaseLayer)
             map.removeLayer(currentBaseLayer)
         currentBaseLayer = baseLayer
+        currentBaseLayer.bringToBack()
     }
 }
 
