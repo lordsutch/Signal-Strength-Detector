@@ -764,7 +764,7 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         coverageLayer = layer;
-        execJavascript("setCoverageLayer(\""+layer+"\")");
+        execJavascript("setOverlayLayer(\""+layer+"\")");
 /*
         ITileLayer source = new WebSourceTileLayer("coverage",
                 "http://tiles-day.cdn.sensorly.net/tile/any/"+providerFragment+"/{z}/{x}/{x}/{y}/{y}.png?s=256")
