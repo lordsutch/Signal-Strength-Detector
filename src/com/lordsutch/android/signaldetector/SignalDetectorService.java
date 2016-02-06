@@ -3,8 +3,6 @@ package com.lordsutch.android.signaldetector;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.Notification.Builder;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -22,9 +20,13 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
@@ -52,12 +54,199 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
+class otherLteCell implements Parcelable {
+    int gci = Integer.MAX_VALUE;
+    int pci = Integer.MAX_VALUE;
+    int tac = Integer.MAX_VALUE;
+    int mcc = Integer.MAX_VALUE;
+    int mnc = Integer.MAX_VALUE;
+    int lteBand = 0;
+
+    int lteSigStrength = Integer.MAX_VALUE;
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(this.gci);
+        dest.writeInt(this.pci);
+        dest.writeInt(this.tac);
+        dest.writeInt(this.mcc);
+        dest.writeInt(this.mnc);
+        dest.writeInt(this.lteBand);
+        dest.writeInt(this.lteSigStrength);
+    }
+
+    public otherLteCell() {
+    }
+
+    protected otherLteCell(Parcel in) {
+        this.gci = in.readInt();
+        this.pci = in.readInt();
+        this.tac = in.readInt();
+        this.mcc = in.readInt();
+        this.mnc = in.readInt();
+        this.lteBand = in.readInt();
+        this.lteSigStrength = in.readInt();
+    }
+
+    public static final Parcelable.Creator<otherLteCell> CREATOR = new Parcelable.Creator<otherLteCell>() {
+        public otherLteCell createFromParcel(Parcel source) {
+            return new otherLteCell(source);
+        }
+
+        public otherLteCell[] newArray(int size) {
+            return new otherLteCell[size];
+        }
+    };
+}
+
+class signalInfo implements Parcelable {
+    // Location location = null;
+
+    double longitude;
+    double latitude;
+    double altitude;
+    double accuracy;
+    double speed;
+    double avgspeed;
+    double bearing;
+    long fixAge; // in milliseconds
+
+    // LTE
+    int gci = Integer.MAX_VALUE;
+    int pci = Integer.MAX_VALUE;
+    int tac = Integer.MAX_VALUE;
+    int mcc = Integer.MAX_VALUE;
+    int mnc = Integer.MAX_VALUE;
+    int lteSigStrength = Integer.MAX_VALUE;
+    int lteBand = 0;
+
+    // CDMA2000
+    int bsid = -1;
+    int nid = -1;
+    int sid = -1;
+    double bslat = 999;
+    double bslon = 999;
+    int cdmaSigStrength = -9999;
+    int evdoSigStrength = -9999;
+
+    // GSM/UMTS/W-CDMA
+    String operator = "";
+    int lac = -1;
+    int cid = -1;
+    int psc = -1;
+    int rnc = -1;
+    int gsmSigStrength = -9999;
+
+    int phoneType = TelephonyManager.PHONE_TYPE_NONE;
+    int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
+
+    boolean roaming = false;
+
+    List<otherLteCell> otherCells = null;
+
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeDouble(this.longitude);
+        dest.writeDouble(this.latitude);
+        dest.writeDouble(this.altitude);
+        dest.writeDouble(this.accuracy);
+        dest.writeDouble(this.speed);
+        dest.writeDouble(this.avgspeed);
+        dest.writeDouble(this.bearing);
+        dest.writeLong(this.fixAge);
+        dest.writeInt(this.gci);
+        dest.writeInt(this.pci);
+        dest.writeInt(this.tac);
+        dest.writeInt(this.mcc);
+        dest.writeInt(this.mnc);
+        dest.writeInt(this.lteSigStrength);
+        dest.writeInt(this.lteBand);
+        dest.writeInt(this.bsid);
+        dest.writeInt(this.nid);
+        dest.writeInt(this.sid);
+        dest.writeDouble(this.bslat);
+        dest.writeDouble(this.bslon);
+        dest.writeInt(this.cdmaSigStrength);
+        dest.writeInt(this.evdoSigStrength);
+        dest.writeString(this.operator);
+        dest.writeInt(this.lac);
+        dest.writeInt(this.cid);
+        dest.writeInt(this.psc);
+        dest.writeInt(this.rnc);
+        dest.writeInt(this.gsmSigStrength);
+        dest.writeInt(this.phoneType);
+        dest.writeInt(this.networkType);
+        dest.writeByte(roaming ? (byte) 1 : (byte) 0);
+        dest.writeList(this.otherCells);
+    }
+
+    public signalInfo() {
+    }
+
+    protected signalInfo(Parcel in) {
+        this.longitude = in.readDouble();
+        this.latitude = in.readDouble();
+        this.altitude = in.readDouble();
+        this.accuracy = in.readDouble();
+        this.speed = in.readDouble();
+        this.avgspeed = in.readDouble();
+        this.bearing = in.readDouble();
+        this.fixAge = in.readLong();
+        this.gci = in.readInt();
+        this.pci = in.readInt();
+        this.tac = in.readInt();
+        this.mcc = in.readInt();
+        this.mnc = in.readInt();
+        this.lteSigStrength = in.readInt();
+        this.lteBand = in.readInt();
+        this.bsid = in.readInt();
+        this.nid = in.readInt();
+        this.sid = in.readInt();
+        this.bslat = in.readDouble();
+        this.bslon = in.readDouble();
+        this.cdmaSigStrength = in.readInt();
+        this.evdoSigStrength = in.readInt();
+        this.operator = in.readString();
+        this.lac = in.readInt();
+        this.cid = in.readInt();
+        this.psc = in.readInt();
+        this.rnc = in.readInt();
+        this.gsmSigStrength = in.readInt();
+        this.phoneType = in.readInt();
+        this.networkType = in.readInt();
+        this.roaming = in.readByte() != 0;
+        this.otherCells = new ArrayList<otherLteCell>();
+        in.readList(this.otherCells, List.class.getClassLoader());
+    }
+
+    public static final Creator<signalInfo> CREATOR = new Creator<signalInfo>() {
+        public signalInfo createFromParcel(Parcel source) {
+            return new signalInfo(source);
+        }
+
+        public signalInfo[] newArray(int size) {
+            return new signalInfo[size];
+        }
+    };
+}
+
+
 public class SignalDetectorService extends Service {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
     public static final int MSG_SIGNAL_UPDATE = 1;
 
-    private Builder mBuilder;
     private int mNotificationId = 1;
 
     private CellLocation mCellLocation;
@@ -74,6 +263,9 @@ public class SignalDetectorService extends Service {
     private LocationManager mLocationManager;
     private boolean listening = false;
 
+    private NotificationCompat.Builder mBuilder;
+    private LocalBroadcastManager broadcaster;
+
     /**
      * Class used for the client Binder.  Because we know this service always
      * runs in the same process as its clients, we don't need to deal with IPC.
@@ -85,17 +277,31 @@ public class SignalDetectorService extends Service {
         }
     }
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        broadcaster = LocalBroadcastManager.getInstance(this);
+    }
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
 
-        mBuilder = new Notification.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
+        resultIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        resultIntent.putExtra("Exit me", true);
+        PendingIntent exitIntent = PendingIntent.getActivity(this, 1, resultIntent, 0);
+
+        mBuilder = new NotificationCompat.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
                 .setContentTitle(getString(R.string.signal_detector_is_running))
                 .setContentText("Loading...")
                 .setOnlyAlertOnce(true)
-                .setPriority(Notification.PRIORITY_LOW)
+                .setLocalOnly(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .addAction(R.drawable.ic_close_24dp, "Exit", exitIntent)
                 .setContentIntent(resultPendingIntent);
 
         startForeground(mNotificationId, mBuilder.build());
@@ -222,63 +428,6 @@ public class SignalDetectorService extends Service {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
 
-    class otherLteCell {
-        int gci = Integer.MAX_VALUE;
-        int pci = Integer.MAX_VALUE;
-        int tac = Integer.MAX_VALUE;
-        int mcc = Integer.MAX_VALUE;
-        int mnc = Integer.MAX_VALUE;
-        int lteBand = 0;
-
-        int lteSigStrength = Integer.MAX_VALUE;
-    }
-
-    class signalInfo {
-        // Location location = null;
-
-        double longitude;
-        double latitude;
-        double altitude;
-        double accuracy;
-        double speed;
-        double avgspeed;
-        double bearing;
-        long fixAge; // in milliseconds
-
-        // LTE
-        int gci = Integer.MAX_VALUE;
-        int pci = Integer.MAX_VALUE;
-        int tac = Integer.MAX_VALUE;
-        int mcc = Integer.MAX_VALUE;
-        int mnc = Integer.MAX_VALUE;
-        int lteSigStrength = Integer.MAX_VALUE;
-        int lteBand = 0;
-
-        // CDMA2000
-        int bsid = -1;
-        int nid = -1;
-        int sid = -1;
-        double bslat = 999;
-        double bslon = 999;
-        int cdmaSigStrength = -9999;
-        int evdoSigStrength = -9999;
-
-        // GSM/UMTS/W-CDMA
-        String operator = "";
-        int lac = -1;
-        int cid = -1;
-        int psc = -1;
-        int rnc = -1;
-        int gsmSigStrength = -9999;
-
-        int phoneType = TelephonyManager.PHONE_TYPE_NONE;
-        int networkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
-
-        boolean roaming = false;
-
-        List<otherLteCell> otherCells = null;
-    }
-
     private static long FIVE_SECONDS = 5 * 1000;
     private LinkedList<Location> locs = new LinkedList<>();
 
@@ -341,7 +490,7 @@ public class SignalDetectorService extends Service {
             return 41; // Legacy Clear sites are on band 41
         else if((mcc == 310 && mnc == 120) ||
                 (mcc == 312 && mnc == 530)) {
-            // Sprint
+            // Sprint (312-530 is prepaid)
             if((gci & 0x00100000) != 0) // 3rd digit is odd if B41
                 return 41;
 
@@ -360,7 +509,16 @@ public class SignalDetectorService extends Service {
             return 17;
         } else if (mcc == 310 && mnc == 260) {
             // T-Mobile
-            //if(sector >= 0x00 && sector <= 0x03)
+            if(sector >= 0x01 && sector <= 0x04)
+                return 4;
+            else if(sector >= 0x11 && sector <= 0x14)
+                return 2;
+            else if(sector >= 0x21 && sector <= 0x23)
+                return 12;
+            else if(sector >= 0x05 && sector <= 0x07)
+                return 12;
+            else if(sector >= 0x15 && sector <= 0x15)
+                return 12;
             return 0;
         } else if (mcc == 311 && mnc == 480) {
             // Verizon
@@ -368,6 +526,15 @@ public class SignalDetectorService extends Service {
                 return 4;
             else if(sector == 0x0e || sector == 0x18 || sector == 0x22)
                 return 2;
+            return 13;
+        } else if (mcc == 312 && mnc == 190) {
+            // nTelos
+            if(sector == 0x0c || sector == 0x16 || sector == 0x20)
+                return 26;
+            else if(sector == 0x0d || sector == 0x17 || sector == 0x21)
+                return 2;
+            else if(sector >= 0x01 && sector <= 0x03)
+                return 25;
             return 13;
         }
         return 0;
@@ -649,17 +816,7 @@ public class SignalDetectorService extends Service {
             }
         }
 
-        if (pushMessenger != null) {
-            Message msg = new Message();
-            msg.obj = signal;
-            msg.what = MSG_SIGNAL_UPDATE;
-            try {
-                pushMessenger.send(msg);
-            } catch (RemoteException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+        sendResult(signal);
     }
 
     private boolean validSID(int sid) { // CDMA System Identifier
@@ -762,14 +919,19 @@ public class SignalDetectorService extends Service {
         }
     }
 
-    private Messenger pushMessenger = null;
+    static final public String SD_RESULT = "com.lordsutch.android.signaldetector.SignalServiceBroadcast";
+    static final public String SD_MESSAGE = "com.lordsutch.android.signaldetector.SignalInfo";
 
-    public void setMessenger(Messenger mMessenger) {
-        pushMessenger = mMessenger;
-//		Log.d(TAG, "pushMessenger set");
-        if (pushMessenger != null)
-            Log.d(TAG, pushMessenger.toString());
+    public void sendResult(Parcelable message) {
+        Intent intent = new Intent(SD_RESULT);
+        if(message != null)
+            intent.putExtra(SD_MESSAGE, message);
+        broadcaster.sendBroadcast(intent);
+    }
 
-        updatelog(false);
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.cancel(mNotificationId);
     }
 }

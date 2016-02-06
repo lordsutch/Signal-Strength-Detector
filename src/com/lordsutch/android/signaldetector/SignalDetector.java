@@ -9,10 +9,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -25,6 +27,7 @@ import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -44,7 +47,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
-import com.lordsutch.android.signaldetector.SignalDetectorService.signalInfo;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -63,6 +65,7 @@ public final class SignalDetector extends AppCompatActivity {
     private TelephonyManager mTelephonyManager = null;
     private String baseLayer = "shields";
     private String coverageLayer = "provider";
+    private BroadcastReceiver receiver;
 
     /**
      * Called when the activity is first created.
@@ -75,6 +78,10 @@ public final class SignalDetector extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.main);
+        if( getIntent().getBooleanExtra("Exit me", false)) {
+            finish();
+            return; // add this to prevent from doing unnecessary stuffs
+        }
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
@@ -140,6 +147,15 @@ public final class SignalDetector extends AppCompatActivity {
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
         reloadPreferences();
+
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                signalInfo s = intent.getParcelableExtra(SignalDetectorService.SD_MESSAGE);
+                updateSigInfo(s);
+            }
+        };
+
     }
 
     @Override
@@ -193,6 +209,15 @@ public final class SignalDetector extends AppCompatActivity {
         super.onStart();
 
         bindSDService();
+        LocalBroadcastManager.getInstance(this).registerReceiver((receiver),
+                new IntentFilter(SignalDetectorService.SD_RESULT)
+        );
+    }
+
+    @Override
+    protected void onStop() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+        super.onStop();
     }
 
     private void bindSDService() {
@@ -201,6 +226,7 @@ public final class SignalDetector extends AppCompatActivity {
 
         startService(intent);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        mBound = true;
     }
 
     private void unbindSDService() {
@@ -219,7 +245,7 @@ public final class SignalDetector extends AppCompatActivity {
 //        Log.d(TAG, "Resuming");
         // leafletView.reload();
         if (mSignalInfo != null)
-            updateGui(mSignalInfo);
+            updateGui();
     }
 
     private void enableLocationSettings() {
@@ -234,7 +260,6 @@ public final class SignalDetector extends AppCompatActivity {
             LocalBinder binder = (LocalBinder) service;
             mService = binder.getService();
             mBound = true;
-            mService.setMessenger(mMessenger);
         }
 
         @Override
@@ -258,38 +283,7 @@ public final class SignalDetector extends AppCompatActivity {
     private double bslat = 999;
     private double bslon = 999;
 
-    /**
-     * Activity Handler of incoming messages from service.
-     */
-    static class IncomingHandler extends Handler {
-        private final WeakReference<SignalDetector> mActivity;
-
-        IncomingHandler(SignalDetector activity) {
-            mActivity = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            SignalDetector activity = mActivity.get();
-            switch (msg.what) {
-                case MSG_SIGNAL_UPDATE:
-                    if (activity != null)
-                        activity.updateSigInfo((signalInfo) msg.obj);
-                    break;
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-    }
-
-    final Messenger mMessenger = new Messenger(new IncomingHandler(this));
-
     private signalInfo mSignalInfo = null;
-
-    public void updateSigInfo(signalInfo signal) {
-        mSignalInfo = signal;
-        updateGui(signal);
-    }
 
     double speedfactor = 3.6;
     String speedlabel = "km/h";
@@ -361,27 +355,40 @@ public final class SignalDetector extends AppCompatActivity {
     private boolean tradunits = false;
     private boolean bsmarker = false;
 
-    private void updateGui(signalInfo signal) {
-        bslat = signal.bslat;
-        bslon = signal.bslon;
+    public void updateSigInfo(signalInfo signal) {
+        mSignalInfo = signal;
+        if(this.hasWindowFocus())
+            updateGui();
+    }
 
-        if (signal.bearing > 0.0)
-            bearing = signal.bearing;
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if(hasFocus)
+            updateGui();
+    }
+
+    private void updateGui() {
+        bslat = mSignalInfo.bslat;
+        bslon = mSignalInfo.bslon;
+
+        if (mSignalInfo.bearing > 0.0)
+            bearing = mSignalInfo.bearing;
 
         TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 
         latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
-                Math.abs(signal.latitude), getResources().getString(signal.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
-                Math.abs(signal.longitude), getResources().getString(signal.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
-                signal.accuracy * accuracyfactor, accuracylabel));
+                Math.abs(mSignalInfo.latitude), getResources().getString(mSignalInfo.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
+                Math.abs(mSignalInfo.longitude), getResources().getString(mSignalInfo.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
+                mSignalInfo.accuracy * accuracyfactor, accuracylabel));
 
         TextView speed = (TextView) findViewById(R.id.speed);
 
         if (bearing > 0.0)
-            speed.setText(String.format("%3.1f %s %s", signal.speed * speedfactor, speedlabel,
+            speed.setText(String.format("%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
                     directionForBearing(bearing)));
         else
-            speed.setText(String.format("%3.1f %s", signal.speed * speedfactor, speedlabel));
+            speed.setText(String.format("%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
 
         TextView servingid = (TextView) findViewById(R.id.cellid);
         TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
@@ -394,17 +401,17 @@ public final class SignalDetector extends AppCompatActivity {
         LinearLayout lteOtherBlock = (LinearLayout) findViewById(R.id.lteOtherBlock);
         LinearLayout preLteBlock = (LinearLayout) findViewById(R.id.preLteBlock);
 
-        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+        if (mSignalInfo.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             ArrayList<String> cellIds = new ArrayList<>();
 
-            if (validTAC(signal.tac))
-                cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
+            if (validTAC(mSignalInfo.tac))
+                cellIds.add(String.format("TAC\u00a0%04X", mSignalInfo.tac));
 
-            if (validCellID(signal.gci))
-                cellIds.add(String.format("GCI\u00a0%08X", signal.gci));
+            if (validCellID(mSignalInfo.gci))
+                cellIds.add(String.format("GCI\u00a0%08X", mSignalInfo.gci));
 
-            if (validPhysicalCellID(signal.pci))
-                cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
+            if (validPhysicalCellID(mSignalInfo.pci))
+                cellIds.add(String.format("PCI\u00a0%03d", mSignalInfo.pci));
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
@@ -419,12 +426,12 @@ public final class SignalDetector extends AppCompatActivity {
             lteOtherBlock.setVisibility(View.GONE);
         }
 
-        if (signal.otherCells != null) {
+        if (mSignalInfo.otherCells != null) {
             ArrayList<String> otherSitesList = new ArrayList<>();
 
-            Collections.sort(signal.otherCells, new Comparator<SignalDetectorService.otherLteCell>() {
+            Collections.sort(mSignalInfo.otherCells, new Comparator<otherLteCell>() {
                 @Override
-                public int compare(SignalDetectorService.otherLteCell lhs, SignalDetectorService.otherLteCell rhs) {
+                public int compare(otherLteCell lhs, otherLteCell rhs) {
                     int c1 = rhs.lteSigStrength - lhs.lteSigStrength;
                     if(c1 == 0) { // Fall back to compare PCI
                         return lhs.pci - rhs.pci;
@@ -433,7 +440,7 @@ public final class SignalDetector extends AppCompatActivity {
                 }
             });
 
-            for (SignalDetectorService.otherLteCell otherCell : signal.otherCells) {
+            for (otherLteCell otherCell : mSignalInfo.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
                     otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
                             otherCell.pci, otherCell.lteSigStrength));
@@ -450,20 +457,20 @@ public final class SignalDetector extends AppCompatActivity {
         int voiceSigStrength = Integer.MAX_VALUE;
         boolean voiceDataSame = true;
 
-        if (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
-            voiceSigStrength = signal.cdmaSigStrength;
-        } else if (signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-            voiceSigStrength = signal.gsmSigStrength;
+        if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+            voiceSigStrength = mSignalInfo.cdmaSigStrength;
+        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+            voiceSigStrength = mSignalInfo.gsmSigStrength;
         }
         int dataSigStrength = voiceSigStrength;
         boolean lteMode = false;
 
-        switch (signal.networkType) {
+        switch (mSignalInfo.networkType) {
             case TelephonyManager.NETWORK_TYPE_LTE:
-                if (validLTESignalStrength(signal.lteSigStrength)) {
+                if (validLTESignalStrength(mSignalInfo.lteSigStrength)) {
 //                    getSupportActionBar().setLogo(R.drawable.ic_launcher);
                     voiceDataSame = false;
-                    dataSigStrength = signal.lteSigStrength;
+                    dataSigStrength = mSignalInfo.lteSigStrength;
                     lteMode = true;
 //                } else {
 //                    getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
@@ -475,9 +482,9 @@ public final class SignalDetector extends AppCompatActivity {
             case TelephonyManager.NETWORK_TYPE_EVDO_A:
             case TelephonyManager.NETWORK_TYPE_EVDO_B:
 //                getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
-                if (validRSSISignalStrength(signal.evdoSigStrength)) {
+                if (validRSSISignalStrength(mSignalInfo.evdoSigStrength)) {
                     voiceDataSame = false;
-                    dataSigStrength = signal.evdoSigStrength;
+                    dataSigStrength = mSignalInfo.evdoSigStrength;
                 }
                 break;
 
@@ -486,20 +493,20 @@ public final class SignalDetector extends AppCompatActivity {
                 break;
         }
 
-        String netText = networkString(signal.networkType);
-        if (lteMode && validMnc(signal.mcc) && validMnc(signal.mnc)) {
-            netText += " " + formatMccMnc(signal.mcc, signal.mnc);
+        String netText = networkString(mSignalInfo.networkType);
+        if (lteMode && validMnc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
+            netText += " " + formatMccMnc(mSignalInfo.mcc, mSignalInfo.mnc);
         }
 
-        if (lteMode && signal.lteBand > 0) {
-            netText += String.format(" B%d", signal.lteBand);
+        if (lteMode && mSignalInfo.lteBand > 0) {
+            netText += String.format(" B%d", mSignalInfo.lteBand);
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
             netText += String.format(" %d\u202FdBm", dataSigStrength);
         }
 
-        if (signal.roaming)
+        if (mSignalInfo.roaming)
             netText += " " + getString(R.string.roamingInd);
 
         network.setText(netText);
@@ -513,28 +520,28 @@ public final class SignalDetector extends AppCompatActivity {
 
         ArrayList<String> bsList = new ArrayList<>();
 
-        if (signal.sid >= 0 && signal.nid >= 0 && signal.bsid >= 0 &&
-                (signal.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
+        if (mSignalInfo.sid >= 0 && mSignalInfo.nid >= 0 && mSignalInfo.bsid >= 0 &&
+                (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
             bsLabel.setText(R.string.cdma_1xrtt_base_station);
 
-            bsList.add("SID\u00A0" + signal.sid);
-            bsList.add("NID\u00A0" + signal.nid);
-            bsList.add(String.format("BSID\u00A0%d\u00A0(x%X)", signal.bsid, signal.bsid));
-        } else if (signal.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
+            bsList.add("SID\u00A0" + mSignalInfo.sid);
+            bsList.add("NID\u00A0" + mSignalInfo.nid);
+            bsList.add(String.format("BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
+        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
             bsLabel.setText(R.string._2g_3g_tower);
 
-            bsList.add("MNC\u00A0" + signal.operator);
-            if (signal.lac > 0)
-                bsList.add("LAC\u00A0" + String.valueOf(signal.lac));
+            bsList.add("MNC\u00A0" + mSignalInfo.operator);
+            if (mSignalInfo.lac > 0)
+                bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
 
-            if (signal.rnc > 0 && signal.rnc != signal.lac)
-                bsList.add("RNC\u00A0" + String.valueOf(signal.rnc));
+            if (mSignalInfo.rnc > 0 && mSignalInfo.rnc != mSignalInfo.lac)
+                bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
 
-            if (signal.cid > 0)
-                bsList.add("CID\u00A0" + String.valueOf(signal.cid));
+            if (mSignalInfo.cid > 0)
+                bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
 
-            if (signal.psc > 0)
-                bsList.add("PSC\u00A0" + String.valueOf(signal.psc));
+            if (mSignalInfo.psc > 0)
+                bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
         }
 
         if (!bsList.isEmpty()) {
@@ -545,9 +552,9 @@ public final class SignalDetector extends AppCompatActivity {
             preLteBlock.setVisibility(View.GONE);
         }
 
-        if (Math.abs(signal.latitude) <= 200)
-            centerMap(signal.latitude, signal.longitude, signal.accuracy, signal.avgspeed, bearing,
-                    signal.fixAge);
+        if (Math.abs(mSignalInfo.latitude) <= 200)
+            centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy, mSignalInfo.avgspeed, bearing,
+                    mSignalInfo.fixAge);
         addBsMarker();
     }
 
@@ -702,6 +709,10 @@ public final class SignalDetector extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if( getIntent().getBooleanExtra("Exit me", false)) {
+            finish();
+            return; // add this to prevent from doing unnecessary stuffs
+        }
         reloadPreferences();
         unbindSDService();
         bindSDService();
@@ -725,12 +736,12 @@ public final class SignalDetector extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         if (mBound) {
             unbindService(mConnection);
             mBound = false;
         }
 //        System.gc();
+        super.onDestroy();
     }
 
     /**
