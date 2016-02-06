@@ -369,6 +369,9 @@ public final class SignalDetector extends AppCompatActivity {
     }
 
     private void updateGui() {
+        if(mSignalInfo == null)
+            return;
+
         bslat = mSignalInfo.bslat;
         bslon = mSignalInfo.bslon;
 
