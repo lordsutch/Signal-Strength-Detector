@@ -284,15 +284,16 @@ public class SignalDetectorService extends Service {
         broadcaster = LocalBroadcastManager.getInstance(this);
     }
 
+    public static final String ACTION_STOP = "STOP";
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
 
-        resultIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        resultIntent.putExtra("Exit me", true);
-        PendingIntent exitIntent = PendingIntent.getActivity(this, 1, resultIntent, 0);
+        Intent stopIntent = new Intent(this, SignalDetector.class).setAction(ACTION_STOP);
+        PendingIntent exitIntent = PendingIntent.getActivity(this, 0, stopIntent, 0);
 
         mBuilder = new NotificationCompat.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
                 .setContentTitle(getString(R.string.signal_detector_is_running))

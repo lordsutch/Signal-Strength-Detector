@@ -78,11 +78,6 @@ public final class SignalDetector extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.main);
-        if( getIntent().getBooleanExtra("Exit me", false)) {
-            finish();
-            return; // add this to prevent from doing unnecessary stuffs
-        }
-
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -710,14 +705,21 @@ public final class SignalDetector extends AppCompatActivity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String action = intent.getAction();
+        if (action != null && action.equals(SignalDetectorService.ACTION_STOP)) {
+            Log.d(TAG, "onActivityResult: exit received.");
+            unbindSDService();
+            finish();
+        }
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if( getIntent().getBooleanExtra("Exit me", false)) {
-            finish();
-            return; // add this to prevent from doing unnecessary stuffs
-        }
-        reloadPreferences();
         unbindSDService();
+        reloadPreferences();
         bindSDService();
     }
 
