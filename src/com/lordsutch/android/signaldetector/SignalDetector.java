@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
@@ -321,9 +322,9 @@ public final class SignalDetector extends AppCompatActivity {
 
     private String formatMccMnc(int mcc, int mnc) {
         if(mnc >= 100 || is3digitMnc(mcc)) {
-            return String.format("%03d-%03d", mcc, mnc);
+            return String.format(Locale.US, "%03d-%03d", mcc, mnc);
         } else {
-            return String.format("%03d-%02d", mcc, mnc);
+            return String.format(Locale.US, "%03d-%02d", mcc, mnc);
         }
     }
 
@@ -375,7 +376,7 @@ public final class SignalDetector extends AppCompatActivity {
 
         TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 
-        latlon.setText(String.format("%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
+        latlon.setText(String.format(Locale.US, "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
                 Math.abs(mSignalInfo.latitude), getResources().getString(mSignalInfo.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
                 Math.abs(mSignalInfo.longitude), getResources().getString(mSignalInfo.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
                 mSignalInfo.accuracy * accuracyfactor, accuracylabel));
@@ -383,10 +384,10 @@ public final class SignalDetector extends AppCompatActivity {
         TextView speed = (TextView) findViewById(R.id.speed);
 
         if (bearing > 0.0)
-            speed.setText(String.format("%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
+            speed.setText(String.format(Locale.US, "%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
                     directionForBearing(bearing)));
         else
-            speed.setText(String.format("%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
+            speed.setText(String.format(Locale.US, "%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
 
         TextView servingid = (TextView) findViewById(R.id.cellid);
         TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
@@ -440,8 +441,12 @@ public final class SignalDetector extends AppCompatActivity {
 
             for (otherLteCell otherCell : mSignalInfo.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
-                    otherSitesList.add(String.format("%03d\u00a0(%d\u202FdBm)",
-                            otherCell.pci, otherCell.lteSigStrength));
+                    String sigInfo = String.format(Locale.US, "%d\u202FdBm", otherCell.lteSigStrength);
+                    if(mService.validTimingAdvance(otherCell.timingAdvance))
+                        sigInfo += String.format(Locale.US, "\u00a0TA=%d", otherCell.timingAdvance);
+
+                    otherSitesList.add(String.format(Locale.US, "%03d\u00a0(%s)",
+                            otherCell.pci, sigInfo));
                 }
             }
             if (otherSitesList.isEmpty())
@@ -497,11 +502,13 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         if (lteMode && mSignalInfo.lteBand > 0) {
-            netText += String.format(" B%d", mSignalInfo.lteBand);
+            netText += String.format(Locale.US, " B%d", mSignalInfo.lteBand);
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
-            netText += String.format(" %d\u202FdBm", dataSigStrength);
+            netText += String.format(Locale.US, " %d\u202FdBm", dataSigStrength);
+            if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
+                netText += String.format(Locale.US, " TA=%d", mSignalInfo.timingAdvance);
         }
 
         if (mSignalInfo.roaming)
@@ -524,7 +531,7 @@ public final class SignalDetector extends AppCompatActivity {
 
             bsList.add("SID\u00A0" + mSignalInfo.sid);
             bsList.add("NID\u00A0" + mSignalInfo.nid);
-            bsList.add(String.format("BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
+            bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
         } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
             bsLabel.setText(R.string._2g_3g_tower);
 
@@ -653,7 +660,7 @@ public final class SignalDetector extends AppCompatActivity {
             mapView.setZoom(zoom);
         // TODO Add markers here
 */
-        execJavascript(String.format("recenter(%f,%f,%f,%f,%f,%s,\"%s\",\"%s\");",
+        execJavascript(String.format(Locale.US, "recenter(%f,%f,%f,%f,%f,%s,\"%s\",\"%s\");",
                 latitude, longitude, accuracy, speed, bearing, staleFix, coverageLayer, baseLayer));
     }
 
@@ -680,7 +687,7 @@ public final class SignalDetector extends AppCompatActivity {
 */
 
         if (bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
-            execJavascript(String.format("placeMarker(%f,%f);", bslat, bslon));
+            execJavascript(String.format(Locale.US, "placeMarker(%f,%f);", bslat, bslon));
         else
             execJavascript("clearMarker();");
     }
