@@ -63,6 +63,7 @@ class otherLteCell implements Parcelable {
     int lteBand = 0;
 
     int lteSigStrength = Integer.MAX_VALUE;
+    int timingAdvance = Integer.MAX_VALUE;
 
     @Override
     public int describeContents() {
@@ -78,6 +79,7 @@ class otherLteCell implements Parcelable {
         dest.writeInt(this.mnc);
         dest.writeInt(this.lteBand);
         dest.writeInt(this.lteSigStrength);
+        dest.writeInt(this.timingAdvance);
     }
 
     public otherLteCell() {
@@ -91,6 +93,7 @@ class otherLteCell implements Parcelable {
         this.mnc = in.readInt();
         this.lteBand = in.readInt();
         this.lteSigStrength = in.readInt();
+        this.timingAdvance = in.readInt();
     }
 
     public static final Parcelable.Creator<otherLteCell> CREATOR = new Parcelable.Creator<otherLteCell>() {
@@ -123,6 +126,8 @@ class signalInfo implements Parcelable {
     int mcc = Integer.MAX_VALUE;
     int mnc = Integer.MAX_VALUE;
     int lteSigStrength = Integer.MAX_VALUE;
+    int timingAdvance = Integer.MAX_VALUE;
+
     int lteBand = 0;
 
     // CDMA2000
@@ -148,7 +153,6 @@ class signalInfo implements Parcelable {
     boolean roaming = false;
 
     List<otherLteCell> otherCells = null;
-
 
     @Override
     public int describeContents() {
@@ -189,6 +193,7 @@ class signalInfo implements Parcelable {
         dest.writeInt(this.networkType);
         dest.writeByte(roaming ? (byte) 1 : (byte) 0);
         dest.writeList(this.otherCells);
+        dest.writeInt(this.timingAdvance);
     }
 
     public signalInfo() {
@@ -228,6 +233,7 @@ class signalInfo implements Parcelable {
         this.roaming = in.readByte() != 0;
         this.otherCells = new ArrayList<otherLteCell>();
         in.readList(this.otherCells, List.class.getClassLoader());
+        this.timingAdvance = in.readInt();
     }
 
     public static final Creator<signalInfo> CREATOR = new Creator<signalInfo>() {
@@ -408,8 +414,11 @@ public class SignalDetectorService extends Service {
         return strength;
     }
 
-    private Boolean validRSSISignalStrength(int strength) // RSSI
-    {
+    private Boolean validTimingAdvance(int timingAdvance) {
+        return (timingAdvance != Integer.MAX_VALUE);
+    }
+
+    private Boolean validRSSISignalStrength(int strength) {
         return (strength > -120 && strength < 0);
     }
 
@@ -649,8 +658,10 @@ public class SignalDetectorService extends Service {
                     CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
 
                     if (item.isRegistered()) {
-                        if (cstr != null)
+                        if (cstr != null) {
                             signal.lteSigStrength = cstr.getDbm();
+                            signal.timingAdvance = cstr.getTimingAdvance();
+                        }
 
                         if (cellid != null) {
                             signal.gci = cellid.getCi();
@@ -664,8 +675,11 @@ public class SignalDetectorService extends Service {
                     } else {
                         otherLteCell otherCell = new otherLteCell();
 
-                        if (cstr != null)
+                        if (cstr != null) {
                             otherCell.lteSigStrength = cstr.getDbm();
+                            otherCell.timingAdvance = cstr.getTimingAdvance();
+                        }
+
                         if (cellid != null) {
                             otherCell.gci = cellid.getCi();
                             otherCell.pci = cellid.getPci();
@@ -716,13 +730,13 @@ public class SignalDetectorService extends Service {
             ArrayList<String> cellIds = new ArrayList<>();
 
             if (validTAC(signal.tac))
-                cellIds.add(String.format("TAC\u00a0%04X", signal.tac));
+                cellIds.add(String.format(Locale.US, "TAC\u00a0%04X", signal.tac));
 
             if (validCellID(signal.gci))
-                cellIds.add(String.format("GCI\u00a0%08X", signal.gci));
+                cellIds.add(String.format(Locale.US, "GCI\u00a0%08X", signal.gci));
 
             if (validPhysicalCellID(signal.pci))
-                cellIds.add(String.format("PCI\u00a0%03d", signal.pci));
+                cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", signal.pci));
 
             if (cellIds.isEmpty())
                 cellIdInfo = getString(R.string.missing);
@@ -745,17 +759,18 @@ public class SignalDetectorService extends Service {
                     (validLTESignalStrength(signal.lteSigStrength) ||
                             validPhysicalCellID(signal.pci) || validCellID(signal.gci))) {
                 String newLteLine = slat + "," + slon + "," +
-                        (validCellID(signal.gci) ? String.format("%08X", signal.gci) : "") + "," +
+                        (validCellID(signal.gci) ? String.format(Locale.US, "%08X", signal.gci) : "") + "," +
                         (validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "") + "," +
                         (validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "") + "," +
                         String.format("%.0f", signal.altitude) + "," +
-                        (validTAC(signal.tac) ? String.format("%04X", signal.tac) : "") + "," +
+                        (validTAC(signal.tac) ? String.format(Locale.US, "%04X", signal.tac) : "") + "," +
                         String.format("%.0f", signal.accuracy) + "," +
-                        (validCellID(signal.gci) ? String.format("%06X", signal.gci /256) : "") + "," +
-                        (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
+                        (validCellID(signal.gci) ? String.format(Locale.US, "%06X", signal.gci /256) : "") + "," +
+                        (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
+                        (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "");
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
-                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band");
+                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance");
                     lteLine = newLteLine;
                 }
             }
@@ -772,22 +787,25 @@ public class SignalDetectorService extends Service {
                         int mcc = mIdentity.getMcc();
                         int mnc = mIdentity.getMnc();
                         int rsrp = mSS.getDbm();
+                        int timingAdvance = mSS.getTimingAdvance();
+                        int lteBand = guessLteBand(mcc, mnc, eci);
 
                         String cellLine = slat + "," + slon + "," +
-                                String.format("%.0f", signal.accuracy) + "," +
-                                String.format("%.0f", signal.altitude) + "," +
+                                String.format(Locale.US, "%.0f", signal.accuracy) + "," +
+                                String.format(Locale.US, "%.0f", signal.altitude) + "," +
                                 (mcc != Integer.MAX_VALUE ? String.valueOf(mcc) : "") + "," +
                                 (mnc != Integer.MAX_VALUE ? String.valueOf(mnc) : "") + "," +
-                                (validTAC(tac) ? String.format("%04X", tac) : "") + "," +
-                                (validCellID(eci) ? String.format("%08X", eci) : "") + "," +
+                                (validTAC(tac) ? String.format(Locale.US, "%04X", tac) : "") + "," +
+                                (validCellID(eci) ? String.format(Locale.US, "%08X", eci) : "") + "," +
                                 (validPhysicalCellID(pci) ? String.valueOf(pci) : "") + "," +
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "") + "," +
                                 (item.isRegistered() ? "1" : "0") + "," +
-                                (validCellID(signal.gci) ? String.format("%06X", signal.gci /256) : "") + "," +
-                                (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "");
+                                (validCellID(eci) ? String.format(Locale.US, "%06X", eci /256) : "") + "," +
+                                (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
+                                (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "");
 
                         appendLog("cellinfolte.csv", cellLine,
-                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band");
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance");
                     }
                 }
             }
