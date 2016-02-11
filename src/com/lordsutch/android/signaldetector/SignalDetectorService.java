@@ -411,27 +411,27 @@ public class SignalDetectorService extends Service {
         return strength;
     }
 
-    private Boolean validTimingAdvance(int timingAdvance) {
+    Boolean validTimingAdvance(int timingAdvance) {
         return (timingAdvance != Integer.MAX_VALUE);
     }
 
-    private Boolean validRSSISignalStrength(int strength) {
+    Boolean validRSSISignalStrength(int strength) {
         return (strength > -120 && strength < 0);
     }
 
-    private Boolean validLTESignalStrength(int strength) {
+    Boolean validLTESignalStrength(int strength) {
         return (strength > -200 && strength < 0);
     }
 
-    private Boolean validPhysicalCellID(int pci) {
+    Boolean validPhysicalCellID(int pci) {
         return (pci >= 0 && pci <= 503);
     }
 
-    private Boolean validCellID(int eci) {
+    Boolean validCellID(int eci) {
         return (eci >= 0 && eci <= 0x0FFFFFFF);
     }
 
-    private boolean validTAC(int tac) {
+    Boolean validTAC(int tac) {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
 
