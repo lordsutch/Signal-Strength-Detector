@@ -72,6 +72,6 @@
     <string name="sensorlySummary">Signal strength overlay</string>
     <string name="sensorlyTitle">Signal strength overlay</string>
     <string name="ta_distance_pref">Convert timing advance value to distance</string>
-    <string name="ta_distance_pref_off">Timing advance shown in raw units (1/192000 sec).</string>
+    <string name="ta_distance_pref_off">Timing advance shown in microseconds.</string>
     <string name="ta_distance_pref_on">Timing advance shown as distance.</string>
 </resources>
