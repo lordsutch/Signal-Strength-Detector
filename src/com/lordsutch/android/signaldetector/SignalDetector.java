@@ -362,9 +362,12 @@ public final class SignalDetector extends AppCompatActivity {
     /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
      * Android timing advance is in microseconds according to:
      * https://android.googlesource.com/platform/hardware/ril/+/master/include/telephony/ril.h
+     * ... but empirically I don't think this is correct.
+     * I think it's probably 16 Ts = 16/(15000 * 2048) s, which makes the distance equivalent
+     * to 78.12 m or 0.0485 mi (http://niviuk.free.fr/store_lte.php)
      */
     private double timingAdvanceToDistance(int timingAdvance) {
-        return (tradunits ? timingAdvance * 0.186225 : timingAdvance * 0.2997);
+        return (tradunits ? timingAdvance * 0.048542 : timingAdvance * 0.07812);
     }
 
     private String formatTimingAdvance(int timingAdvance) {
@@ -372,7 +375,8 @@ public final class SignalDetector extends AppCompatActivity {
             return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance), ta_distance_units);
         } else {
-            return String.format(Locale.US, "\u00a0TA=%d\u202fµs", timingAdvance);
+            // 16 Ts = 25/48 µs
+            return String.format(Locale.US, "\u00a0TA=%.0f\u202fµs", ((double)timingAdvance)*25/48);
         }
     }
 
