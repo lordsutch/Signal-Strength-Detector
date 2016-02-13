@@ -47,6 +47,15 @@
         android:summaryOn="@string/logging_pref_on"
         android:title="@string/logging_pref" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="ta_distance"
+        android:summary="@string/ta_distance_pref_on"
+        android:summaryOff="@string/ta_distance_pref_off"
+        android:summaryOn="@string/ta_distance_pref_on"
+        android:title="@string/ta_distance_pref"
+        />
+
     <Preference
         android:key="clear_cache"
         android:persistent="false"

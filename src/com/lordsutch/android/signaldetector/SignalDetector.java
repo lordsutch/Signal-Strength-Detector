@@ -350,11 +350,30 @@ public final class SignalDetector extends AppCompatActivity {
 
     private boolean tradunits = false;
     private boolean bsmarker = false;
+    private boolean taAsDistance = false;
+    private String ta_distance_units = "mi";
 
     public void updateSigInfo(signalInfo signal) {
         mSignalInfo = signal;
         if(this.hasWindowFocus())
             updateGui();
+    }
+
+    /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
+     * Android timing advance is in microseconds according to:
+     * https://android.googlesource.com/platform/hardware/ril/+/master/include/telephony/ril.h
+     */
+    private double timingAdvanceToDistance(int timingAdvance) {
+        return (tradunits ? timingAdvance * 0.186225 : timingAdvance * 0.2997);
+    }
+
+    private String formatTimingAdvance(int timingAdvance) {
+        if(taAsDistance) {
+            return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
+                    timingAdvanceToDistance(timingAdvance), ta_distance_units);
+        } else {
+            return String.format(Locale.US, "\u00a0TA=%d\u202fµs", timingAdvance);
+        }
     }
 
     @Override
@@ -376,7 +395,7 @@ public final class SignalDetector extends AppCompatActivity {
 
         TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 
-        latlon.setText(String.format(Locale.US, "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
+        latlon.setText(String.format(Locale.getDefault(), "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
                 Math.abs(mSignalInfo.latitude), getResources().getString(mSignalInfo.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
                 Math.abs(mSignalInfo.longitude), getResources().getString(mSignalInfo.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
                 mSignalInfo.accuracy * accuracyfactor, accuracylabel));
@@ -384,10 +403,10 @@ public final class SignalDetector extends AppCompatActivity {
         TextView speed = (TextView) findViewById(R.id.speed);
 
         if (bearing > 0.0)
-            speed.setText(String.format(Locale.US, "%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
+            speed.setText(String.format(Locale.getDefault(), "%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
                     directionForBearing(bearing)));
         else
-            speed.setText(String.format(Locale.US, "%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
+            speed.setText(String.format(Locale.getDefault(), "%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
 
         TextView servingid = (TextView) findViewById(R.id.cellid);
         TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
@@ -410,7 +429,7 @@ public final class SignalDetector extends AppCompatActivity {
                 cellIds.add(String.format("GCI\u00a0%08X", mSignalInfo.gci));
 
             if (validPhysicalCellID(mSignalInfo.pci))
-                cellIds.add(String.format("PCI\u00a0%03d", mSignalInfo.pci));
+                cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", mSignalInfo.pci));
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
@@ -442,8 +461,9 @@ public final class SignalDetector extends AppCompatActivity {
             for (otherLteCell otherCell : mSignalInfo.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
                     String sigInfo = String.format(Locale.US, "%d\u202FdBm", otherCell.lteSigStrength);
-                    if(mService.validTimingAdvance(otherCell.timingAdvance))
-                        sigInfo += String.format(Locale.US, "\u00a0TA=%d", otherCell.timingAdvance);
+                    if(mService.validTimingAdvance(otherCell.timingAdvance)) {
+                        sigInfo += formatTimingAdvance(otherCell.timingAdvance);
+                    }
 
                     otherSitesList.add(String.format(Locale.US, "%03d\u00a0(%s)",
                             otherCell.pci, sigInfo));
@@ -508,7 +528,7 @@ public final class SignalDetector extends AppCompatActivity {
         if (validLTESignalStrength(dataSigStrength)) {
             netText += String.format(Locale.US, " %d\u202FdBm", dataSigStrength);
             if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
-                netText += String.format(Locale.US, " TA=%d", mSignalInfo.timingAdvance);
+                netText += formatTimingAdvance(mSignalInfo.timingAdvance);
         }
 
         if (mSignalInfo.roaming)
@@ -698,11 +718,13 @@ public final class SignalDetector extends AppCompatActivity {
             speedlabel = "mph";
             accuracyfactor = 3.28084;
             accuracylabel = "ft";
+            ta_distance_units = "mi";
         } else {
             speedfactor = 3.6;
             speedlabel = "km/h";
             accuracyfactor = 1.0;
             accuracylabel = "m";
+            ta_distance_units = "km";
         }
     }
 
@@ -735,6 +757,7 @@ public final class SignalDetector extends AppCompatActivity {
         bsmarker = sharedPref.getBoolean("show_base_station", false);
         tradunits = sharedPref.getBoolean("traditional_units", false);
         baseLayer = sharedPref.getString("tile_source", "osm");
+        taAsDistance = sharedPref.getBoolean("ta_distance", false);
 
         setMapView(baseLayer);
         addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));
