@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
@@ -51,12 +52,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
+import eu.chainfire.libsuperuser.Shell;
+
 class otherLteCell implements Parcelable {
     int gci = Integer.MAX_VALUE;
     int pci = Integer.MAX_VALUE;
     int tac = Integer.MAX_VALUE;
     int mcc = Integer.MAX_VALUE;
     int mnc = Integer.MAX_VALUE;
+    int earfcn = Integer.MAX_VALUE;
+    int rsrq = Integer.MAX_VALUE;
     int lteBand = 0;
 
     int lteSigStrength = Integer.MAX_VALUE;
@@ -74,6 +79,8 @@ class otherLteCell implements Parcelable {
         dest.writeInt(this.tac);
         dest.writeInt(this.mcc);
         dest.writeInt(this.mnc);
+        dest.writeInt(this.earfcn);
+        dest.writeInt(this.rsrq);
         dest.writeInt(this.lteBand);
         dest.writeInt(this.lteSigStrength);
         dest.writeInt(this.timingAdvance);
@@ -88,6 +95,8 @@ class otherLteCell implements Parcelable {
         this.tac = in.readInt();
         this.mcc = in.readInt();
         this.mnc = in.readInt();
+        this.earfcn = in.readInt();
+        this.rsrq = in.readInt();
         this.lteBand = in.readInt();
         this.lteSigStrength = in.readInt();
         this.timingAdvance = in.readInt();
@@ -122,6 +131,8 @@ class signalInfo implements Parcelable {
     int tac = Integer.MAX_VALUE;
     int mcc = Integer.MAX_VALUE;
     int mnc = Integer.MAX_VALUE;
+    int earfcn = Integer.MAX_VALUE;
+    int rsrq = Integer.MAX_VALUE;
     int lteSigStrength = Integer.MAX_VALUE;
     int timingAdvance = Integer.MAX_VALUE;
 
@@ -171,6 +182,8 @@ class signalInfo implements Parcelable {
         dest.writeInt(this.tac);
         dest.writeInt(this.mcc);
         dest.writeInt(this.mnc);
+        dest.writeInt(this.earfcn);
+        dest.writeInt(this.rsrq);
         dest.writeInt(this.lteSigStrength);
         dest.writeInt(this.lteBand);
         dest.writeInt(this.bsid);
@@ -210,6 +223,8 @@ class signalInfo implements Parcelable {
         this.tac = in.readInt();
         this.mcc = in.readInt();
         this.mnc = in.readInt();
+        this.earfcn = in.readInt();
+        this.rsrq = in.readInt();
         this.lteSigStrength = in.readInt();
         this.lteBand = in.readInt();
         this.bsid = in.readInt();
@@ -267,6 +282,10 @@ public class SignalDetectorService extends Service {
     private NotificationCompat.Builder mBuilder;
     private LocalBroadcastManager broadcaster;
 
+    private Shell.Interactive rootSessionCat;
+    private Shell.Interactive rootSessionEcho;
+    private int EARFCN = Integer.MAX_VALUE;
+
     /**
      * Class used for the client Binder.  Because we know this service always
      * runs in the same process as its clients, we don't need to deal with IPC.
@@ -278,11 +297,118 @@ public class SignalDetectorService extends Service {
         }
     }
 
+    /**
+     * Start cat on /dev/smd11 and STDOUT line by line, updating EARFCN when a valid one is detected
+     */
+    private void sendRootCat() {
+        rootSessionCat.addCommand(new String[] { "cat /dev/smd11"}, 1,
+            new Shell.OnCommandLineListener() {
+                @Override
+                public void onCommandResult(int commandCode, int exitCode) {
+                    if (exitCode != 0 ) {
+                        Log.e(TAG, "Error with root cat shell" + exitCode);
+                        // And close it because it errored out.
+                        rootSessionCat.close();
+                        // This prevents echo from being sent
+                        rootSessionCat = null;
+                    }
+                }
+                @Override
+                public void onLine(String line) {
+                    int tmpEARFCN = convertEARFCNtoInt(line);
+                    if (validEARFCN(tmpEARFCN)) {
+                        EARFCN = tmpEARFCN;
+                        Log.d(TAG, "EARFCN " + tmpEARFCN);
+                    }
+                }
+        });
+    }
+
+    private void openRootSessionForCat() {
+        rootSessionCat = new Shell.Builder().
+                useSU().
+                setWantSTDERR(true).
+                setMinimalLogging(false).
+                open(new Shell.OnCommandResultListener() {
+                    // Callback to report whether the shell was successfully started up
+                    @Override
+                    public void onCommandResult(int commandCode, int exitCode, List<String> output) {
+
+                        if (exitCode != Shell.OnCommandResultListener.SHELL_RUNNING) {
+                            Log.e(TAG, "Error opening root shell: exitCode " + exitCode);
+                        } else {
+                            // Shell is up: start processing
+                            Log.d(TAG, "Root cat shell up");
+                        }
+                    }
+                });
+    }
+
+    private void openRootSessionForEcho() {
+        rootSessionEcho = new Shell.Builder().
+                useSU().
+                setWantSTDERR(true).
+                setMinimalLogging(false).
+                setWatchdogTimeout(5).
+                open(new Shell.OnCommandResultListener() {
+                    // Callback to report whether the shell was successfully started up
+                    @Override
+                    public void onCommandResult(int commandCode, int exitCode, List<String> output) {
+
+                        if (exitCode != Shell.OnCommandResultListener.SHELL_RUNNING) {
+                            Log.e(TAG, "Error opening root shell: exitCode " + exitCode);
+                        } else {
+                            // Shell is up: start processing
+                            Log.d(TAG, "Root echo shell up");
+                        }
+                    }
+                });
+    }
+
+    private void sendRootEARFCN() {
+        if (rootSessionEcho != null && rootSessionCat != null) {
+            rootSessionEcho.addCommand(new String[]{"echo \"AT\\$QCRSRP?\\r\\n\" > /dev/smd11"}, 0,
+                    new Shell.OnCommandResultListener() {
+                        public void onCommandResult(int commandCode, int exitCode, List<String> output) {
+                            if (exitCode < 0) {
+                                Log.e(TAG, "Error executing echo: exitCode " + exitCode);
+                                if (exitCode == -1) {
+                                    rootSessionEcho.close();
+                                    openRootSessionForEcho();
+                                }
+                            }
+                        }
+                    }
+            );
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
 
         broadcaster = LocalBroadcastManager.getInstance(this);
+
+        // Only get earfcn if option is enabled
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
+        if (sharedPref.getBoolean("earfcn", false)) {
+            openRootSessionForCat();
+            if (rootSessionCat != null)
+                sendRootCat();
+            openRootSessionForEcho();
+        }
+    }
+
+    private int convertEARFCNtoInt(String rawRootOutput) {
+        // Since we get every line from cat, we only want the one that starts with $QCRSRP
+        if (rawRootOutput.matches("\\$QCRSRP(.*)")) {
+            // Strip off "$QCRSRP: " from beginning and split into fields, convert to list of strings
+            List<String> fields = new ArrayList<String>(Arrays.asList(rawRootOutput.substring(9).split(",")));
+            // Return only the EARFCN as Int
+            return Integer.parseInt(fields.get(1));
+        }
+        // return Integer.MAX_VALUE to signify no change
+        return Integer.MAX_VALUE;
     }
 
     public static final String ACTION_STOP = "STOP";
@@ -432,6 +558,10 @@ public class SignalDetectorService extends Service {
     boolean validTAC(int tac) {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
+
+    Boolean validEARFCN(int earfcn) {
+        return ( earfcn != Integer.MAX_VALUE);
+    } // Integer.MAX_VALUE signifies no change or empty / default EARFCN
 
     private static long FIVE_SECONDS = 5 * 1000;
     private LinkedList<Location> locs = new LinkedList<>();
@@ -645,6 +775,7 @@ public class SignalDetectorService extends Service {
 
         List<CellInfo> mCellInfo = mManager.getAllCellInfo();
         if (mCellInfo != null) {
+            sendRootEARFCN();
             signal.otherCells = new ArrayList<>();
 
             for (CellInfo item : mCellInfo) {
@@ -664,6 +795,7 @@ public class SignalDetectorService extends Service {
                             signal.tac = cellid.getTac();
                             signal.mnc = cellid.getMnc();
                             signal.mcc = cellid.getMcc();
+                            signal.earfcn = EARFCN;
                             signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci);
                             gotID = true;
                         }
@@ -733,6 +865,10 @@ public class SignalDetectorService extends Service {
             if (validPhysicalCellID(signal.pci))
                 cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", signal.pci));
 
+            if(validEARFCN(signal.earfcn)) {
+                cellIds.add(String.format(Locale.US, "EARFCN\u00a0%d", signal.earfcn));
+            }
+
             if (cellIds.isEmpty())
                 cellIdInfo = getString(R.string.missing);
             else
@@ -761,11 +897,14 @@ public class SignalDetectorService extends Service {
                         (validTAC(signal.tac) ? String.format(Locale.US, "%04X", signal.tac) : "") + "," +
                         String.format(Locale.US, "%.0f", signal.accuracy) + "," +
                         (validCellID(signal.gci) ? String.format(Locale.US, "%06X", signal.gci /256) : "") + "," +
+//   OK to add EARFCN here? And below?
+//                        (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
                         (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "");
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
                     appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance");
+//                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,earfcn,band,timingAdvance");
                     lteLine = newLteLine;
                 }
             }
@@ -796,11 +935,14 @@ public class SignalDetectorService extends Service {
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "") + "," +
                                 (item.isRegistered() ? "1" : "0") + "," +
                                 (validCellID(eci) ? String.format(Locale.US, "%06X", eci /256) : "") + "," +
+//                                (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
                                 (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
                                 (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "");
 
                         appendLog("cellinfolte.csv", cellLine,
                                 "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance");
+//                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,earfcn,band,timingAdvance");
+
                     }
                 }
             }
@@ -900,6 +1042,8 @@ public class SignalDetectorService extends Service {
             mManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
             listening = false;
         }
+        if (rootSessionEcho != null) rootSessionEcho.close();
+        if (rootSessionCat != null) rootSessionCat.kill(); // we must kill this Shell instead of close(), since cat never returns. close() waits for an idle shell
         stopForeground(true);
 
         super.onDestroy();

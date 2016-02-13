@@ -56,6 +56,13 @@
         android:title="@string/ta_distance_pref"
         />
 
+    <CheckBoxPreference
+        android:key="earfcn"
+        android:summary="@string/earfcn_pref_off"
+        android:summaryOff="@string/earfcn_pref_off"
+        android:summaryOn="@string/earfcn_pref_on"
+        android:title="@string/earfcn_pref" />
+
     <Preference
         android:key="clear_cache"
         android:persistent="false"

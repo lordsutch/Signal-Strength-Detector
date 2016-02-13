@@ -342,6 +342,8 @@ public final class SignalDetector extends AppCompatActivity {
         return (pci >= 0 && pci <= 503);
     }
 
+    private Boolean validEARFCN(int earfcn) { return earfcn != Integer.MAX_VALUE; }
+
     private boolean tradunits = false;
     private boolean bsmarker = false;
     private boolean taAsDistance = false;
@@ -434,6 +436,9 @@ public final class SignalDetector extends AppCompatActivity {
 
             if (validPhysicalCellID(mSignalInfo.pci))
                 cellIds.add(String.format(Locale.getDefault(), "PCI\u00a0%03d", mSignalInfo.pci));
+
+            if (validEARFCN(mSignalInfo.earfcn))
+                cellIds.add(String.format("EARFCN\u00a0%d", mSignalInfo.earfcn));
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
