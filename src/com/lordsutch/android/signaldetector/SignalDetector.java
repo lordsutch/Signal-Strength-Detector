@@ -374,7 +374,7 @@ public final class SignalDetector extends AppCompatActivity {
                     timingAdvanceToDistance(timingAdvance), ta_distance_units);
         } else {
             // 16 Ts = 25/48 µs
-            return String.format(Locale.US, "\u00a0TA=%.0f\u202fµs", timingAdvance*25/48.0);
+            return String.format(Locale.getDefault(), "\u00a0TA=%.0f\u202fµs", timingAdvance*25/48.0);
         }
     }
 
@@ -431,7 +431,7 @@ public final class SignalDetector extends AppCompatActivity {
                 cellIds.add(String.format("GCI\u00a0%08X", mSignalInfo.gci));
 
             if (validPhysicalCellID(mSignalInfo.pci))
-                cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", mSignalInfo.pci));
+                cellIds.add(String.format(Locale.getDefault(), "PCI\u00a0%03d", mSignalInfo.pci));
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
@@ -462,12 +462,12 @@ public final class SignalDetector extends AppCompatActivity {
 
             for (otherLteCell otherCell : mSignalInfo.otherCells) {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
-                    String sigInfo = String.format(Locale.US, "%d\u202FdBm", otherCell.lteSigStrength);
+                    String sigInfo = String.format(Locale.getDefault(), "%d\u202FdBm", otherCell.lteSigStrength);
                     if(mService.validTimingAdvance(otherCell.timingAdvance)) {
                         sigInfo += formatTimingAdvance(otherCell.timingAdvance);
                     }
 
-                    otherSitesList.add(String.format(Locale.US, "%03d\u00a0(%s)",
+                    otherSitesList.add(String.format(Locale.getDefault(), "%03d\u00a0(%s)",
                             otherCell.pci, sigInfo));
                 }
             }
@@ -524,11 +524,11 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         if (lteMode && mSignalInfo.lteBand > 0) {
-            netText += String.format(Locale.US, " B%d", mSignalInfo.lteBand);
+            netText += String.format(Locale.getDefault(), " B%d", mSignalInfo.lteBand);
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
-            netText += String.format(Locale.US, " %d\u202FdBm", dataSigStrength);
+            netText += String.format(Locale.getDefault(), " %d\u202FdBm", dataSigStrength);
             if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
                 netText += formatTimingAdvance(mSignalInfo.timingAdvance);
         }
@@ -553,7 +553,7 @@ public final class SignalDetector extends AppCompatActivity {
 
             bsList.add("SID\u00A0" + mSignalInfo.sid);
             bsList.add("NID\u00A0" + mSignalInfo.nid);
-            bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
+            bsList.add(String.format(Locale.getDefault(), "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
         } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
             bsLabel.setText(R.string._2g_3g_tower);
 
@@ -715,7 +715,7 @@ public final class SignalDetector extends AppCompatActivity {
 */
 
         if (bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
-            execJavascript(String.format(Locale.US, "placeMarker(%f,%f);", bslat, bslon));
+            execJavascript(String.format(Locale.US, "placeMarker(%.5f,%.5f);", bslat, bslon));
         else
             execJavascript("clearMarker();");
     }
