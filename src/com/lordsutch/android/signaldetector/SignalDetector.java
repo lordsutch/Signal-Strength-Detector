@@ -20,10 +20,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
-import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -48,15 +45,12 @@ import android.widget.Toast;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import static com.lordsutch.android.signaldetector.SignalDetectorService.MSG_SIGNAL_UPDATE;
 
 public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
@@ -264,15 +258,15 @@ public final class SignalDetector extends AppCompatActivity {
         }
     };
 
-    private Boolean validLTESignalStrength(int strength) {
+    private boolean validLTESignalStrength(int strength) {
         return (strength > -200 && strength < 0);
     }
 
-    private Boolean validRSSISignalStrength(int strength) {
+    private boolean validRSSISignalStrength(int strength) {
         return (strength > -120 && strength < 0);
     }
 
-    private Boolean validCellID(int eci) {
+    private boolean validCellID(int eci) {
         return (eci >= 0 && eci <= 0x0FFFFFFF);
     }
 
@@ -316,7 +310,7 @@ public final class SignalDetector extends AppCompatActivity {
             310, 311, 312, 313, 316 // USA; Guam
     );
 
-    private Boolean is3digitMnc(int mcc) {
+    private boolean is3digitMnc(int mcc) {
         return threeDigitMNCList.contains(mcc);
     }
 
@@ -344,7 +338,7 @@ public final class SignalDetector extends AppCompatActivity {
         }
     }
 
-    private Boolean validPhysicalCellID(int pci) {
+    private boolean validPhysicalCellID(int pci) {
         return (pci >= 0 && pci <= 503);
     }
 
@@ -366,8 +360,12 @@ public final class SignalDetector extends AppCompatActivity {
      * I think it's probably 16 Ts = 16/(15000 * 2048) s, which makes the distance equivalent
      * to 78.12 m or 0.0485 mi (http://niviuk.free.fr/store_lte.php)
      */
+    private double timingAdvanceToMeters(int timingAdvance) {
+        return timingAdvance * 78.12;
+    }
+
     private double timingAdvanceToDistance(int timingAdvance) {
-        return (tradunits ? timingAdvance * 0.048542 : timingAdvance * 0.07812);
+        return timingAdvanceToMeters(timingAdvance) / (tradunits ? 1609.334 : 1000);
     }
 
     private String formatTimingAdvance(int timingAdvance) {
@@ -376,7 +374,7 @@ public final class SignalDetector extends AppCompatActivity {
                     timingAdvanceToDistance(timingAdvance), ta_distance_units);
         } else {
             // 16 Ts = 25/48 µs
-            return String.format(Locale.US, "\u00a0TA=%.0f\u202fµs", ((double)timingAdvance)*25/48);
+            return String.format(Locale.US, "\u00a0TA=%.0f\u202fµs", timingAdvance*25/48.0);
         }
     }
 
@@ -677,6 +675,11 @@ public final class SignalDetector extends AppCompatActivity {
                 coverageLayer = "";
         }
 
+        double towerRadius = 0.0;
+
+        if(mSignalInfo != null)
+            towerRadius = timingAdvanceToMeters(mSignalInfo.timingAdvance);
+
 /*
         mapView.setCenter(new LatLng(latitude, longitude));
         int zoom = zoomForSpeed(speed);
@@ -684,8 +687,9 @@ public final class SignalDetector extends AppCompatActivity {
             mapView.setZoom(zoom);
         // TODO Add markers here
 */
-        execJavascript(String.format(Locale.US, "recenter(%f,%f,%f,%f,%f,%s,\"%s\",\"%s\");",
-                latitude, longitude, accuracy, speed, bearing, staleFix, coverageLayer, baseLayer));
+        execJavascript(String.format(Locale.US, "recenter(%.5f,%.5f,%f,%.0f,%.0f,%s,\"%s\",\"%s\",%.0f);",
+                latitude, longitude, accuracy, speed, bearing, staleFix, coverageLayer, baseLayer,
+                towerRadius));
     }
 
 //    private Marker baseMarker = null;

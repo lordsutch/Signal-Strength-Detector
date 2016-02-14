@@ -1,5 +1,6 @@
 var map = null;
 var marker = null;
+var towerMarker = null;
 var zoom = 12;
 var oldspeed = 0;
 var pmarker = null;
@@ -149,7 +150,7 @@ function zoomLoc(lat, lon, speed, bearing) {
     return L.latLng([lat+dlat, lon+dlon]);
 }
 
-function recenter(lat, lon, radius, speed, bearing, stale, operator, base) {
+function recenter(lat, lon, radius, speed, bearing, stale, operator, base, towerRadius) {
     newZoom = zoom4speed(speed);
 
     if(!map) {
@@ -174,6 +175,17 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base) {
     marker.setLatLng(pos);
     marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
     marker.redraw();
+
+    if(!towerMarker) {
+        towerMarker = L.circle(pos, towerRadius);
+        towerMarker.setStyle({color: "#ccc", fillColor: "#ccc"});
+        towerMarker.addTo(map);
+    } else {
+        towerMarker.setLatLng(pos);
+        if(towerRadius > 0)
+            towerMarker.setRadius(towerRadius);
+        towerMarker.redraw();
+    }
 
     if(!stale && bearing > 0) {
         if(arrow) {
