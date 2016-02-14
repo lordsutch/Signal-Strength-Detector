@@ -248,8 +248,6 @@ class signalInfo implements Parcelable {
 public class SignalDetectorService extends Service {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
-    public static final int MSG_SIGNAL_UPDATE = 1;
-
     private int mNotificationId = 1;
 
     private CellLocation mCellLocation;
@@ -300,7 +298,7 @@ public class SignalDetectorService extends Service {
 
         mBuilder = new NotificationCompat.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
                 .setContentTitle(getString(R.string.signal_detector_is_running))
-                .setContentText("Loading...")
+                .setContentText("Loading…")
                 .setOnlyAlertOnce(true)
                 .setLocalOnly(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -368,7 +366,7 @@ public class SignalDetectorService extends Service {
     }
 
     private void appendLog(String logfile, String text, String header) {
-        Boolean newfile = false;
+        boolean newfile = false;
         File filesdir = getExternalFilesDir(null);
 
         File logFile = new File(filesdir, logfile);
@@ -411,27 +409,27 @@ public class SignalDetectorService extends Service {
         return strength;
     }
 
-    Boolean validTimingAdvance(int timingAdvance) {
+    boolean validTimingAdvance(int timingAdvance) {
         return (timingAdvance != Integer.MAX_VALUE);
     }
 
-    Boolean validRSSISignalStrength(int strength) {
+    boolean validRSSISignalStrength(int strength) {
         return (strength > -120 && strength < 0);
     }
 
-    Boolean validLTESignalStrength(int strength) {
+    boolean validLTESignalStrength(int strength) {
         return (strength > -200 && strength < 0);
     }
 
-    Boolean validPhysicalCellID(int pci) {
+    boolean validPhysicalCellID(int pci) {
         return (pci >= 0 && pci <= 503);
     }
 
-    Boolean validCellID(int eci) {
+    boolean validCellID(int eci) {
         return (eci >= 0 && eci <= 0x0FFFFFFF);
     }
 
-    Boolean validTAC(int tac) {
+    boolean validTAC(int tac) {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
 
@@ -596,7 +594,7 @@ public class SignalDetectorService extends Service {
         if (mLocation == null || mSignalStrength == null || mCellLocation == null)
             return;
 
-        Boolean gotID = false;
+        boolean gotID = false;
 
         signalInfo signal = new signalInfo();
 
@@ -759,9 +757,9 @@ public class SignalDetectorService extends Service {
                         (validCellID(signal.gci) ? String.format(Locale.US, "%08X", signal.gci) : "") + "," +
                         (validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "") + "," +
                         (validLTESignalStrength(signal.lteSigStrength) ? String.valueOf(signal.lteSigStrength) : "") + "," +
-                        String.format("%.0f", signal.altitude) + "," +
+                        String.format(Locale.US, "%.0f", signal.altitude) + "," +
                         (validTAC(signal.tac) ? String.format(Locale.US, "%04X", signal.tac) : "") + "," +
-                        String.format("%.0f", signal.accuracy) + "," +
+                        String.format(Locale.US, "%.0f", signal.accuracy) + "," +
                         (validCellID(signal.gci) ? String.format(Locale.US, "%06X", signal.gci /256) : "") + "," +
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
                         (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "");
