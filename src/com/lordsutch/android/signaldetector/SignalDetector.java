@@ -359,9 +359,11 @@ public final class SignalDetector extends AppCompatActivity {
      * ... but empirically I don't think this is correct.
      * I think it's probably 16 Ts = 16/(15000 * 2048) s, which makes the distance equivalent
      * to 78.12 m or 0.0485 mi (http://niviuk.free.fr/store_lte.php)
+     *
+     * Might be 229.7/2 = 159.85 m; try that...
      */
     private double timingAdvanceToMeters(int timingAdvance) {
-        return timingAdvance * 78.12;
+        return timingAdvance * 159.85;
     }
 
     private double timingAdvanceToDistance(int timingAdvance) {
