@@ -178,7 +178,7 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base, tower
 
     if(!towerMarker) {
         towerMarker = L.circle(pos, towerRadius);
-        towerMarker.setStyle({color: "#ccc", fillColor: "#ccc"});
+        towerMarker.setStyle({color: "#cc0", fillColor: "#cc0"});
         towerMarker.addTo(map);
     } else {
         towerMarker.setLatLng(pos);
