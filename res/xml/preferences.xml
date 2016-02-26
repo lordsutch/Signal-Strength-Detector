@@ -57,6 +57,7 @@
         />
 
     <CheckBoxPreference
+        android:defaultValue="false"
         android:key="earfcn"
         android:summary="@string/earfcn_pref_off"
         android:summaryOff="@string/earfcn_pref_off"
