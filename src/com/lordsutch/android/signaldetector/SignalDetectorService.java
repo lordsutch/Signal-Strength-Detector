@@ -61,7 +61,6 @@ class otherLteCell implements Parcelable {
     int mcc = Integer.MAX_VALUE;
     int mnc = Integer.MAX_VALUE;
     int earfcn = Integer.MAX_VALUE;
-    int rsrq = Integer.MAX_VALUE;
     int lteBand = 0;
 
     int lteSigStrength = Integer.MAX_VALUE;
@@ -80,7 +79,6 @@ class otherLteCell implements Parcelable {
         dest.writeInt(this.mcc);
         dest.writeInt(this.mnc);
         dest.writeInt(this.earfcn);
-        dest.writeInt(this.rsrq);
         dest.writeInt(this.lteBand);
         dest.writeInt(this.lteSigStrength);
         dest.writeInt(this.timingAdvance);
@@ -96,7 +94,6 @@ class otherLteCell implements Parcelable {
         this.mcc = in.readInt();
         this.mnc = in.readInt();
         this.earfcn = in.readInt();
-        this.rsrq = in.readInt();
         this.lteBand = in.readInt();
         this.lteSigStrength = in.readInt();
         this.timingAdvance = in.readInt();
@@ -132,7 +129,6 @@ class signalInfo implements Parcelable {
     int mcc = Integer.MAX_VALUE;
     int mnc = Integer.MAX_VALUE;
     int earfcn = Integer.MAX_VALUE;
-    int rsrq = Integer.MAX_VALUE;
     int lteSigStrength = Integer.MAX_VALUE;
     int timingAdvance = Integer.MAX_VALUE;
 
@@ -183,7 +179,6 @@ class signalInfo implements Parcelable {
         dest.writeInt(this.mcc);
         dest.writeInt(this.mnc);
         dest.writeInt(this.earfcn);
-        dest.writeInt(this.rsrq);
         dest.writeInt(this.lteSigStrength);
         dest.writeInt(this.lteBand);
         dest.writeInt(this.bsid);
@@ -224,7 +219,6 @@ class signalInfo implements Parcelable {
         this.mcc = in.readInt();
         this.mnc = in.readInt();
         this.earfcn = in.readInt();
-        this.rsrq = in.readInt();
         this.lteSigStrength = in.readInt();
         this.lteBand = in.readInt();
         this.bsid = in.readInt();
@@ -559,7 +553,7 @@ public class SignalDetectorService extends Service {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, FFFF are reserved values
     }
 
-    Boolean validEARFCN(int earfcn) {
+    boolean validEARFCN(int earfcn) {
         return ( earfcn != Integer.MAX_VALUE);
     } // Integer.MAX_VALUE signifies no change or empty / default EARFCN
 
@@ -897,14 +891,12 @@ public class SignalDetectorService extends Service {
                         (validTAC(signal.tac) ? String.format(Locale.US, "%04X", signal.tac) : "") + "," +
                         String.format(Locale.US, "%.0f", signal.accuracy) + "," +
                         (validCellID(signal.gci) ? String.format(Locale.US, "%06X", signal.gci /256) : "") + "," +
-//   OK to add EARFCN here? And below?
-//                        (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
-                        (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "");
+                        (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "") + "," +
+                        (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "");
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
-                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance");
-//                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,earfcn,band,timingAdvance");
+                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance,earfcn");
                     lteLine = newLteLine;
                 }
             }
@@ -935,13 +927,12 @@ public class SignalDetectorService extends Service {
                                 (validLTESignalStrength(rsrp) ? String.valueOf(rsrp) : "") + "," +
                                 (item.isRegistered() ? "1" : "0") + "," +
                                 (validCellID(eci) ? String.format(Locale.US, "%06X", eci /256) : "") + "," +
-//                                (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
                                 (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
-                                (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "");
+                                (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "") + "," +
+                                (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "");
 
                         appendLog("cellinfolte.csv", cellLine,
-                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance");
-//                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,earfcn,band,timingAdvance");
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn");
 
                     }
                 }
