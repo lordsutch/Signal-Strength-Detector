@@ -52,6 +52,8 @@
             android:required="false"
             tools:ignore="MissingPrefix" />
 
+        <meta-data android:name="android.max_aspect" android:value="2.6" />
+
         <meta-data
             android:name="com.sec.android.support.multiwindow"
             android:value="true" />
@@ -69,5 +71,4 @@
             android:value="598.0dip" />
 
     </application>
-
 </manifest>

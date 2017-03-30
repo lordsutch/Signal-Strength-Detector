@@ -407,8 +407,6 @@ public class SignalDetectorService extends Service {
 
     public static final String ACTION_STOP = "STOP";
 
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-    @Override
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
@@ -706,14 +704,9 @@ public class SignalDetectorService extends Service {
     }
 
     private long locationFixAge(Location loc) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            return (loc.getElapsedRealtimeNanos() - SystemClock.elapsedRealtimeNanos()) / (1000 * 1000);
-        } else {
-            return (loc.getTime() - (new Date()).getTime());
-        }
+        return (loc.getElapsedRealtimeNanos() - SystemClock.elapsedRealtimeNanos()) / (1000 * 1000);
     }
 
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     private void updatelog(boolean log) {
         if (mLocation == null || mSignalStrength == null || mCellLocation == null)
             return;
@@ -789,7 +782,10 @@ public class SignalDetectorService extends Service {
                             signal.tac = cellid.getTac();
                             signal.mnc = cellid.getMnc();
                             signal.mcc = cellid.getMcc();
-                            signal.earfcn = EARFCN;
+                            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                                signal.earfcn = cellid.getEarfcn();
+                            else
+                                signal.earfcn = EARFCN;
                             signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci);
                             gotID = true;
                         }
@@ -808,6 +804,8 @@ public class SignalDetectorService extends Service {
                             otherCell.mnc = cellid.getMnc();
                             otherCell.mcc = cellid.getMcc();
                             otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci);
+                            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                                otherCell.earfcn = cellid.getEarfcn();
                         }
                         signal.otherCells.add(otherCell);
                     }
