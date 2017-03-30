@@ -1,7 +1,6 @@
 package com.lordsutch.android.signaldetector;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -46,7 +45,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -252,7 +250,6 @@ class signalInfo implements Parcelable {
         }
     };
 }
-
 
 public class SignalDetectorService extends Service {
     public static final String TAG = SignalDetector.class.getSimpleName();
