@@ -549,7 +549,8 @@ public class SignalDetectorService extends Service {
     }
 
     boolean validEARFCN(int earfcn) {
-        return ( earfcn != Integer.MAX_VALUE);
+        // Some phones (Samsung S7 Edge) report 0, which is impossible so we'll ignore that too.
+        return ( earfcn != Integer.MAX_VALUE && earfcn > 0);
     } // Integer.MAX_VALUE signifies no change or empty / default EARFCN
 
     private static long FIVE_SECONDS = 5 * 1000;
