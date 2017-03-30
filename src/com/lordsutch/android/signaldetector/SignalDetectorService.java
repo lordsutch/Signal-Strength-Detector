@@ -607,8 +607,127 @@ public class SignalDetectorService extends Service {
     private String CdmaLine = null;
     private String GSMLine = null;
 
-    private int guessLteBand(int mcc, int mnc, int gci) {
+    private int guessLteBandFromEARFCN(int earfcn) {
+        // Stolen from http://niviuk.free.fr/lte_band.php
+        if(earfcn <= 599)
+            return 1;
+        else if(earfcn <= 1199)
+            return 2;
+        else if(earfcn <= 1949)
+            return 3;
+        else if(earfcn <= 2399)
+            return 4;
+        else if(earfcn <= 2649)
+            return 5;
+        else if(earfcn <= 2749)
+            return 6;
+        else if(earfcn <= 2690)
+            return 7;
+        else if(earfcn <= 3799)
+            return 8;
+        else if(earfcn <= 4149)
+            return 9;
+        else if(earfcn <= 4749)
+            return 10;
+        else if(earfcn <= 4949)
+            return 11;
+        else if(earfcn <= 5179)
+            return 12;
+        else if(earfcn <= 5279)
+            return 13;
+        else if(earfcn <= 5379)
+            return 14;
+        // Bands 15, 16 missing
+        else if(earfcn >= 5730 && earfcn <= 5849)
+            return 17;
+        else if(earfcn >= 5850 && earfcn <= 5999)
+            return 18;
+        else if(earfcn >= 6000 && earfcn <= 6149)
+            return 19;
+        else if(earfcn >= 6150 && earfcn <= 6449)
+            return 20;
+        else if(earfcn >= 6450 && earfcn <= 6599)
+            return 21;
+        else if(earfcn >= 6600 && earfcn <= 7399)
+            return 22;
+        else if(earfcn >= 7500 && earfcn <= 7699)
+            return 23;
+        else if(earfcn >= 7700 && earfcn <= 8039)
+            return 24;
+        else if(earfcn >= 8040 && earfcn <= 8689)
+            return 25;
+        else if(earfcn >= 8690 && earfcn <= 9039)
+            return 26;
+        else if(earfcn >= 9040 && earfcn <= 9209)
+            return 27;
+        else if(earfcn >= 9210 && earfcn <= 9659)
+            return 28;
+        else if(earfcn >= 9660 && earfcn <= 9769)
+            return 29;
+        else if(earfcn >= 9770 && earfcn <= 9869)
+            return 30;
+        else if(earfcn >= 9870 && earfcn <= 9919)
+            return 31;
+        else if(earfcn >= 9920 && earfcn <= 10359)
+            return 32;
+        else if(earfcn >= 36000 && earfcn <= 36199)
+            return 33;
+        else if(earfcn >= 36200 && earfcn <= 36349)
+            return 34;
+        else if(earfcn >= 36350 && earfcn <= 36949)
+            return 35;
+        else if(earfcn >= 36950 && earfcn <= 37549)
+            return 36;
+        else if(earfcn >= 37550 && earfcn <= 37749)
+            return 37;
+        else if(earfcn >= 37750 && earfcn <= 38249)
+            return 38;
+        else if(earfcn >= 38250 && earfcn <= 38649)
+            return 39;
+        else if(earfcn >= 38650 && earfcn <= 39649)
+            return 40;
+        else if(earfcn >= 39650 && earfcn <= 41589)
+            return 41;
+        else if(earfcn >= 41590 && earfcn <= 43589)
+            return 42;
+        else if(earfcn >= 43590 && earfcn <= 45589)
+            return 43;
+        else if(earfcn >= 45590 && earfcn <= 46589)
+            return 44;
+        else if(earfcn >= 46590 && earfcn <= 46789)
+            return 45;
+        else if(earfcn >= 46790 && earfcn <= 54539)
+            return 46;
+        else if(earfcn >= 54540 && earfcn <= 55239)
+            return 47;
+        else if(earfcn >= 55240 && earfcn <= 56739)
+            return 48;
+        else if(earfcn >= 65536 && earfcn <= 66435)
+            return 65;
+        else if(earfcn >= 66436 && earfcn <= 67335)
+            return 66;
+        else if(earfcn >= 67336 && earfcn <= 67535)
+            return 67;
+        else if(earfcn >= 67536 && earfcn <= 67835)
+            return 68;
+        else if(earfcn >= 67836 && earfcn <= 68335)
+            return 69;
+        else if(earfcn >= 68336 && earfcn <= 68585)
+            return 70;
+        else if(earfcn >= 255144 && earfcn <= 256143)
+            return 252;
+        else if(earfcn >= 260894 && earfcn <= 262143)
+            return 253;
+        else
+            return 0;
+    }
+
+    private int guessLteBand(int mcc, int mnc, int gci, int earfcn) {
         int sector = gci & 0xff;
+
+        if(validEARFCN(earfcn)) {
+            return guessLteBandFromEARFCN(earfcn);
+        }
 
         if(mcc == 311 && (mnc == 490 || mnc == 870))
             return 41; // Legacy Clear sites are on band 41
@@ -783,7 +902,7 @@ public class SignalDetectorService extends Service {
                                 signal.earfcn = cellid.getEarfcn();
                             else
                                 signal.earfcn = EARFCN;
-                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci);
+                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci, signal.earfcn);
                             gotID = true;
                         }
                     } else {
@@ -800,9 +919,9 @@ public class SignalDetectorService extends Service {
                             otherCell.tac = cellid.getTac();
                             otherCell.mnc = cellid.getMnc();
                             otherCell.mcc = cellid.getMcc();
-                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci);
                             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                 otherCell.earfcn = cellid.getEarfcn();
+                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci, otherCell.earfcn);
                         }
                         signal.otherCells.add(otherCell);
                     }
@@ -907,9 +1026,12 @@ public class SignalDetectorService extends Service {
                         int pci = mIdentity.getPci();
                         int mcc = mIdentity.getMcc();
                         int mnc = mIdentity.getMnc();
+                        int earfcn = Integer.MAX_VALUE;
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                            earfcn = mIdentity.getEarfcn();
                         int rsrp = mSS.getDbm();
                         int timingAdvance = mSS.getTimingAdvance();
-                        int lteBand = guessLteBand(mcc, mnc, eci);
+                        int lteBand = guessLteBand(mcc, mnc, eci, earfcn);
 
                         String cellLine = slat + "," + slon + "," +
                                 String.format(Locale.US, "%.0f", signal.accuracy) + "," +
@@ -924,7 +1046,7 @@ public class SignalDetectorService extends Service {
                                 (validCellID(eci) ? String.format(Locale.US, "%06X", eci /256) : "") + "," +
                                 (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
                                 (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "") + "," +
-                                (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "");
+                                (validEARFCN(earfcn) ? String.format(Locale.US, "%d", earfcn) : "");
 
                         appendLog("cellinfolte.csv", cellLine,
                                 "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn");
