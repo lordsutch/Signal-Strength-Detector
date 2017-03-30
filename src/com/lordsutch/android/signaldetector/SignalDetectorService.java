@@ -997,7 +997,7 @@ public class SignalDetectorService extends Service {
         long THIRTY_SECONDS = (long) (30 * 1000);
         if (loggingEnabled && log && (signal.fixAge < THIRTY_SECONDS)) {
             TimeZone tz = TimeZone.getTimeZone("UTC");
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
             df.setTimeZone(tz);
             String nowAsISO = df.format(new Date());
 
