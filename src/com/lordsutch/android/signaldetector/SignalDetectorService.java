@@ -42,13 +42,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -992,6 +996,11 @@ public class SignalDetectorService extends Service {
 
         long THIRTY_SECONDS = (long) (30 * 1000);
         if (loggingEnabled && log && (signal.fixAge < THIRTY_SECONDS)) {
+            TimeZone tz = TimeZone.getTimeZone("UTC");
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+            df.setTimeZone(tz);
+            String nowAsISO = df.format(new Date());
+
             String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
             String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
@@ -1008,10 +1017,11 @@ public class SignalDetectorService extends Service {
                         (validCellID(signal.gci) ? String.format(Locale.US, "%06X", signal.gci /256) : "") + "," +
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
                         (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "") + "," +
-                        (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "");
+                        (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
+                        nowAsISO;
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
-                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance,earfcn");
+                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance,earfcn,timestamp");
                     lteLine = newLteLine;
                 }
             }
@@ -1047,10 +1057,11 @@ public class SignalDetectorService extends Service {
                                 (validCellID(eci) ? String.format(Locale.US, "%06X", eci /256) : "") + "," +
                                 (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
                                 (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "") + "," +
-                                (validEARFCN(earfcn) ? String.format(Locale.US, "%d", earfcn) : "");
+                                (validEARFCN(earfcn) ? String.format(Locale.US, "%d", earfcn) : "") + "," +
+                                nowAsISO;
 
                         appendLog("cellinfolte.csv", cellLine,
-                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn");
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn,timestamp");
 
                     }
                 }
@@ -1060,22 +1071,23 @@ public class SignalDetectorService extends Service {
                 String bslatstr = (signal.bslat <= 200 ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
                 String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
-                String newCdmaLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%d,%s,%s,%.0f,%.0f",
+                String newCdmaLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%d,%s,%s,%.0f,%.0f,%s",
                         slat, slon, signal.sid, signal.nid, signal.bsid, signal.cdmaSigStrength,
-                        bslatstr, bslonstr, signal.altitude, signal.accuracy);
+                        bslatstr, bslonstr, signal.altitude, signal.accuracy, nowAsISO);
                 if (CdmaLine == null || !newCdmaLine.equals(CdmaLine)) {
                     Log.d(TAG, "Logging CDMA cell.");
                     appendLog(((signal.sid >= 22404) && (signal.sid <= 22451)) ? "esmrcells.csv" : "cdmacells.csv",
-                            newCdmaLine, "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy");
+                            newCdmaLine, "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy,timestamp");
                     CdmaLine = newCdmaLine;
                 }
             } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid)) {
-                String newGSMLine = String.format(Locale.US, "%s,%s,%.0f,%.0f,%d,%d,%d,%d,%s", slat, slon,
+                String newGSMLine = String.format(Locale.US, "%s,%s,%.0f,%.0f,%d,%d,%d,%d,%s,%s", slat, slon,
                         signal.altitude, signal.accuracy,
-                        signal.cid, signal.rnc, signal.lac, signal.psc, signal.gsmSigStrength);
+                        signal.cid, signal.rnc, signal.lac, signal.psc, signal.gsmSigStrength,
+                        nowAsISO);
                 if (GSMLine == null || !newGSMLine.equals(GSMLine)) {
                     Log.d(TAG, "Logging GSM cell.");
-                    appendLog("gsmcells.csv", newGSMLine, "latitude,longitude,altitude,accuracy,cid,rnc,lac,psc,rssi");
+                    appendLog("gsmcells.csv", newGSMLine, "latitude,longitude,altitude,accuracy,cid,rnc,lac,psc,rssi,timestamp");
                     GSMLine = newGSMLine;
                 }
             }
