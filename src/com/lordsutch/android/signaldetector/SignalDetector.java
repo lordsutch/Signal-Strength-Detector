@@ -108,13 +108,6 @@ public final class SignalDetector extends AppCompatActivity {
                         + cm.sourceId());
                 return true;
             }
-
-            // Enable client caching
-            @Override
-            public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
-                                                 WebStorage.QuotaUpdater quotaUpdater) {
-                quotaUpdater.updateQuota(spaceNeeded * 2);
-            }
         });
 
         webSettings.setDomStorageEnabled(true);
