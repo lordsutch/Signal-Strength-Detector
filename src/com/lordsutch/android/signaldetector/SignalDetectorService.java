@@ -1,7 +1,6 @@
 package com.lordsutch.android.signaldetector;
 
 import android.Manifest;
-import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -266,7 +265,6 @@ public class SignalDetectorService extends Service {
     private Object mHTCManager;
     private Location mLocation = null;
     private NotificationManager mNotifyMgr;
-    private PendingIntent pintent = null;
 
     IBinder mBinder = new LocalBinder();      // interface for clients that bind
 
@@ -432,17 +430,6 @@ public class SignalDetectorService extends Service {
         mHTCManager = getSystemService("htctelephony");
 
         mNotifyMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (false && pintent == null) {
-            Calendar cal = Calendar.getInstance();
-
-            Intent xintent = new Intent(this, SignalDetectorService.class);
-            pintent = PendingIntent.getService(this, 0, xintent, 0);
-
-            AlarmManager alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            // Start every 30 seconds
-            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30 * 1000, pintent);
-        }
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
 
@@ -1168,34 +1155,6 @@ public class SignalDetectorService extends Service {
         stopForeground(true);
 
         super.onDestroy();
-    }
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        if (pintent != null) {
-            AlarmManager alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            alarm.cancel(pintent);
-            pintent = null;
-        }
-
-        super.onUnbind(intent);
-        return true;
-    }
-
-    @Override
-    public void onRebind(Intent intent) {
-        super.onRebind(intent);
-
-        if (false && pintent == null) {
-            Calendar cal = Calendar.getInstance();
-
-            Intent xintent = new Intent(this, SignalDetectorService.class);
-            pintent = PendingIntent.getService(this, 0, xintent, 0);
-
-            AlarmManager alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            // Start every 30 seconds
-            alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30 * 1000, pintent);
-        }
     }
 
     static final public String SD_RESULT = "com.lordsutch.android.signaldetector.SignalServiceBroadcast";
