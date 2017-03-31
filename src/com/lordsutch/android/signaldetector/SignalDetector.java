@@ -431,7 +431,7 @@ public final class SignalDetector extends AppCompatActivity {
                 cellIds.add(String.format(Locale.getDefault(), "PCI\u00a0%03d", mSignalInfo.pci));
 
             if (validEARFCN(mSignalInfo.earfcn))
-                cellIds.add(String.format("EARFCN\u00a0%d", mSignalInfo.earfcn));
+                cellIds.add(String.format(Locale.getDefault(), "EARFCN\u00a0%d", mSignalInfo.earfcn));
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
