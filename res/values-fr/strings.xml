@@ -1,2 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="app_name">Signal Detector</string>
+    <string name="bearing_nnw">NNO</string>
+    <string name="bearing_northwest">NO</string>
+    <string name="bearing_southwest">SO</string>
+    <string name="bearing_ssw">SSO</string>
+    <string name="bearing_wnw">ONO</string>
+    <string name="bearing_west">O</string>
+    <string name="bearing_wsw">OSO</string>
+    <string name="speed">Vitesse</string>
+    <string name="traditional_units">Unités de mesure anglo-saxonnes</string>
+    <string name="pref_title_traditional_units">Utiliser des unités de mesure anglo-saxonnes</string>
+    <string name="other_lte_sites">Voisins</string>
+    <string name="metric_units">Unités métriques</string>
+    <string name="missing">manquant</string>
+    <string name="no_signal">pas de signal</string>
+    <string name="location">Position</string>
+    <string name="exit">Quitter</string>
+    <string name="submit">Soumettre</string>
+    <string name="voice_signal">Signal Vocal</string>
+    <string name="title_activity_settings">Paramètres</string>
+    <string name="ta_distance_pref_off">Avance temporelle s\'affiche en microsecondes.</string>
+    <string name="ta_distance_pref_on">Avance temporelle s\'affiche comme distance.</string>
+    <string name="lte_signal_strength">Signal LTE</string>
+    <string name="current_network">Réseau de données</string>
+    <string name="enable_gps">Activer le GPS</string>
+    <string name="enable_gps_dialog">Le fournisseur de GPS n\'est pas activé. Voulez-vous l\'activer?</string>
+</resources>
