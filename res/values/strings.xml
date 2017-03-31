@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Signal Detector</string>
+    <string name="app_name" translatable="false">Signal Detector</string>
     <string name="done">Listening successfully completed, time to send the results.</string>
     <string name="results">Signal Detector Output</string>
     <string name="cancel">Cancel</string>
@@ -21,7 +21,7 @@
     <string name="_2g_3g_tower">GSM/UMTS Site</string>
     <string name="exit">Exit</string>
     <string name="speed">Speed</string>
-    <string name="traditional_units">Traditional units</string>
+    <string name="traditional_units">Imperial units</string>
     <string name="metric_units">Metric units</string>
     <string name="bearing_north">N</string>
     <string name="bearing_nne">NNE</string>
@@ -43,9 +43,9 @@
     <!-- Strings related to Settings -->
 	<string name="title_activity_settings">Settings</string>
     
-    <string name="pref_title_traditional_units">Use traditional units</string>
-    <string name="pref_description_traditional_units">Currently using statute feet and miles.</string>
-    <string name="pref_description_metric_units">Currently using meters and kilometers.</string>
+    <string name="pref_title_traditional_units">Use Imperial units</string>
+    <string name="pref_description_traditional_units">Currently using Imperial feet and miles.</string>
+    <string name="pref_description_metric_units">Currently using metres and kilometres.</string>
 
     <string name="pref_title_base_station">Show base station location</string>
     <string name="pref_description_base_station">Map marker will show reported base station location. May be inaccurate. (CDMA networks only.)</string>
@@ -56,7 +56,7 @@
     <string name="clear_map_tile_cache">Clear map tile cache.</string>    
     <string name="clear_map_cache">Clear map cache</string>    
     <string name="map_tile_cache_cleared">Map tile cache cleared.</string>
-    <string name="other_lte_sites">Neighbors</string>
+    <string name="other_lte_sites">Neighbours</string>
     <string name="voice_signal">Voice Signal</string>
     <string name="less_power_summary">Uses less power, at the expense of less-accurate position
         reporting.
