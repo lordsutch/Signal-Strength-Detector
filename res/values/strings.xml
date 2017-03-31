@@ -68,8 +68,8 @@
     <string name="logging_pref_on">Log base station information on user storage.</string>
     <string name="logging_pref_off">Logging disabled.</string>
     <string name="earfcn_pref">Display EARFCN Data (root required)</string>
-    <string name="earfcn_pref_on">Displaying EARFCN</string>
-    <string name="earfcn_pref_off">Not displaying EARFCN</string>
+    <string name="earfcn_pref_on">Displaying EARFCN on Qualcomm devices requiring root.</string>
+    <string name="earfcn_pref_off">Not displaying EARFCN if root required.</string>
     <string name="tileSource">Map tiles source</string>
     <string name="tileSourceSummary">Style of map to use.</string>
     <string name="sensorlySummary">Signal strength overlay</string>
