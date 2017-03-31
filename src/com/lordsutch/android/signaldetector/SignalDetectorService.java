@@ -422,7 +422,7 @@ public class SignalDetectorService extends Service {
                 .setLocalOnly(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .addAction(R.drawable.ic_close_24dp, "Exit", exitIntent)
+                .addAction(R.drawable.ic_close_black_24dp, "Exit", exitIntent)
                 .setContentIntent(resultPendingIntent);
 
         startForeground(mNotificationId, mBuilder.build());
