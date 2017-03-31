@@ -718,7 +718,9 @@ public class SignalDetectorService extends Service {
         int sector = gci & 0xff;
 
         if(validEARFCN(earfcn)) {
-            return guessLteBandFromEARFCN(earfcn);
+            int band = guessLteBandFromEARFCN(earfcn);
+            if(band > 0)
+                return band;
         }
 
         if(mcc == 311 && (mnc == 490 || mnc == 870))
@@ -730,8 +732,21 @@ public class SignalDetectorService extends Service {
                 return 41;
 
             if((sector >= 0x19 && sector <= 0x1b) || // Ericsson/ALU
-                    (sector >= 0x0f && sector <= 0x11)) // Samsung
+                    (sector >= 0x0f && sector <= 0x10)) // Samsung
                 return 26;
+
+            if(sector == 0x11) {
+                if (gci >= 0x7600000 && gci < 0xBA00000) { // Samsung
+                    return 26;
+                } else {
+                    return 25;
+                }
+            }
+
+            // mini macros starts with what looks like B25 but b41 sectors
+            if(sector >= 0x31 && sector <= 0x43)
+                return 41;
+
             return 25;
         } else if (mcc == 310 && (mnc == 410 || mnc == 150)) {
             // AT&T
