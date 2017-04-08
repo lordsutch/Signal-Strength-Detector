@@ -562,15 +562,11 @@ public class SignalDetectorService extends Service {
 
                 totspeed += loc.getSpeed() * weight;
                 weights += weight;
-
-//				Log.d(TAG, String.format("%d %.5f", tdiff, weight));
             }
         }
 
         if (weights < 1.0)
             return 0.0;
-
-//		Log.d(TAG, String.format("%.2f %.2f", totspeed, weights));
 
         return totspeed / weights;
     }
@@ -756,6 +752,8 @@ public class SignalDetectorService extends Service {
                 return 2;
             else if(sector >= 0x16 && sector <= 0x19)
                 return 4;
+            else if(sector >= 0x95 && sector <= 0x9a)
+                return 30;
             return 17;
         } else if (mcc == 310 && mnc == 260) {
             // T-Mobile
@@ -772,10 +770,14 @@ public class SignalDetectorService extends Service {
             return 0;
         } else if (mcc == 311 && mnc == 480) {
             // Verizon
-            if(sector == 0x0c || sector == 0x16 || sector == 0x20)
+            if(sector <= 6)
+                return 13;
+            else if((sector % 10) == 2 || (sector % 10) == 3)
                 return 4;
-            else if(sector == 0x0e || sector == 0x18 || sector == 0x22)
+            else if((sector % 10) == 4 || (sector % 10) == 5)
                 return 2;
+            else if((sector % 10) == 7)
+                return 5;
             return 13;
         } else if (mcc == 312 && mnc == 190) {
             // nTelos
@@ -991,12 +993,11 @@ public class SignalDetectorService extends Service {
         }
         mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellIdInfo)
                 .setSmallIcon(networkIcon(signal.networkType));
-
         mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
+        long THIRTY_SECONDS = (long) (30 * 1000);
         signal.fixAge = locationFixAge(mLocation);
 
-        long THIRTY_SECONDS = (long) (30 * 1000);
         if (loggingEnabled && log && (signal.fixAge < THIRTY_SECONDS)) {
             TimeZone tz = TimeZone.getTimeZone("UTC");
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
@@ -1137,9 +1138,6 @@ public class SignalDetectorService extends Service {
         @Override
         public void onCellLocationChanged(CellLocation mLocation) {
             mCellLocation = mLocation;
-//    		if(mCellLocation != null) {
-//    			Log.d(TAG, mCellLocation.toString());
-//    		}
             updatelog(true);
         }
 
