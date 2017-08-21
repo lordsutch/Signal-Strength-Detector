@@ -45,7 +45,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -63,6 +62,7 @@ class otherLteCell implements Parcelable {
     int mnc = Integer.MAX_VALUE;
     int earfcn = Integer.MAX_VALUE;
     int lteBand = 0;
+    boolean isFDD = true;
 
     int lteSigStrength = Integer.MAX_VALUE;
     int timingAdvance = Integer.MAX_VALUE;
@@ -83,6 +83,7 @@ class otherLteCell implements Parcelable {
         dest.writeInt(this.lteBand);
         dest.writeInt(this.lteSigStrength);
         dest.writeInt(this.timingAdvance);
+        dest.writeInt(this.isFDD ? 1 : 0);
     }
 
     public otherLteCell() {
@@ -98,6 +99,7 @@ class otherLteCell implements Parcelable {
         this.lteBand = in.readInt();
         this.lteSigStrength = in.readInt();
         this.timingAdvance = in.readInt();
+        this.isFDD = in.readInt() != 0;
     }
 
     public static final Parcelable.Creator<otherLteCell> CREATOR = new Parcelable.Creator<otherLteCell>() {
@@ -134,6 +136,7 @@ class signalInfo implements Parcelable {
     int timingAdvance = Integer.MAX_VALUE;
 
     int lteBand = 0;
+    boolean isFDD = false;
 
     // CDMA2000
     int bsid = -1;
@@ -197,9 +200,10 @@ class signalInfo implements Parcelable {
         dest.writeInt(this.gsmSigStrength);
         dest.writeInt(this.phoneType);
         dest.writeInt(this.networkType);
-        dest.writeByte(roaming ? (byte) 1 : (byte) 0);
+        dest.writeInt(roaming ? (byte) 1 : (byte) 0);
         dest.writeList(this.otherCells);
         dest.writeInt(this.timingAdvance);
+        dest.writeInt(this.isFDD ? 1 : 0);
     }
 
     public signalInfo() {
@@ -237,10 +241,11 @@ class signalInfo implements Parcelable {
         this.gsmSigStrength = in.readInt();
         this.phoneType = in.readInt();
         this.networkType = in.readInt();
-        this.roaming = in.readByte() != 0;
+        this.roaming = in.readInt() != 0;
         this.otherCells = new ArrayList<otherLteCell>();
         in.readList(this.otherCells, List.class.getClassLoader());
         this.timingAdvance = in.readInt();
+        this.isFDD = in.readInt() != 0;
     }
 
     public static final Creator<signalInfo> CREATOR = new Creator<signalInfo>() {
@@ -595,6 +600,18 @@ public class SignalDetectorService extends Service {
     private String CdmaLine = null;
     private String GSMLine = null;
 
+    private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
+        if(!validTimingAdvance(timingAdvance))
+            return Double.NaN;
+        return (isFDD ? timingAdvance : timingAdvance-20) * 149.85;
+    }
+
+    private boolean isBandFDD(int lteBand) {
+        if(lteBand >= 33 && lteBand <= 48)
+            return false;
+        return true;
+    }
+
     private int guessLteBandFromEARFCN(int earfcn) {
         // Stolen from http://niviuk.free.fr/lte_band.php
         if(earfcn <= 599)
@@ -912,6 +929,7 @@ public class SignalDetectorService extends Service {
                             else
                                 signal.earfcn = EARFCN;
                             signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci, signal.earfcn);
+                            signal.isFDD = isBandFDD(signal.lteBand);
                             gotID = true;
                         }
                     } else {
@@ -931,6 +949,7 @@ public class SignalDetectorService extends Service {
                             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                 otherCell.earfcn = cellid.getEarfcn();
                             otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci, otherCell.earfcn);
+                            otherCell.isFDD = isBandFDD(otherCell.lteBand);
                         }
                         signal.otherCells.add(otherCell);
                     }
@@ -1000,16 +1019,19 @@ public class SignalDetectorService extends Service {
 
         if (loggingEnabled && log && (signal.fixAge < THIRTY_SECONDS)) {
             TimeZone tz = TimeZone.getTimeZone("UTC");
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US); // Quoted "Z" to indicate UTC, no timezone offset
             df.setTimeZone(tz);
-            String nowAsISO = df.format(new Date());
+            Date now = new Date();
 
+            String nowAsISO = df.format(now);
             String slat = Location.convert(signal.latitude, Location.FORMAT_DEGREES);
             String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
             if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
                     (validLTESignalStrength(signal.lteSigStrength) ||
                             validPhysicalCellID(signal.pci) || validCellID(signal.gci))) {
+                double estDistance = timingAdvanceToMeters(signal.timingAdvance, signal.isFDD);
+
                 String newLteLine = slat + "," + slon + "," +
                         (validCellID(signal.gci) ? String.format(Locale.US, "%08X", signal.gci) : "") + "," +
                         (validPhysicalCellID(signal.pci) ? String.valueOf(signal.pci) : "") + "," +
@@ -1021,10 +1043,15 @@ public class SignalDetectorService extends Service {
                         (signal.lteBand > 0 ? String.valueOf(signal.lteBand) : "") + "," +
                         (validTimingAdvance(signal.timingAdvance) ? String.valueOf(signal.timingAdvance) : "") + "," +
                         (validEARFCN(signal.earfcn) ? String.format(Locale.US, "%d", signal.earfcn) : "") + "," +
-                        nowAsISO;
+                        nowAsISO + "," + String.valueOf(now.getTime()) + "," +
+                        (isBandFDD(signal.lteBand) ? "1" : "0") + ","+
+                        (Double.isNaN(estDistance) ? "" : String.format(Locale.US, "%.0f", estDistance)) + "," +
+                        (signal.mcc != Integer.MAX_VALUE ? String.valueOf(signal.mcc) : "") + "," +
+                        (signal.mnc != Integer.MAX_VALUE ? String.valueOf(signal.mnc) : "");
+
                 if (lteLine == null || !newLteLine.equals(lteLine)) {
                     Log.d(TAG, "Logging LTE cell.");
-                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance,earfcn,timestamp");
+                    appendLog("ltecells.csv", newLteLine, "latitude,longitude,cellid,physcellid,dBm,altitude,tac,accuracy,baseGci,band,timingAdvance,earfcn,timestamp,timeSinceEpoch,fdd,estDistance,mcc,mnc");
                     lteLine = newLteLine;
                 }
             }
@@ -1046,6 +1073,8 @@ public class SignalDetectorService extends Service {
                         int rsrp = mSS.getDbm();
                         int timingAdvance = mSS.getTimingAdvance();
                         int lteBand = guessLteBand(mcc, mnc, eci, earfcn);
+                        boolean isFDD = isBandFDD(lteBand);
+                        double estDistance = timingAdvanceToMeters(timingAdvance, isFDD);
 
                         String cellLine = slat + "," + slon + "," +
                                 String.format(Locale.US, "%.0f", signal.accuracy) + "," +
@@ -1061,10 +1090,12 @@ public class SignalDetectorService extends Service {
                                 (lteBand > 0 ? String.valueOf(lteBand) : "") + "," +
                                 (validTimingAdvance(timingAdvance) ? String.valueOf(timingAdvance) : "") + "," +
                                 (validEARFCN(earfcn) ? String.format(Locale.US, "%d", earfcn) : "") + "," +
-                                nowAsISO;
+                                nowAsISO + "," + String.valueOf(now.getTime()) + "," +
+                                (isFDD ? "1" : "0") + ","+
+                                (Double.isNaN(estDistance) ? "" : String.format(Locale.US, "%.0f", estDistance));
 
                         appendLog("cellinfolte.csv", cellLine,
-                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn,timestamp");
+                                "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn,timestamp,timeSinceEpoch,fdd,estDistance");
 
                     }
                 }

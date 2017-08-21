@@ -37,7 +37,6 @@ import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
-import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -351,27 +350,27 @@ public final class SignalDetector extends AppCompatActivity {
     /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
      * Android timing advance is in microseconds according to:
      * https://android.googlesource.com/platform/hardware/ril/+/master/include/telephony/ril.h
-     * ... but empirically I don't think this is correct.
-     * I think it's probably 16 Ts = 16/(15000 * 2048) s, which makes the distance equivalent
-     * to 78.12 m or 0.0485 mi (http://niviuk.free.fr/store_lte.php)
      *
-     * Might be 229.7/2 = 159.85 m; try that...
+     * This seems to be round-trip time, so one-way distance is half that.
      */
-    private double timingAdvanceToMeters(int timingAdvance) {
-        return timingAdvance * 159.85;
+    private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
+        if(!mService.validTimingAdvance(timingAdvance))
+            return Double.NaN;
+        return (isFDD ? timingAdvance : timingAdvance-20) * 149.85;
     }
 
-    private double timingAdvanceToDistance(int timingAdvance) {
-        return timingAdvanceToMeters(timingAdvance) / (tradunits ? 1609.334 : 1000);
+    /* Uses tradunits setting */
+    private double timingAdvanceToDistance(int timingAdvance, boolean isFDD) {
+        return timingAdvanceToMeters(timingAdvance, isFDD) / (tradunits ? 1609.334 : 1000.0);
     }
 
-    private String formatTimingAdvance(int timingAdvance) {
+    private String formatTimingAdvance(int timingAdvance, boolean isFDD) {
         if(taAsDistance) {
+            /* TA offset for TDD seems to be ~10 microseconds  */
             return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
-                    timingAdvanceToDistance(timingAdvance), ta_distance_units);
+                    timingAdvanceToDistance(timingAdvance, isFDD), ta_distance_units);
         } else {
-            // 16 Ts = 25/48 µs
-            return String.format(Locale.getDefault(), "\u00a0TA=%.0f\u202fµs", timingAdvance*25/48.0);
+            return String.format(Locale.getDefault(), "\u00a0TA=%.0f\u202fµs", timingAdvance);
         }
     }
 
@@ -464,7 +463,7 @@ public final class SignalDetector extends AppCompatActivity {
                 if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
                     String sigInfo = String.format(Locale.getDefault(), "%d\u202FdBm", otherCell.lteSigStrength);
                     if(mService.validTimingAdvance(otherCell.timingAdvance)) {
-                        sigInfo += formatTimingAdvance(otherCell.timingAdvance);
+                        sigInfo += formatTimingAdvance(otherCell.timingAdvance, otherCell.isFDD);
                     }
 
                     otherSitesList.add(String.format(Locale.getDefault(), "%03d\u00a0(%s)",
@@ -530,7 +529,7 @@ public final class SignalDetector extends AppCompatActivity {
         if (validLTESignalStrength(dataSigStrength)) {
             netText += String.format(Locale.getDefault(), " %d\u202FdBm", dataSigStrength);
             if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
-                netText += formatTimingAdvance(mSignalInfo.timingAdvance);
+                netText += formatTimingAdvance(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
         }
 
         if (mSignalInfo.roaming)
@@ -675,10 +674,11 @@ public final class SignalDetector extends AppCompatActivity {
                 coverageLayer = "";
         }
 
-        double towerRadius = 0.0;
+        double towerRadius = Double.NaN;
 
-        if(mSignalInfo != null)
-            towerRadius = timingAdvanceToMeters(mSignalInfo.timingAdvance);
+        if(mSignalInfo != null) {
+            towerRadius = timingAdvanceToMeters(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
+        }
 
 /*
         mapView.setCenter(new LatLng(latitude, longitude));
