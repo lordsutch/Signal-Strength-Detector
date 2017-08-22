@@ -77,4 +77,6 @@
     <string name="ta_distance_pref">Convert timing advance value to distance</string>
     <string name="ta_distance_pref_off">Timing advance shown in microseconds.</string>
     <string name="ta_distance_pref_on">Timing advance shown as distance.</string>
+    <string name="group_1_name">Network Information</string>
+    <string name="group_1_description">Information about available networks.</string>
 </resources>

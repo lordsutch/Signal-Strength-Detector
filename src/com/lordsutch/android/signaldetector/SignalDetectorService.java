@@ -1,6 +1,9 @@
 package com.lordsutch.android.signaldetector;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -278,6 +281,7 @@ public class SignalDetectorService extends Service {
     private boolean listening = false;
 
     private NotificationCompat.Builder mBuilder;
+    private Notification mNotification;
     private LocalBroadcastManager broadcaster;
 
     private Shell.Interactive rootSessionCat;
@@ -410,6 +414,26 @@ public class SignalDetectorService extends Service {
     }
 
     public static final String ACTION_STOP = "STOP";
+    private static String CHANNEL_ID = "networkInfo";
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void createNotificationChannel() {
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        // The user-visible name of the channel.
+        CharSequence name = getString(R.string.group_1_name);
+        // The user-visible description of the channel.
+        String description = getString(R.string.group_1_description);
+
+        int importance = NotificationManager.IMPORTANCE_LOW;
+        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+        // Configure the notification channel.
+        mChannel.setDescription(description);
+        mChannel.setShowBadge(true);
+        mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        mNotificationManager.createNotificationChannel(mChannel);
+    }
 
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
@@ -418,7 +442,10 @@ public class SignalDetectorService extends Service {
         Intent stopIntent = new Intent(this, SignalDetector.class).setAction(ACTION_STOP);
         PendingIntent exitIntent = PendingIntent.getActivity(this, 0, stopIntent, 0);
 
-        mBuilder = new NotificationCompat.Builder(this).setSmallIcon(R.drawable.ic_stat_0g)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            createNotificationChannel();
+
+        mBuilder = new NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_0g)
                 .setContentTitle(getString(R.string.signal_detector_is_running))
                 .setContentText("Loading…")
                 .setOnlyAlertOnce(true)
@@ -428,7 +455,9 @@ public class SignalDetectorService extends Service {
                 .addAction(R.drawable.ic_close_black_24dp, "Exit", exitIntent)
                 .setContentIntent(resultPendingIntent);
 
-        startForeground(mNotificationId, mBuilder.build());
+        mNotification = mBuilder.build();
+
+        startForeground(mNotificationId, mNotification);
 
         mManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         //noinspection ResourceType
@@ -1010,9 +1039,11 @@ public class SignalDetectorService extends Service {
             else
                 cellIdInfo = TextUtils.join(", ", cellIds);
         }
-        mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellIdInfo)
+        mBuilder = mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellIdInfo)
                 .setSmallIcon(networkIcon(signal.networkType));
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+
+        mNotification = mBuilder.build();
+        mNotifyMgr.notify(mNotificationId, mNotification);
 
         long THIRTY_SECONDS = (long) (30 * 1000);
         signal.fixAge = locationFixAge(mLocation);
@@ -1185,6 +1216,8 @@ public class SignalDetectorService extends Service {
     @Override
     public void onDestroy() {
         // The service is no longer used and is being destroyed
+        stopForeground(true);
+
         if(listening) {
             try {
                 mLocationManager.removeUpdates(mLocListener);
@@ -1196,7 +1229,6 @@ public class SignalDetectorService extends Service {
         }
         if (rootSessionEcho != null) rootSessionEcho.close();
         if (rootSessionCat != null) rootSessionCat.kill(); // we must kill this Shell instead of close(), since cat never returns. close() waits for an idle shell
-        stopForeground(true);
 
         super.onDestroy();
     }
