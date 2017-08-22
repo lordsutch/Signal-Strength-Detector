@@ -636,9 +636,7 @@ public class SignalDetectorService extends Service {
     }
 
     private boolean isBandFDD(int lteBand) {
-        if(lteBand >= 33 && lteBand <= 48)
-            return false;
-        return true;
+        return !(lteBand >= 33 && lteBand <= 48);
     }
 
     private int guessLteBandFromEARFCN(int earfcn) {
