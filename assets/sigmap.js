@@ -174,7 +174,7 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base, tower
 
     marker.setLatLng(pos);
     marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
-    marker.redraw();
+//    marker.redraw();
 
     if(!towerMarker) {
         towerMarker = L.circle(pos, towerRadius);
@@ -184,7 +184,7 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base, tower
         towerMarker.setLatLng(pos);
         if(towerRadius > 0)
             towerMarker.setRadius(towerRadius);
-        towerMarker.redraw();
+//        towerMarker.redraw();
     }
 
     if(!stale && bearing > 0) {
@@ -202,7 +202,10 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base, tower
     }
 
     if(pmarker) {
-        bounds = L.latLngBounds([pos, pmarker.getLatLng()]).pad(padding);
+        bounds = L.latLngBounds([pos, pmarker.getLatLng()])
+        if(towerRadius > 0)
+            bounds = bounds.extend(towerMarker.getBounds())
+        bounds = bounds.pad(padding);
         map.fitBounds(bounds);
         lastZoom = 0;
     } else {
