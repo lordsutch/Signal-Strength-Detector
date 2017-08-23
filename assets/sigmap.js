@@ -175,14 +175,16 @@ function recenter(lat, lon, radius, speed, bearing, stale, operator, base, tower
     marker.setLatLng(pos);
     marker.setRadius(radius); // Convert to 95% confidence (1.96 sd) from 68% (1 sd)
 
+    if(isNaN(towerRadius))
+        towerRadius = 0; /* Effectively hide the marker */
+
     if(!towerMarker) {
         towerMarker = L.circle(pos, towerRadius);
         towerMarker.setStyle({color: "#cc0", fillColor: "#cc0"});
         towerMarker.addTo(map);
     } else {
         towerMarker.setLatLng(pos);
-        if(towerRadius !== towerRadius)
-            towerRadius = 0; /* Effectively hide the marker */
+
         towerMarker.setRadius(towerRadius);
     }
 
