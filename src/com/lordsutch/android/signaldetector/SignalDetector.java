@@ -369,8 +369,10 @@ public final class SignalDetector extends AppCompatActivity {
             /* TA offset for TDD seems to be ~10 microseconds  */
             return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance, isFDD), ta_distance_units);
+        } else if (!Double.isNaN(timingAdvance)) {
+            return String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance);
         } else {
-            return String.format(Locale.getDefault(), "\u00a0TA=%.0f\u202fµs", timingAdvance);
+            return "";
         }
     }
 
