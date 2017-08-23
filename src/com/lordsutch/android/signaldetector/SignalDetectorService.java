@@ -274,6 +274,8 @@ public class SignalDetectorService extends Service {
     private Location mLocation = null;
     private NotificationManager mNotifyMgr;
 
+    private List<CellInfo> mCellInfo = null;
+
     IBinder mBinder = new LocalBinder();      // interface for clients that bind
 
     private boolean loggingEnabled = false;
@@ -485,7 +487,7 @@ public class SignalDetectorService extends Service {
 
         // Register the listener with the telephony manager
         mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
-                PhoneStateListener.LISTEN_CELL_LOCATION);
+                PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         boolean lessPower = sharedPref.getBoolean("low_power", false);
@@ -929,7 +931,9 @@ public class SignalDetectorService extends Service {
 
         signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113 + 2 * signal.gsmSigStrength : -9999);
 
-        List<CellInfo> mCellInfo = mManager.getAllCellInfo();
+        if(mCellInfo == null)
+            mCellInfo = mManager.getAllCellInfo();
+
         if (mCellInfo != null) {
             sendRootEARFCN();
             signal.otherCells = new ArrayList<>();
@@ -1173,7 +1177,7 @@ public class SignalDetectorService extends Service {
             updateLocations(mLoc);
             if (mLocation != mLoc) {
                 mLocation = mLoc;
-                updatelog(true);
+                updatelog(false); // Only log when there's a signal strength change.
             }
         }
 
@@ -1198,6 +1202,12 @@ public class SignalDetectorService extends Service {
         @Override
         public void onCellLocationChanged(CellLocation mLocation) {
             mCellLocation = mLocation;
+            updatelog(true);
+        }
+
+        @Override
+        public void onCellInfoChanged(List<CellInfo> cellInfo) {
+            mCellInfo = cellInfo;
             updatelog(true);
         }
 
