@@ -1,6 +1,7 @@
 package com.lordsutch.android.signaldetector;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -23,6 +24,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.CellIdentityCdma;
@@ -322,27 +324,28 @@ public class SignalDetectorService extends Service {
      * Start cat on /dev/smd11 and STDOUT line by line, updating EARFCN when a valid one is detected
      */
     private void sendRootCat() {
-        rootSessionCat.addCommand(new String[] { "cat /dev/smd11"}, 1,
-            new Shell.OnCommandLineListener() {
-                @Override
-                public void onCommandResult(int commandCode, int exitCode) {
-                    if (exitCode != 0 ) {
-                        Log.e(TAG, "Error with root cat shell" + exitCode);
-                        // And close it because it errored out.
-                        rootSessionCat.close();
-                        // This prevents echo from being sent
-                        rootSessionCat = null;
+        rootSessionCat.addCommand(new String[]{"cat /dev/smd11"}, 1,
+                new Shell.OnCommandLineListener() {
+                    @Override
+                    public void onCommandResult(int commandCode, int exitCode) {
+                        if (exitCode != 0) {
+                            Log.e(TAG, "Error with root cat shell" + exitCode);
+                            // And close it because it errored out.
+                            rootSessionCat.close();
+                            // This prevents echo from being sent
+                            rootSessionCat = null;
+                        }
                     }
-                }
-                @Override
-                public void onLine(String line) {
-                    int tmpEARFCN = convertEARFCNtoInt(line);
-                    if (validEARFCN(tmpEARFCN)) {
-                        EARFCN = tmpEARFCN;
-                        Log.d(TAG, "EARFCN " + tmpEARFCN);
+
+                    @Override
+                    public void onLine(String line) {
+                        int tmpEARFCN = convertEARFCNtoInt(line);
+                        if (validEARFCN(tmpEARFCN)) {
+                            EARFCN = tmpEARFCN;
+                            Log.d(TAG, "EARFCN " + tmpEARFCN);
+                        }
                     }
-                }
-        });
+                });
     }
 
     private void openRootSessionForCat() {
@@ -454,6 +457,7 @@ public class SignalDetectorService extends Service {
         mNotificationManager.createNotificationChannel(mChannel);
     }
 
+    @SuppressLint("WrongConstant")
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
@@ -461,7 +465,7 @@ public class SignalDetectorService extends Service {
         Intent stopIntent = new Intent(this, SignalDetector.class).setAction(ACTION_STOP);
         PendingIntent exitIntent = PendingIntent.getActivity(this, 0, stopIntent, 0);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             createNotificationChannel();
 
         mBuilder = new NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_0g)
@@ -598,7 +602,7 @@ public class SignalDetectorService extends Service {
 
     boolean validEARFCN(int earfcn) {
         // Some phones (Samsung S7 Edge) report 0, which is impossible so we'll ignore that too.
-        return ( earfcn != Integer.MAX_VALUE && earfcn > 0);
+        return (earfcn != Integer.MAX_VALUE && earfcn > 0);
     } // Integer.MAX_VALUE signifies no change or empty / default EARFCN
 
     private static long FIVE_SECONDS = 5 * 1000;
@@ -653,9 +657,9 @@ public class SignalDetectorService extends Service {
     private String GSMLine = null;
 
     private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
-        if(!validTimingAdvance(timingAdvance))
+        if (!validTimingAdvance(timingAdvance))
             return Double.NaN;
-        return (isFDD ? timingAdvance : timingAdvance-20) * 149.85;
+        return (isFDD ? timingAdvance : timingAdvance - 20) * 149.85;
     }
 
     private boolean isBandFDD(int lteBand) {
@@ -664,114 +668,114 @@ public class SignalDetectorService extends Service {
 
     private int guessLteBandFromEARFCN(int earfcn) {
         // Stolen from http://niviuk.free.fr/lte_band.php
-        if(earfcn <= 599)
+        if (earfcn <= 599)
             return 1;
-        else if(earfcn <= 1199)
+        else if (earfcn <= 1199)
             return 2;
-        else if(earfcn <= 1949)
+        else if (earfcn <= 1949)
             return 3;
-        else if(earfcn <= 2399)
+        else if (earfcn <= 2399)
             return 4;
-        else if(earfcn <= 2649)
+        else if (earfcn <= 2649)
             return 5;
-        else if(earfcn <= 2749)
+        else if (earfcn <= 2749)
             return 6;
-        else if(earfcn <= 2690)
+        else if (earfcn <= 2690)
             return 7;
-        else if(earfcn <= 3799)
+        else if (earfcn <= 3799)
             return 8;
-        else if(earfcn <= 4149)
+        else if (earfcn <= 4149)
             return 9;
-        else if(earfcn <= 4749)
+        else if (earfcn <= 4749)
             return 10;
-        else if(earfcn <= 4949)
+        else if (earfcn <= 4949)
             return 11;
-        else if(earfcn <= 5179)
+        else if (earfcn <= 5179)
             return 12;
-        else if(earfcn <= 5279)
+        else if (earfcn <= 5279)
             return 13;
-        else if(earfcn <= 5379)
+        else if (earfcn <= 5379)
             return 14;
-        // Bands 15, 16 missing
-        else if(earfcn >= 5730 && earfcn <= 5849)
+            // Bands 15, 16 missing
+        else if (earfcn >= 5730 && earfcn <= 5849)
             return 17;
-        else if(earfcn >= 5850 && earfcn <= 5999)
+        else if (earfcn >= 5850 && earfcn <= 5999)
             return 18;
-        else if(earfcn >= 6000 && earfcn <= 6149)
+        else if (earfcn >= 6000 && earfcn <= 6149)
             return 19;
-        else if(earfcn >= 6150 && earfcn <= 6449)
+        else if (earfcn >= 6150 && earfcn <= 6449)
             return 20;
-        else if(earfcn >= 6450 && earfcn <= 6599)
+        else if (earfcn >= 6450 && earfcn <= 6599)
             return 21;
-        else if(earfcn >= 6600 && earfcn <= 7399)
+        else if (earfcn >= 6600 && earfcn <= 7399)
             return 22;
-        else if(earfcn >= 7500 && earfcn <= 7699)
+        else if (earfcn >= 7500 && earfcn <= 7699)
             return 23;
-        else if(earfcn >= 7700 && earfcn <= 8039)
+        else if (earfcn >= 7700 && earfcn <= 8039)
             return 24;
-        else if(earfcn >= 8040 && earfcn <= 8689)
+        else if (earfcn >= 8040 && earfcn <= 8689)
             return 25;
-        else if(earfcn >= 8690 && earfcn <= 9039)
+        else if (earfcn >= 8690 && earfcn <= 9039)
             return 26;
-        else if(earfcn >= 9040 && earfcn <= 9209)
+        else if (earfcn >= 9040 && earfcn <= 9209)
             return 27;
-        else if(earfcn >= 9210 && earfcn <= 9659)
+        else if (earfcn >= 9210 && earfcn <= 9659)
             return 28;
-        else if(earfcn >= 9660 && earfcn <= 9769)
+        else if (earfcn >= 9660 && earfcn <= 9769)
             return 29;
-        else if(earfcn >= 9770 && earfcn <= 9869)
+        else if (earfcn >= 9770 && earfcn <= 9869)
             return 30;
-        else if(earfcn >= 9870 && earfcn <= 9919)
+        else if (earfcn >= 9870 && earfcn <= 9919)
             return 31;
-        else if(earfcn >= 9920 && earfcn <= 10359)
+        else if (earfcn >= 9920 && earfcn <= 10359)
             return 32;
-        else if(earfcn >= 36000 && earfcn <= 36199)
+        else if (earfcn >= 36000 && earfcn <= 36199)
             return 33;
-        else if(earfcn >= 36200 && earfcn <= 36349)
+        else if (earfcn >= 36200 && earfcn <= 36349)
             return 34;
-        else if(earfcn >= 36350 && earfcn <= 36949)
+        else if (earfcn >= 36350 && earfcn <= 36949)
             return 35;
-        else if(earfcn >= 36950 && earfcn <= 37549)
+        else if (earfcn >= 36950 && earfcn <= 37549)
             return 36;
-        else if(earfcn >= 37550 && earfcn <= 37749)
+        else if (earfcn >= 37550 && earfcn <= 37749)
             return 37;
-        else if(earfcn >= 37750 && earfcn <= 38249)
+        else if (earfcn >= 37750 && earfcn <= 38249)
             return 38;
-        else if(earfcn >= 38250 && earfcn <= 38649)
+        else if (earfcn >= 38250 && earfcn <= 38649)
             return 39;
-        else if(earfcn >= 38650 && earfcn <= 39649)
+        else if (earfcn >= 38650 && earfcn <= 39649)
             return 40;
-        else if(earfcn >= 39650 && earfcn <= 41589)
+        else if (earfcn >= 39650 && earfcn <= 41589)
             return 41;
-        else if(earfcn >= 41590 && earfcn <= 43589)
+        else if (earfcn >= 41590 && earfcn <= 43589)
             return 42;
-        else if(earfcn >= 43590 && earfcn <= 45589)
+        else if (earfcn >= 43590 && earfcn <= 45589)
             return 43;
-        else if(earfcn >= 45590 && earfcn <= 46589)
+        else if (earfcn >= 45590 && earfcn <= 46589)
             return 44;
-        else if(earfcn >= 46590 && earfcn <= 46789)
+        else if (earfcn >= 46590 && earfcn <= 46789)
             return 45;
-        else if(earfcn >= 46790 && earfcn <= 54539)
+        else if (earfcn >= 46790 && earfcn <= 54539)
             return 46;
-        else if(earfcn >= 54540 && earfcn <= 55239)
+        else if (earfcn >= 54540 && earfcn <= 55239)
             return 47;
-        else if(earfcn >= 55240 && earfcn <= 56739)
+        else if (earfcn >= 55240 && earfcn <= 56739)
             return 48;
-        else if(earfcn >= 65536 && earfcn <= 66435)
+        else if (earfcn >= 65536 && earfcn <= 66435)
             return 65;
-        else if(earfcn >= 66436 && earfcn <= 67335)
+        else if (earfcn >= 66436 && earfcn <= 67335)
             return 66;
-        else if(earfcn >= 67336 && earfcn <= 67535)
+        else if (earfcn >= 67336 && earfcn <= 67535)
             return 67;
-        else if(earfcn >= 67536 && earfcn <= 67835)
+        else if (earfcn >= 67536 && earfcn <= 67835)
             return 68;
-        else if(earfcn >= 67836 && earfcn <= 68335)
+        else if (earfcn >= 67836 && earfcn <= 68335)
             return 69;
-        else if(earfcn >= 68336 && earfcn <= 68585)
+        else if (earfcn >= 68336 && earfcn <= 68585)
             return 70;
-        else if(earfcn >= 255144 && earfcn <= 256143)
+        else if (earfcn >= 255144 && earfcn <= 256143)
             return 252;
-        else if(earfcn >= 260894 && earfcn <= 262143)
+        else if (earfcn >= 260894 && earfcn <= 262143)
             return 253;
         else
             return 0;
@@ -780,25 +784,25 @@ public class SignalDetectorService extends Service {
     private int guessLteBand(int mcc, int mnc, int gci, int earfcn) {
         int sector = gci & 0xff;
 
-        if(validEARFCN(earfcn)) {
+        if (validEARFCN(earfcn)) {
             int band = guessLteBandFromEARFCN(earfcn);
-            if(band > 0)
+            if (band > 0)
                 return band;
         }
 
-        if(mcc == 311 && (mnc == 490 || mnc == 870))
+        if (mcc == 311 && (mnc == 490 || mnc == 870))
             return 41; // Legacy Clear sites are on band 41
-        else if((mcc == 310 && mnc == 120) ||
+        else if ((mcc == 310 && mnc == 120) ||
                 (mcc == 312 && mnc == 530)) {
             // Sprint (312-530 is prepaid)
-            if((gci & 0x00100000) != 0) // 3rd digit is odd if B41
+            if ((gci & 0x00100000) != 0) // 3rd digit is odd if B41
                 return 41;
 
-            if((sector >= 0x19 && sector <= 0x1b) || // Ericsson/ALU
+            if ((sector >= 0x19 && sector <= 0x1b) || // Ericsson/ALU
                     (sector >= 0x0f && sector <= 0x10)) // Samsung
                 return 26;
 
-            if(sector == 0x11) {
+            if (sector == 0x11) {
                 if (gci >= 0x7600000 && gci < 0xBA00000) { // Samsung
                     return 26;
                 } else {
@@ -807,56 +811,56 @@ public class SignalDetectorService extends Service {
             }
 
             // mini macros starts with what looks like B25 but b41 sectors
-            if(sector >= 0x31 && sector <= 0x43)
+            if (sector >= 0x31 && sector <= 0x43)
                 return 41;
 
             // small cells - thanks Flompholph
-            if( (gci & 0x0f0000) >= 0x090000 && gci < 0x0fe00000 && sector == 0x01 )
+            if ((gci & 0x0f0000) >= 0x090000 && gci < 0x0fe00000 && sector == 0x01)
                 return 41;
 
             return 25;
         } else if (mcc == 310 && (mnc == 410 || mnc == 150)) {
             // AT&T
-            if(sector >= 0x00 && sector <= 0x02)
+            if (sector >= 0x00 && sector <= 0x02)
                 return 5;
-            else if(sector >= 0x08 && sector <= 0x0a)
+            else if (sector >= 0x08 && sector <= 0x0a)
                 return 2;
-            else if(sector >= 0x16 && sector <= 0x19)
+            else if (sector >= 0x16 && sector <= 0x19)
                 return 4;
-            else if(sector >= 0x95 && sector <= 0x9a)
+            else if (sector >= 0x95 && sector <= 0x9a)
                 return 30;
             return 17;
         } else if (mcc == 310 && mnc == 260) {
             // T-Mobile
-            if(sector >= 0x01 && sector <= 0x04)
+            if (sector >= 0x01 && sector <= 0x04)
                 return 4;
-            else if(sector >= 0x11 && sector <= 0x14)
+            else if (sector >= 0x11 && sector <= 0x14)
                 return 2;
-            else if(sector >= 0x21 && sector <= 0x23)
+            else if (sector >= 0x21 && sector <= 0x23)
                 return 12;
-            else if(sector >= 0x05 && sector <= 0x07)
+            else if (sector >= 0x05 && sector <= 0x07)
                 return 12;
-            else if(sector >= 0x15 && sector <= 0x15)
+            else if (sector >= 0x15 && sector <= 0x15)
                 return 12;
             return 0;
         } else if (mcc == 311 && mnc == 480) {
             // Verizon
-            if(sector <= 6)
+            if (sector <= 6)
                 return 13;
-            else if((sector % 10) == 2 || (sector % 10) == 3)
+            else if ((sector % 10) == 2 || (sector % 10) == 3)
                 return 4;
-            else if((sector % 10) == 4 || (sector % 10) == 5)
+            else if ((sector % 10) == 4 || (sector % 10) == 5)
                 return 2;
-            else if((sector % 10) == 7)
+            else if ((sector % 10) == 7)
                 return 5;
             return 13;
         } else if (mcc == 312 && mnc == 190) {
             // nTelos
-            if(sector == 0x0c || sector == 0x16 || sector == 0x20)
+            if (sector == 0x0c || sector == 0x16 || sector == 0x20)
                 return 26;
-            else if(sector == 0x0d || sector == 0x17 || sector == 0x21)
+            else if (sector == 0x0d || sector == 0x17 || sector == 0x21)
                 return 2;
-            else if(sector >= 0x01 && sector <= 0x03)
+            else if (sector >= 0x01 && sector <= 0x03)
                 return 25;
             return 13;
         }
@@ -908,6 +912,9 @@ public class SignalDetectorService extends Service {
     }
 
     private void getLegacyCellLocationData(signalInfo signal) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
         mCellLocation = mManager.getCellLocation();
         if (mCellLocation instanceof CdmaCellLocation) {
             CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
@@ -916,13 +923,13 @@ public class SignalDetectorService extends Service {
             signal.nid = x.getNetworkId();
             signal.sid = x.getSystemId();
 
-            if(signal.bsid == -1)
+            if (signal.bsid == -1)
                 signal.bsid = Integer.MAX_VALUE;
 
-            if(signal.nid <= 0)
+            if (signal.nid <= 0)
                 signal.nid = Integer.MAX_VALUE;
 
-            if(signal.sid <= 0)
+            if (signal.sid <= 0)
                 signal.sid = Integer.MAX_VALUE;
 
             signal.bslat = x.getBaseStationLatitude() / 14400.0;
@@ -983,7 +990,10 @@ public class SignalDetectorService extends Service {
         //if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
         getLegacyCellLocationData(signal);
 
-        mCellInfo = mManager.getAllCellInfo();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mCellInfo = mManager.getAllCellInfo();
+        }
+
         if (mCellInfo != null) {
             sendRootEARFCN();
             signal.otherCells = new ArrayList<>();
