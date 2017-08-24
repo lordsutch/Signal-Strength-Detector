@@ -428,7 +428,7 @@ public class SignalDetectorService extends Service {
         // The user-visible description of the channel.
         String description = getString(R.string.group_1_description);
 
-        int importance = NotificationManager.IMPORTANCE_LOW;
+        int importance = NotificationManager.IMPORTANCE_MIN;
         NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
         // Configure the notification channel.
         mChannel.setDescription(description);
@@ -486,8 +486,12 @@ public class SignalDetectorService extends Service {
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         // Register the listener with the telephony manager
+        mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+
+        /*
         mManager.listen(mListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
                 PhoneStateListener.LISTEN_CELL_LOCATION | PhoneStateListener.LISTEN_CELL_INFO);
+         */
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
         boolean lessPower = sharedPref.getBoolean("low_power", false);
@@ -879,7 +883,7 @@ public class SignalDetectorService extends Service {
     }
 
     private void updatelog(boolean log) {
-        if (mLocation == null || mSignalStrength == null || mCellLocation == null)
+        if (mSignalStrength == null)
             return;
 
         boolean gotID = false;
@@ -904,6 +908,8 @@ public class SignalDetectorService extends Service {
         signal.roaming = mManager.isNetworkRoaming();
         signal.operator = mManager.getNetworkOperator();
 
+        mCellLocation = mManager.getCellLocation();
+        /* This code is deprecated in Android 8+ */
         if (mCellLocation instanceof CdmaCellLocation) {
             CdmaCellLocation x = (CdmaCellLocation) mCellLocation;
 
@@ -913,6 +919,14 @@ public class SignalDetectorService extends Service {
 
             signal.bslat = x.getBaseStationLatitude() / 14400.0;
             signal.bslon = x.getBaseStationLongitude() / 14400.0;
+
+            /* Deal with possiblity these may be swapped in Android 8 - thanks Mikejeep
+             * https://issuetracker.google.com/issues/63130155 */
+            if(validLocation(signal.bslon, signal.bslat) && Math.abs(signal.bslat - signal.latitude) > 1.0) {
+                double tmp = signal.bslat;
+                signal.bslat = signal.bslon;
+                signal.bslon = tmp;
+            }
         } else if (mCellLocation instanceof GsmCellLocation) {
             GsmCellLocation x = (GsmCellLocation) mCellLocation;
 
@@ -931,8 +945,7 @@ public class SignalDetectorService extends Service {
 
         signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113 + 2 * signal.gsmSigStrength : -9999);
 
-        if(mCellInfo == null)
-            mCellInfo = mManager.getAllCellInfo();
+        mCellInfo = mManager.getAllCellInfo();
 
         if (mCellInfo != null) {
             sendRootEARFCN();
@@ -1135,8 +1148,10 @@ public class SignalDetectorService extends Service {
             }
 
             if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid)) {
-                String bslatstr = (signal.bslat <= 200 ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
-                String bslonstr = (signal.bslon <= 200 ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
+                boolean isValid = validLocation(signal.bslon, signal.bslat);
+
+                String bslatstr = (isValid ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
+                String bslonstr = (isValid ? Location.convert(signal.bslon, Location.FORMAT_DEGREES) : "");
 
                 String newCdmaLine = String.format(Locale.US, "%s,%s,%d,%d,%d,%d,%s,%s,%.0f,%.0f,%s",
                         slat, slon, signal.sid, signal.nid, signal.bsid, signal.cdmaSigStrength,
@@ -1163,6 +1178,10 @@ public class SignalDetectorService extends Service {
         sendResult(signal);
     }
 
+    protected boolean validLocation(double lon, double lat) {
+        return (Math.abs(lon) <= 180 && Math.abs(lat) <= 90);
+    }
+
     private boolean validSID(int sid) { // CDMA System Identifier
         return sid >= 0 && sid <= 0x7fff;
     }
@@ -1177,7 +1196,8 @@ public class SignalDetectorService extends Service {
             updateLocations(mLoc);
             if (mLocation != mLoc) {
                 mLocation = mLoc;
-                updatelog(false); // Only log when there's a signal strength change.
+                updatelog(true);
+                // updatelog(false); // Only log when there's a signal strength change.
             }
         }
 
