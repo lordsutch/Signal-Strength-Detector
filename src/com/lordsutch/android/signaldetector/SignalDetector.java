@@ -38,9 +38,9 @@ import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 
@@ -97,15 +97,22 @@ public final class SignalDetector extends AppCompatActivity {
         final Activity activity = this;
 
         leafletView.setWebChromeClient(new WebChromeClient() {
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
-            }
-
             public boolean onConsoleMessage(ConsoleMessage cm) {
                 Log.d(TAG, cm.message() + " -- From line "
                         + cm.lineNumber() + " of "
                         + cm.sourceId());
                 return true;
+            }
+        });
+
+        leafletView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(SignalDetector.this);
+                setMapView(baseLayer);
+                addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));
             }
         });
 
@@ -123,10 +130,8 @@ public final class SignalDetector extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
                 (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED ||
-                        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED ||
-                        checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED)) {
+                        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED)) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.READ_PHONE_STATE,
                     Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
         }
 
@@ -140,7 +145,6 @@ public final class SignalDetector extends AppCompatActivity {
                 updateSigInfo(s);
             }
         };
-
     }
 
     @Override
@@ -254,7 +258,7 @@ public final class SignalDetector extends AppCompatActivity {
     };
 
     private boolean validLTESignalStrength(int strength) {
-        return (strength > -200 && strength < 0);
+        return (strength > -140 && strength < 0);
     }
 
     private boolean validRSSISignalStrength(int strength) {
@@ -719,7 +723,7 @@ public final class SignalDetector extends AppCompatActivity {
         }
 */
 
-        if (bsmarker && Math.abs(bslat) <= 90 && Math.abs(bslon) <= 190)
+        if (bsmarker && mService.validLocation(bslon, bslat))
             execJavascript(String.format(Locale.US, "placeMarker(%.5f,%.5f);", bslat, bslon));
         else
             execJavascript("clearMarker();");
