@@ -361,7 +361,7 @@ public final class SignalDetector extends AppCompatActivity {
      * This seems to be round-trip time, so one-way distance is half that.
      */
     private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
-        if(!mService.validTimingAdvance(timingAdvance))
+        if(timingAdvance == Integer.MAX_VALUE)
             return Double.NaN;
         return (isFDD ? timingAdvance : timingAdvance-20) * 149.85;
     }
@@ -376,7 +376,29 @@ public final class SignalDetector extends AppCompatActivity {
             /* TA offset for TDD seems to be ~10 microseconds  */
             return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance, isFDD), ta_distance_units);
-        } else if (!Double.isNaN(timingAdvance)) {
+        } else if (timingAdvance != Integer.MAX_VALUE) {
+            return String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance);
+        } else {
+            return "";
+        }
+    }
+
+    private double gsmTimingAdvanceToMeters(int timingAdvance) {
+        if(timingAdvance == Integer.MAX_VALUE)
+            return Double.NaN;
+        return timingAdvance * 550.0; // See http://www.telecomhall.com/parameter-timing-advance-ta.aspx
+    }
+
+    /* Uses tradunits setting */
+    private double gsmTimingAdvanceToDistance(int timingAdvance) {
+        return gsmTimingAdvanceToMeters(timingAdvance) / (tradunits ? 1609.334 : 1000.0);
+    }
+
+    private String formatGsmTimingAdvance(int timingAdvance) {
+        if(taAsDistance) {
+            return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
+                    gsmTimingAdvanceToDistance(timingAdvance), ta_distance_units);
+        } else if (timingAdvance != Integer.MAX_VALUE) {
             return String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance);
         } else {
             return "";
@@ -555,28 +577,39 @@ public final class SignalDetector extends AppCompatActivity {
 
         ArrayList<String> bsList = new ArrayList<>();
 
-        if (mSignalInfo.sid >= 0 && mSignalInfo.nid >= 0 && mSignalInfo.bsid >= 0 &&
-                (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA)) {
+        if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
             bsLabel.setText(R.string.cdma_1xrtt_base_station);
 
-            bsList.add("SID\u00A0" + mSignalInfo.sid);
-            bsList.add("NID\u00A0" + mSignalInfo.nid);
-            bsList.add(String.format(Locale.getDefault(), "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
+            if(mSignalInfo.sid != Integer.MAX_VALUE)
+                bsList.add("SID\u00A0" + mSignalInfo.sid);
+            if(mSignalInfo.nid != Integer.MAX_VALUE)
+                bsList.add("NID\u00A0" + mSignalInfo.nid);
+            if(mSignalInfo.bsid != Integer.MAX_VALUE)
+                bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
         } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
             bsLabel.setText(R.string._2g_3g_tower);
 
             bsList.add("MNC\u00A0" + mSignalInfo.operator);
-            if (mSignalInfo.lac > 0)
+            if (mSignalInfo.lac != Integer.MAX_VALUE)
                 bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
 
-            if (mSignalInfo.rnc > 0 && mSignalInfo.rnc != mSignalInfo.lac)
+            if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc != mSignalInfo.lac)
                 bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
 
-            if (mSignalInfo.cid > 0)
+            if (mSignalInfo.cid != Integer.MAX_VALUE)
                 bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
 
-            if (mSignalInfo.psc > 0)
+            if (mSignalInfo.psc != Integer.MAX_VALUE)
                 bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
+
+            if (mSignalInfo.bsic != Integer.MAX_VALUE)
+                bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
+
+            if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
+                bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+
+            if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
+                bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
         }
 
         if (!bsList.isEmpty()) {
@@ -683,10 +716,12 @@ public final class SignalDetector extends AppCompatActivity {
                 coverageLayer = "";
         }
 
-        double towerRadius = Double.NaN;
+        double towerRadius = 0.0;
 
         if(mSignalInfo != null) {
             towerRadius = timingAdvanceToMeters(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
+            if (mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
+                towerRadius = gsmTimingAdvanceToMeters(mSignalInfo.gsmTimingAdvance);
         }
 
 /*
