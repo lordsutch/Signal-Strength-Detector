@@ -956,7 +956,7 @@ public class SignalDetectorService extends Service {
     }
 
     private void updatelog(boolean log) {
-        if (mSignalStrength == null)
+        if (mSignalStrength == null || mLocation == null)
             return;
 
         boolean gotID = false;
