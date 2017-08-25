@@ -524,13 +524,15 @@ public class SignalDetectorService extends Service {
         mCriteria.setSpeedRequired(!lessPower);
         mCriteria.setAccuracy(lessPower ? Criteria.ACCURACY_COARSE : Criteria.ACCURACY_FINE);
 
-        String provider = mLocationManager.getBestProvider(mCriteria, true);
+        provider = mLocationManager.getBestProvider(mCriteria, true);
         Log.d(TAG, "Using GPS provider " + provider);
 
         mLocationManager.requestLocationUpdates(provider, 1000, 0, mLocListener);
         mLocation = mLocationManager.getLastKnownLocation(provider);
         listening = true;
     }
+
+    private String provider;
 
     private void appendLog(String logfile, String text, String header) {
         boolean newfile = false;
@@ -956,10 +958,21 @@ public class SignalDetectorService extends Service {
     }
 
     private void updatelog(boolean log) {
-        if (mSignalStrength == null || mLocation == null)
+        if (mSignalStrength == null)
             return;
 
         boolean gotID = false;
+
+        if (mLocation == null &&
+                ActivityCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)  == PackageManager.PERMISSION_GRANTED) {
+            mLocation = mLocationManager.getLastKnownLocation(provider);
+        }
+
+        if (mLocation == null)
+            mLocation = new Location(provider);
 
         signalInfo signal = new signalInfo();
 
