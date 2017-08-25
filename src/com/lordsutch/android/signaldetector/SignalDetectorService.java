@@ -497,11 +497,9 @@ public class SignalDetectorService extends Service {
     }
 
     public void startGPS() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
         }
 
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -520,9 +518,8 @@ public class SignalDetectorService extends Service {
         Criteria mCriteria = new Criteria();
         mCriteria.setAltitudeRequired(false);
         mCriteria.setCostAllowed(false);
-        mCriteria.setBearingRequired(!lessPower);
-        mCriteria.setSpeedRequired(!lessPower);
-        mCriteria.setAccuracy(lessPower ? Criteria.ACCURACY_COARSE : Criteria.ACCURACY_FINE);
+        mCriteria.setPowerRequirement(lessPower ? Criteria.POWER_LOW : Criteria.POWER_HIGH);
+        mCriteria.setAccuracy(lessPower ? Criteria.NO_REQUIREMENT : Criteria.ACCURACY_FINE);
 
         provider = mLocationManager.getBestProvider(mCriteria, true);
         Log.d(TAG, "Using GPS provider " + provider);
@@ -925,7 +922,7 @@ public class SignalDetectorService extends Service {
             signal.nid = x.getNetworkId();
             signal.sid = x.getSystemId();
 
-            if (signal.bsid == -1)
+            if (signal.bsid < 0)
                 signal.bsid = Integer.MAX_VALUE;
 
             if (signal.nid <= 0)
@@ -948,11 +945,20 @@ public class SignalDetectorService extends Service {
             GsmCellLocation x = (GsmCellLocation) mCellLocation;
 
             signal.lac = x.getLac();
+            if(signal.lac < 0 || signal.lac > 0xffff)
+                signal.lac = Integer.MAX_VALUE;
+
             signal.psc = x.getPsc();
+            if (signal.psc < 0)
+                signal.psc = Integer.MAX_VALUE;
+
             signal.cid = x.getCid();
             if (signal.cid >= 0) {
                 signal.rnc = signal.cid >> 16;
                 signal.cid = signal.cid & 0xffff;
+            } else {
+                signal.rnc = Integer.MAX_VALUE;
+                signal.cid = Integer.MAX_VALUE;
             }
         }
     }
@@ -1079,6 +1085,7 @@ public class SignalDetectorService extends Service {
                     signal.lac = cellid.getLac();
                     signal.mcc = cellid.getMcc();
                     signal.mnc = cellid.getMnc();
+                    signal.cid = cellid.getCid();
 
                     signal.gsmSigStrength = cstr.getDbm();
 
@@ -1092,6 +1099,11 @@ public class SignalDetectorService extends Service {
                     CellIdentityWcdma cellid = ((CellInfoWcdma) item).getCellIdentity();
 
                     signal.cid = cellid.getCid();
+                    if(signal.cid != Integer.MAX_VALUE) {
+                        signal.rnc = signal.cid >> 16;
+                        signal.cid = signal.cid & 0xffff;
+                    }
+
                     signal.lac = cellid.getLac();
                     signal.mcc = cellid.getMcc();
                     signal.mnc = cellid.getMnc();
