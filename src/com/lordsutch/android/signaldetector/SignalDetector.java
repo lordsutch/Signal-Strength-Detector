@@ -569,8 +569,20 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         String netText = networkString(mSignalInfo.networkType);
+        boolean operatorShown = false;
+        String opString = "";
+
         if (lteMode && validMcc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
-            netText += " " + formatPLMN(mSignalInfo.mcc, mSignalInfo.mnc);
+            opString = formatPLMN(mSignalInfo.mcc, mSignalInfo.mnc);
+        } else if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
+            opString = formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc);
+        } else if (!mSignalInfo.operator.isEmpty()) {
+            opString = formatOperator(mSignalInfo.operator);
+        }
+
+        if(!opString.isEmpty()) {
+            netText += " " + opString;
+            operatorShown = true;
         }
 
         if (lteMode && mSignalInfo.lteBand > 0) {
@@ -609,11 +621,15 @@ public final class SignalDetector extends AppCompatActivity {
             // Devices seem to put LTE stuff into non-LTE fields...?
             bsLabel.setText(R.string._2g_3g_tower);
 
-            if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc))
-                bsList.add("PLMN\u00A0" + formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc));
-            else if(!mSignalInfo.operator.isEmpty() &&
-                    !mSignalInfo.operator.contentEquals(String.format(Locale.US, "%d%d", mSignalInfo.mcc, mSignalInfo.mnc)))
-                bsList.add("PLMN\u00A0" + formatOperator(mSignalInfo.operator));
+            String gsmOpString = "";
+            if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
+                gsmOpString = formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc);
+            } else {
+                gsmOpString = formatOperator(mSignalInfo.operator);
+            }
+
+            if(!operatorShown || !gsmOpString.contentEquals(opString))
+                bsList.add("PLMN\u00A0" + gsmOpString);
 
             if (mSignalInfo.lac != Integer.MAX_VALUE)
                 bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
