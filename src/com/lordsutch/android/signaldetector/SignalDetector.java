@@ -54,8 +54,9 @@ import java.util.Locale;
 public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
-    public static WebView leafletView = null;
-//    public static MapView mapView = null;
+    private WebView leafletView = null;
+    private boolean pageAvailable = false;
+    //    private MapView mapView = null;
     private TelephonyManager mTelephonyManager = null;
     private String baseLayer = "shields";
     private String coverageLayer = "provider";
@@ -109,6 +110,7 @@ public final class SignalDetector extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                SignalDetector.pageAvailable = true;
 
                 SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(SignalDetector.this);
                 setMapView(baseLayer);
@@ -269,18 +271,18 @@ public final class SignalDetector extends AppCompatActivity {
         return (eci >= 0 && eci <= 0x0FFFFFFF);
     }
 
-    private double bslat = 999;
-    private double bslon = 999;
+    private double bslat = Double.NaN;
+    private double bslon = Double.NaN;
 
     private signalInfo mSignalInfo = null;
 
-    double speedfactor = 3.6;
-    String speedlabel = "km/h";
+    double speedFactor = 3.6;
+    String speedLabel = "km/h";
 
-    double accuracyfactor = 1.0;
-    String accuracylabel = "m";
+    double accuracyFactor = 1.0;
+    String accuracyLabel = "m";
 
-    double bearing = 0.0;
+    float bearing = 0;
 
     // Swiped from https://en.wikipedia.org/wiki/Mobile_country_code
     private List<Integer> threeDigitMNCList = Arrays.asList(
@@ -313,7 +315,7 @@ public final class SignalDetector extends AppCompatActivity {
         return threeDigitMNCList.contains(mcc);
     }
 
-    private String formatMccMnc(int mcc, int mnc) {
+    private String formatPLMN(int mcc, int mnc) {
         if(mnc >= 100 || is3digitMnc(mcc)) {
             return String.format(Locale.US, "%03d-%03d", mcc, mnc);
         } else {
@@ -419,23 +421,26 @@ public final class SignalDetector extends AppCompatActivity {
         bslat = mSignalInfo.bslat;
         bslon = mSignalInfo.bslon;
 
-        if (mSignalInfo.bearing > 0.0)
+        if (mSignalInfo.bearing > 0)
             bearing = mSignalInfo.bearing;
+
+        Log.d(TAG, mSignalInfo.toString());
 
         TextView latlon = (TextView) findViewById(R.id.positionLatLon);
 
         latlon.setText(String.format(Locale.getDefault(), "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
                 Math.abs(mSignalInfo.latitude), getResources().getString(mSignalInfo.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
                 Math.abs(mSignalInfo.longitude), getResources().getString(mSignalInfo.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
-                mSignalInfo.accuracy * accuracyfactor, accuracylabel));
+                mSignalInfo.accuracy * accuracyFactor, accuracyLabel));
 
         TextView speed = (TextView) findViewById(R.id.speed);
 
         if (bearing > 0.0)
-            speed.setText(String.format(Locale.getDefault(), "%3.1f %s %s", mSignalInfo.speed * speedfactor, speedlabel,
-                    directionForBearing(bearing)));
+            speed.setText(String.format(Locale.getDefault(), "%3.1f %s %s",
+                    mSignalInfo.speed * speedFactor, speedLabel, directionForBearing(bearing)));
         else
-            speed.setText(String.format(Locale.getDefault(), "%3.1f %s", mSignalInfo.speed * speedfactor, speedlabel));
+            speed.setText(String.format(Locale.getDefault(), "%3.1f %s",
+                    mSignalInfo.speed * speedFactor, speedLabel));
 
         TextView servingid = (TextView) findViewById(R.id.cellid);
         TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
@@ -549,8 +554,8 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         String netText = networkString(mSignalInfo.networkType);
-        if (lteMode && validMnc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
-            netText += " " + formatMccMnc(mSignalInfo.mcc, mSignalInfo.mnc);
+        if (lteMode && validMcc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
+            netText += " " + formatPLMN(mSignalInfo.mcc, mSignalInfo.mnc);
         }
 
         if (lteMode && mSignalInfo.lteBand > 0) {
@@ -577,39 +582,43 @@ public final class SignalDetector extends AppCompatActivity {
 
         ArrayList<String> bsList = new ArrayList<>();
 
-        if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+        if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA && mService.validSID(mSignalInfo.sid)) {
             bsLabel.setText(R.string.cdma_1xrtt_base_station);
-
-            if(mSignalInfo.sid != Integer.MAX_VALUE)
-                bsList.add("SID\u00A0" + mSignalInfo.sid);
-            if(mSignalInfo.nid != Integer.MAX_VALUE)
+            bsList.add("SID\u00A0" + mSignalInfo.sid);
+            if(mService.validNID(mSignalInfo.nid))
                 bsList.add("NID\u00A0" + mSignalInfo.nid);
-            if(mSignalInfo.bsid != Integer.MAX_VALUE)
-                bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)", mSignalInfo.bsid, mSignalInfo.bsid));
+            if(mService.validBSID(mSignalInfo.bsid))
+                bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)",
+                        mSignalInfo.bsid, mSignalInfo.bsid));
         } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-            bsLabel.setText(R.string._2g_3g_tower);
+            if(!lteMode || (mSignalInfo.lac != mSignalInfo.tac && mSignalInfo.fullCid != mSignalInfo.gci) ) {
+                // Devices seem to put LTE stuff into non-LTE fields...?
+                bsLabel.setText(R.string._2g_3g_tower);
 
-            bsList.add("MNC\u00A0" + mSignalInfo.operator);
-            if (mSignalInfo.lac != Integer.MAX_VALUE)
-                bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
+                if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc))
+                    bsList.add("PLMN\u00A0" + formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc));
 
-            if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc != mSignalInfo.lac)
-                bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
+                if (mSignalInfo.lac != Integer.MAX_VALUE)
+                    bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
 
-            if (mSignalInfo.cid != Integer.MAX_VALUE)
-                bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
+                if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc != mSignalInfo.lac)
+                    bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
 
-            if (mSignalInfo.psc != Integer.MAX_VALUE)
-                bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
+                if (mSignalInfo.cid != Integer.MAX_VALUE)
+                    bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
 
-            if (mSignalInfo.bsic != Integer.MAX_VALUE)
-                bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
+                if (mSignalInfo.psc != Integer.MAX_VALUE)
+                    bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
 
-            if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
-                bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+                if (mSignalInfo.bsic != Integer.MAX_VALUE)
+                    bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
 
-            if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
-                bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
+                if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
+                    bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+
+                if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
+                    bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
+            }
         }
 
         if (!bsList.isEmpty()) {
@@ -620,8 +629,8 @@ public final class SignalDetector extends AppCompatActivity {
             preLteBlock.setVisibility(View.GONE);
         }
 
-        if (Math.abs(mSignalInfo.latitude) <= 200)
-            centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy, mSignalInfo.avgspeed, bearing,
+        if (mService.validLocation(mSignalInfo.longitude, mSignalInfo.latitude))
+            centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy, mSignalInfo.avgSpeed, bearing,
                     mSignalInfo.fixAge);
         addBsMarker();
     }
@@ -630,8 +639,12 @@ public final class SignalDetector extends AppCompatActivity {
         return (tac > 0x0000 && tac < 0xFFFF); // 0, 0xFFFF are reserved values
     }
 
-    private boolean validMnc(int mcc) {
+    private boolean validMcc(int mcc) {
         return (mcc > 0 && mcc <= 999);
+    }
+
+    private boolean validMnc(int mnc) {
+        return (mnc > 0 && mnc <= 999);
     }
 
     private String networkString(int networkType) {
@@ -680,6 +693,8 @@ public final class SignalDetector extends AppCompatActivity {
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
 //        Log.d(TAG, script);
+        if (!pageAvailable)
+            return;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
@@ -687,8 +702,8 @@ public final class SignalDetector extends AppCompatActivity {
             leafletView.loadUrl("javascript:" + script);
     }
 
-    private int zoomForSpeed(double speed) {
-        speed = speed*3.6; // Convert to km/h from m/s
+    private int zoomForSpeed(float speed) {
+        speed = speed*(float)3.6; // Convert to km/h from m/s
 
         if(speed >= 83)
             return 13;
@@ -704,8 +719,8 @@ public final class SignalDetector extends AppCompatActivity {
         return 0; // Don't zoom
     }
 
-    private void centerMap(double latitude, double longitude, double accuracy, double speed,
-                           double bearing, long fixAge) {
+    private void centerMap(double latitude, double longitude, float accuracy, float speed,
+                           float bearing, long fixAge) {
         boolean staleFix = fixAge > (30 * 1000); // 30 seconds
 
         if(coverageLayer.equals("provider")) {
@@ -766,16 +781,16 @@ public final class SignalDetector extends AppCompatActivity {
 
     private void updateUnits() {
         if (tradunits) {
-            speedfactor = 2.237;
-            speedlabel = "mph";
-            accuracyfactor = 3.28084;
-            accuracylabel = "ft";
+            speedFactor = 2.237;
+            speedLabel = "mph";
+            accuracyFactor = 3.28084;
+            accuracyLabel = "ft";
             ta_distance_units = "mi";
         } else {
-            speedfactor = 3.6;
-            speedlabel = "km/h";
-            accuracyfactor = 1.0;
-            accuracylabel = "m";
+            speedFactor = 3.6;
+            speedLabel = "km/h";
+            accuracyFactor = 1.0;
+            accuracyLabel = "m";
             ta_distance_units = "km";
         }
     }
