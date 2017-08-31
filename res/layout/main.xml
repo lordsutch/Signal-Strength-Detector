@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:mapbox="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:layout_gravity="fill"
     android:background="@android:color/white"
     android:gravity="fill"
@@ -15,9 +16,6 @@
         android:id="@+id/TableLayout1"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="false"
-        android:layout_alignParentStart="false"
-        android:layout_alignParentTop="false"
         android:layout_gravity="top"
         android:padding="4dp"
         android:shrinkColumns="1"
@@ -49,7 +47,6 @@
                 android:id="@+id/textview6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/speed"
                 android:textColor="@android:color/black" />
@@ -71,7 +68,6 @@
                 android:id="@+id/TextView03"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/current_network"
                 android:textColor="@android:color/black" />
@@ -91,7 +87,6 @@
                 android:id="@+id/textView2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/serving_lte_cell_id"
                 android:textColor="@android:color/black" />
@@ -112,7 +107,6 @@
                 android:id="@+id/textView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/other_lte_sites"
                 android:textColor="@android:color/black" />
@@ -133,7 +127,6 @@
                 android:id="@+id/bsLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/cdma_1xrtt_base_station"
                 android:textColor="@android:color/black" />
@@ -154,7 +147,6 @@
                 android:id="@+id/sigStrengthLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/voice_signal"
                 android:textColor="@android:color/black" />
@@ -189,10 +181,6 @@
         android:id="@+id/leafletView"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/TableLayout1"
         android:layout_gravity="bottom" />
 
-</RelativeLayout>
+</LinearLayout>
