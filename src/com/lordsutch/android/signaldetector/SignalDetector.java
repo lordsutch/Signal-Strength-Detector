@@ -18,6 +18,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -55,7 +56,7 @@ public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
 
     private WebView leafletView = null;
-    private boolean pageAvailable = false;
+    public boolean pageAvailable = false;
     //    private MapView mapView = null;
     private TelephonyManager mTelephonyManager = null;
     private String baseLayer = "shields";
@@ -88,7 +89,7 @@ public final class SignalDetector extends AppCompatActivity {
         mapView.getOverlays().add(userLocationOverlay);
 */
 
-        leafletView = (WebView) findViewById(R.id.leafletView);
+        leafletView = findViewById(R.id.leafletView);
 
         WebSettings webSettings = leafletView.getSettings();
         webSettings.setAllowFileAccessFromFileURLs(true);
@@ -110,7 +111,7 @@ public final class SignalDetector extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                SignalDetector.pageAvailable = true;
+                SignalDetector.this.pageAvailable = true;
 
                 SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(SignalDetector.this);
                 setMapView(baseLayer);
@@ -426,14 +427,14 @@ public final class SignalDetector extends AppCompatActivity {
 
         Log.d(TAG, mSignalInfo.toString());
 
-        TextView latlon = (TextView) findViewById(R.id.positionLatLon);
+        TextView latlon = findViewById(R.id.positionLatLon);
 
         latlon.setText(String.format(Locale.getDefault(), "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
                 Math.abs(mSignalInfo.latitude), getResources().getString(mSignalInfo.latitude >= 0 ? R.string.bearing_north : R.string.bearing_south),
                 Math.abs(mSignalInfo.longitude), getResources().getString(mSignalInfo.longitude >= 0 ? R.string.bearing_east : R.string.bearing_west),
                 mSignalInfo.accuracy * accuracyFactor, accuracyLabel));
 
-        TextView speed = (TextView) findViewById(R.id.speed);
+        TextView speed = findViewById(R.id.speed);
 
         if (bearing > 0.0)
             speed.setText(String.format(Locale.getDefault(), "%3.1f %s %s",
@@ -442,16 +443,16 @@ public final class SignalDetector extends AppCompatActivity {
             speed.setText(String.format(Locale.getDefault(), "%3.1f %s",
                     mSignalInfo.speed * speedFactor, speedLabel));
 
-        TextView servingid = (TextView) findViewById(R.id.cellid);
-        TextView bsLabel = (TextView) findViewById(R.id.bsLabel);
-        TextView cdmaBS = (TextView) findViewById(R.id.cdma_sysinfo);
-        TextView cdmaStrength = (TextView) findViewById(R.id.cdmaSigStrength);
-        TextView otherSites = (TextView) findViewById(R.id.otherLteSites);
+        TextView servingid = findViewById(R.id.cellid);
+        TextView bsLabel = findViewById(R.id.bsLabel);
+        TextView cdmaBS = findViewById(R.id.cdma_sysinfo);
+        TextView cdmaStrength = findViewById(R.id.cdmaSigStrength);
+        TextView otherSites = findViewById(R.id.otherLteSites);
 
-        LinearLayout voiceSignalBlock = (LinearLayout) findViewById(R.id.voiceSignalBlock);
-        LinearLayout lteBlock = (LinearLayout) findViewById(R.id.lteBlock);
-        LinearLayout lteOtherBlock = (LinearLayout) findViewById(R.id.lteOtherBlock);
-        LinearLayout preLteBlock = (LinearLayout) findViewById(R.id.preLteBlock);
+        LinearLayout voiceSignalBlock = findViewById(R.id.voiceSignalBlock);
+        LinearLayout lteBlock = findViewById(R.id.lteBlock);
+        LinearLayout lteOtherBlock = findViewById(R.id.lteOtherBlock);
+        LinearLayout preLteBlock = findViewById(R.id.preLteBlock);
 
         if (mSignalInfo.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             ArrayList<String> cellIds = new ArrayList<>();
@@ -512,7 +513,7 @@ public final class SignalDetector extends AppCompatActivity {
                 otherSites.setText(TextUtils.join("; ", otherSitesList));
         }
 
-        TextView network = (TextView) findViewById(R.id.networkString);
+        TextView network = findViewById(R.id.networkString);
 
         int voiceSigStrength = Integer.MAX_VALUE;
         boolean voiceDataSame = true;
@@ -630,8 +631,8 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         if (mService.validLocation(mSignalInfo.longitude, mSignalInfo.latitude))
-            centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy, mSignalInfo.avgSpeed, bearing,
-                    mSignalInfo.fixAge);
+            centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy,
+                    mSignalInfo.avgSpeed, bearing, mSignalInfo.fixAge);
         addBsMarker();
     }
 
@@ -682,13 +683,6 @@ public final class SignalDetector extends AppCompatActivity {
         }
     }
 
-    private boolean isEVDONetwork(int networkType) {
-        return (networkType == TelephonyManager.NETWORK_TYPE_EHRPD ||
-                networkType == TelephonyManager.NETWORK_TYPE_EVDO_0 ||
-                networkType == TelephonyManager.NETWORK_TYPE_EVDO_A ||
-                networkType == TelephonyManager.NETWORK_TYPE_EVDO_B);
-    }
-
     @TargetApi(Build.VERSION_CODES.KITKAT)
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
@@ -698,8 +692,11 @@ public final class SignalDetector extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             leafletView.evaluateJavascript(script, null);
-        else
-            leafletView.loadUrl("javascript:" + script);
+        else {
+            Uri uri = new Uri.Builder().scheme("javascript").opaquePart(script).build();
+
+            leafletView.loadUrl(uri.toString());
+        }
     }
 
     private int zoomForSpeed(float speed) {

@@ -81,46 +81,48 @@ class otherLteCell implements Parcelable {
     int lteSigStrength = Integer.MAX_VALUE;
     int timingAdvance = Integer.MAX_VALUE;
 
+    otherLteCell() {
+    }
+
+    protected otherLteCell(Parcel in) {
+        gci = in.readInt();
+        pci = in.readInt();
+        tac = in.readInt();
+        mcc = in.readInt();
+        mnc = in.readInt();
+        earfcn = in.readInt();
+        lteBand = in.readInt();
+        isFDD = in.readByte() != 0;
+        lteSigStrength = in.readInt();
+        timingAdvance = in.readInt();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(gci);
+        dest.writeInt(pci);
+        dest.writeInt(tac);
+        dest.writeInt(mcc);
+        dest.writeInt(mnc);
+        dest.writeInt(earfcn);
+        dest.writeInt(lteBand);
+        dest.writeByte((byte) (isFDD ? 1 : 0));
+        dest.writeInt(lteSigStrength);
+        dest.writeInt(timingAdvance);
+    }
+
     @Override
     public int describeContents() {
         return 0;
     }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(this.gci);
-        dest.writeInt(this.pci);
-        dest.writeInt(this.tac);
-        dest.writeInt(this.mcc);
-        dest.writeInt(this.mnc);
-        dest.writeInt(this.earfcn);
-        dest.writeInt(this.lteBand);
-        dest.writeInt(this.lteSigStrength);
-        dest.writeInt(this.timingAdvance);
-        dest.writeInt(this.isFDD ? 1 : 0);
-    }
-
-    public otherLteCell() {
-    }
-
-    protected otherLteCell(Parcel in) {
-        this.gci = in.readInt();
-        this.pci = in.readInt();
-        this.tac = in.readInt();
-        this.mcc = in.readInt();
-        this.mnc = in.readInt();
-        this.earfcn = in.readInt();
-        this.lteBand = in.readInt();
-        this.lteSigStrength = in.readInt();
-        this.timingAdvance = in.readInt();
-        this.isFDD = in.readInt() != 0;
-    }
-
-    public static final Parcelable.Creator<otherLteCell> CREATOR = new Parcelable.Creator<otherLteCell>() {
-        public otherLteCell createFromParcel(Parcel source) {
-            return new otherLteCell(source);
+    public static final Creator<otherLteCell> CREATOR = new Creator<otherLteCell>() {
+        @Override
+        public otherLteCell createFromParcel(Parcel in) {
+            return new otherLteCell(in);
         }
 
+        @Override
         public otherLteCell[] newArray(int size) {
             return new otherLteCell[size];
         }
@@ -184,6 +186,112 @@ class signalInfo implements Parcelable {
 
     List<otherLteCell> otherCells = null;
 
+    protected signalInfo(Parcel in) {
+        longitude = in.readDouble();
+        latitude = in.readDouble();
+        altitude = in.readDouble();
+        accuracy = in.readFloat();
+        speed = in.readFloat();
+        avgSpeed = in.readFloat();
+        bearing = in.readFloat();
+        fixAge = in.readLong();
+        gci = in.readInt();
+        pci = in.readInt();
+        tac = in.readInt();
+        mcc = in.readInt();
+        mnc = in.readInt();
+        earfcn = in.readInt();
+        lteSigStrength = in.readInt();
+        timingAdvance = in.readInt();
+        gsmTimingAdvance = in.readInt();
+        lteBand = in.readInt();
+        isFDD = in.readByte() != 0;
+        bsid = in.readInt();
+        nid = in.readInt();
+        sid = in.readInt();
+        bslat = in.readDouble();
+        bslon = in.readDouble();
+        cdmaSigStrength = in.readInt();
+        evdoSigStrength = in.readInt();
+        operator = in.readString();
+        lac = in.readInt();
+        cid = in.readInt();
+        psc = in.readInt();
+        rnc = in.readInt();
+        fullCid = in.readInt();
+        gsmSigStrength = in.readInt();
+        bsic = in.readInt();
+        uarfcn = in.readInt();
+        gsmMcc = in.readInt();
+        gsmMnc = in.readInt();
+        phoneType = in.readInt();
+        networkType = in.readInt();
+        roaming = in.readByte() != 0;
+        otherCells = in.createTypedArrayList(otherLteCell.CREATOR);
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeDouble(longitude);
+        dest.writeDouble(latitude);
+        dest.writeDouble(altitude);
+        dest.writeFloat(accuracy);
+        dest.writeFloat(speed);
+        dest.writeFloat(avgSpeed);
+        dest.writeFloat(bearing);
+        dest.writeLong(fixAge);
+        dest.writeInt(gci);
+        dest.writeInt(pci);
+        dest.writeInt(tac);
+        dest.writeInt(mcc);
+        dest.writeInt(mnc);
+        dest.writeInt(earfcn);
+        dest.writeInt(lteSigStrength);
+        dest.writeInt(timingAdvance);
+        dest.writeInt(gsmTimingAdvance);
+        dest.writeInt(lteBand);
+        dest.writeByte((byte) (isFDD ? 1 : 0));
+        dest.writeInt(bsid);
+        dest.writeInt(nid);
+        dest.writeInt(sid);
+        dest.writeDouble(bslat);
+        dest.writeDouble(bslon);
+        dest.writeInt(cdmaSigStrength);
+        dest.writeInt(evdoSigStrength);
+        dest.writeString(operator);
+        dest.writeInt(lac);
+        dest.writeInt(cid);
+        dest.writeInt(psc);
+        dest.writeInt(rnc);
+        dest.writeInt(fullCid);
+        dest.writeInt(gsmSigStrength);
+        dest.writeInt(bsic);
+        dest.writeInt(uarfcn);
+        dest.writeInt(gsmMcc);
+        dest.writeInt(gsmMnc);
+        dest.writeInt(phoneType);
+        dest.writeInt(networkType);
+        dest.writeByte((byte) (roaming ? 1 : 0));
+        dest.writeTypedList(otherCells);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<signalInfo> CREATOR = new Creator<signalInfo>() {
+        @Override
+        public signalInfo createFromParcel(Parcel in) {
+            return new signalInfo(in);
+        }
+
+        @Override
+        public signalInfo[] newArray(int size) {
+            return new signalInfo[size];
+        }
+    };
+
     @Override
     public String toString() {
         return "signalInfo{" +
@@ -192,7 +300,7 @@ class signalInfo implements Parcelable {
                 ", altitude=" + altitude +
                 ", accuracy=" + accuracy +
                 ", speed=" + speed +
-                ", avgspeed=" + avgSpeed +
+                ", avgSpeed=" + avgSpeed +
                 ", bearing=" + bearing +
                 ", fixAge=" + fixAge +
                 ", gci=" + gci +
@@ -231,111 +339,9 @@ class signalInfo implements Parcelable {
                 '}';
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeDouble(this.longitude);
-        dest.writeDouble(this.latitude);
-        dest.writeDouble(this.altitude);
-        dest.writeFloat(this.accuracy);
-        dest.writeFloat(this.speed);
-        dest.writeFloat(this.avgSpeed);
-        dest.writeFloat(this.bearing);
-        dest.writeLong(this.fixAge);
-        dest.writeInt(this.gci);
-        dest.writeInt(this.pci);
-        dest.writeInt(this.tac);
-        dest.writeInt(this.mcc);
-        dest.writeInt(this.mnc);
-        dest.writeInt(this.earfcn);
-        dest.writeInt(this.lteSigStrength);
-        dest.writeInt(this.lteBand);
-        dest.writeInt(this.bsid);
-        dest.writeInt(this.nid);
-        dest.writeInt(this.sid);
-        dest.writeDouble(this.bslat);
-        dest.writeDouble(this.bslon);
-        dest.writeInt(this.cdmaSigStrength);
-        dest.writeInt(this.evdoSigStrength);
-        dest.writeString(this.operator);
-        dest.writeInt(this.lac);
-        dest.writeInt(this.cid);
-        dest.writeInt(this.psc);
-        dest.writeInt(this.rnc);
-        dest.writeInt(this.fullCid);
-        dest.writeInt(this.gsmSigStrength);
-        dest.writeInt(this.phoneType);
-        dest.writeInt(this.networkType);
-        dest.writeInt(roaming ? (byte) 1 : (byte) 0);
-        dest.writeList(this.otherCells);
-        dest.writeInt(this.timingAdvance);
-        dest.writeInt(this.isFDD ? 1 : 0);
-        dest.writeInt(this.gsmTimingAdvance);
-        dest.writeInt(this.bsic);
-        dest.writeInt(this.gsmMcc);
-        dest.writeInt(this.gsmMnc);
-    }
-
     public signalInfo() {
     }
 
-    protected signalInfo(Parcel in) {
-        this.longitude = in.readDouble();
-        this.latitude = in.readDouble();
-        this.altitude = in.readDouble();
-        this.accuracy = in.readFloat();
-        this.speed = in.readFloat();
-        this.avgSpeed = in.readFloat();
-        this.bearing = in.readFloat();
-        this.fixAge = in.readLong();
-        this.gci = in.readInt();
-        this.pci = in.readInt();
-        this.tac = in.readInt();
-        this.mcc = in.readInt();
-        this.mnc = in.readInt();
-        this.earfcn = in.readInt();
-        this.lteSigStrength = in.readInt();
-        this.lteBand = in.readInt();
-        this.bsid = in.readInt();
-        this.nid = in.readInt();
-        this.sid = in.readInt();
-        this.bslat = in.readDouble();
-        this.bslon = in.readDouble();
-        this.cdmaSigStrength = in.readInt();
-        this.evdoSigStrength = in.readInt();
-        this.operator = in.readString();
-        this.lac = in.readInt();
-        this.cid = in.readInt();
-        this.psc = in.readInt();
-        this.rnc = in.readInt();
-        this.fullCid = in.readInt();
-        this.gsmSigStrength = in.readInt();
-        this.phoneType = in.readInt();
-        this.networkType = in.readInt();
-        this.roaming = in.readInt() != 0;
-        this.otherCells = new ArrayList<otherLteCell>();
-        in.readList(this.otherCells, List.class.getClassLoader());
-        this.timingAdvance = in.readInt();
-        this.isFDD = in.readInt() != 0;
-        this.gsmTimingAdvance = in.readInt();
-        this.bsic = in.readInt();
-        this.gsmMcc = in.readInt();
-        this.gsmMnc = in.readInt();
-    }
-
-    public static final Creator<signalInfo> CREATOR = new Creator<signalInfo>() {
-        public signalInfo createFromParcel(Parcel source) {
-            return new signalInfo(source);
-        }
-
-        public signalInfo[] newArray(int size) {
-            return new signalInfo[size];
-        }
-    };
 }
 
 public class SignalDetectorService extends Service {
@@ -511,7 +517,9 @@ public class SignalDetectorService extends Service {
         mChannel.setDescription(description);
         mChannel.setShowBadge(false);
         mChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        mNotificationManager.createNotificationChannel(mChannel);
+        if (mNotificationManager != null) {
+            mNotificationManager.createNotificationChannel(mChannel);
+        }
     }
 
     @SuppressLint("WrongConstant")
@@ -1234,7 +1242,6 @@ public class SignalDetectorService extends Service {
         mNotification = mBuilder.build();
         mNotifyMgr.notify(mNotificationId, mNotification);
 
-        long THIRTY_SECONDS = (long) (30 * 1000);
         signal.fixAge = locationFixAge(mLocation);
 
         if (loggingEnabled && log) {
@@ -1458,6 +1465,8 @@ public class SignalDetectorService extends Service {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.cancel(mNotificationId);
+        if (mNotificationManager != null) {
+            mNotificationManager.cancel(mNotificationId);
+        }
     }
 }
