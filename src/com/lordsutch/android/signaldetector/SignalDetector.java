@@ -377,10 +377,10 @@ public final class SignalDetector extends AppCompatActivity {
     private String formatTimingAdvance(int timingAdvance, boolean isFDD) {
         if(taAsDistance) {
             /* TA offset for TDD seems to be ~10 microseconds  */
-            return String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
+            return String.format(Locale.getDefault(), "TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance, isFDD), ta_distance_units);
         } else if (timingAdvance != Integer.MAX_VALUE) {
-            return String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance);
+            return String.format(Locale.getDefault(), "TA=%d\u202fµs", timingAdvance);
         } else {
             return "";
         }
@@ -425,7 +425,7 @@ public final class SignalDetector extends AppCompatActivity {
         if (mSignalInfo.bearing > 0)
             bearing = mSignalInfo.bearing;
 
-        Log.d(TAG, mSignalInfo.toString());
+//        Log.d(TAG, mSignalInfo.toString());
 
         TextView latlon = findViewById(R.id.positionLatLon);
 
@@ -497,14 +497,25 @@ public final class SignalDetector extends AppCompatActivity {
             });
 
             for (otherLteCell otherCell : mSignalInfo.otherCells) {
-                if (validPhysicalCellID(otherCell.pci) && validLTESignalStrength(otherCell.lteSigStrength)) {
-                    String sigInfo = String.format(Locale.getDefault(), "%d\u202FdBm", otherCell.lteSigStrength);
-                    if(mService.validTimingAdvance(otherCell.timingAdvance)) {
-                        sigInfo += formatTimingAdvance(otherCell.timingAdvance, otherCell.isFDD);
-                    }
+                if (validPhysicalCellID(otherCell.pci)) {
+                    ArrayList<String> sigList = new ArrayList<>();
 
-                    otherSitesList.add(String.format(Locale.getDefault(), "%03d\u00a0(%s)",
-                            otherCell.pci, sigInfo));
+                    String sigInfo = String.format(Locale.getDefault(), "%03d", otherCell.pci);
+
+                    if(validLTESignalStrength(otherCell.lteSigStrength))
+                        sigList.add(String.format(Locale.getDefault(), "%d\u202FdBm", otherCell.lteSigStrength));
+
+                    if(mService.validTimingAdvance(otherCell.timingAdvance))
+                        sigList.add(formatTimingAdvance(otherCell.timingAdvance, otherCell.isFDD));
+
+                    if(mService.validEARFCN(otherCell.earfcn) && otherCell.earfcn != mSignalInfo.earfcn)
+                        sigList.add(String.format(Locale.getDefault(), "EARFCN=%d", otherCell.earfcn));
+
+                    if(!sigList.isEmpty())
+                        sigInfo += String.format(Locale.getDefault(),"\u00a0(%s)",
+                                TextUtils.join(" ", sigList));
+
+                    otherSitesList.add(sigInfo);
                 }
             }
             if (otherSitesList.isEmpty())
@@ -515,15 +526,18 @@ public final class SignalDetector extends AppCompatActivity {
 
         TextView network = findViewById(R.id.networkString);
 
-        int voiceSigStrength = Integer.MAX_VALUE;
+        int dataSigStrength = Integer.MAX_VALUE;
         boolean voiceDataSame = true;
 
         if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
-            voiceSigStrength = mSignalInfo.cdmaSigStrength;
+            dataSigStrength = mSignalInfo.cdmaSigStrength;
         } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-            voiceSigStrength = mSignalInfo.gsmSigStrength;
+            dataSigStrength = mSignalInfo.gsmSigStrength;
+        } else {
+            dataSigStrength = validRSSISignalStrength(mSignalInfo.cdmaSigStrength) ?
+                    mSignalInfo.cdmaSigStrength : mSignalInfo.gsmSigStrength;
         }
-        int dataSigStrength = voiceSigStrength;
+        int voiceSigStrength = dataSigStrength;
         boolean lteMode = false;
 
         switch (mSignalInfo.networkType) {
@@ -566,7 +580,7 @@ public final class SignalDetector extends AppCompatActivity {
         if (validLTESignalStrength(dataSigStrength)) {
             netText += String.format(Locale.getDefault(), " %d\u202FdBm", dataSigStrength);
             if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
-                netText += formatTimingAdvance(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
+                netText += "\u00a0"+formatTimingAdvance(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
         }
 
         if (mSignalInfo.roaming)
@@ -591,35 +605,39 @@ public final class SignalDetector extends AppCompatActivity {
             if(mService.validBSID(mSignalInfo.bsid))
                 bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)",
                         mSignalInfo.bsid, mSignalInfo.bsid));
-        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-            if(!lteMode || (mSignalInfo.lac != mSignalInfo.tac && mSignalInfo.fullCid != mSignalInfo.gci) ) {
-                // Devices seem to put LTE stuff into non-LTE fields...?
-                bsLabel.setText(R.string._2g_3g_tower);
+        } else if (!lteMode || (mSignalInfo.lac != mSignalInfo.tac && mSignalInfo.fullCid != mSignalInfo.gci) ) {
+            // Devices seem to put LTE stuff into non-LTE fields...?
+            bsLabel.setText(R.string._2g_3g_tower);
 
-                if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc))
-                    bsList.add("PLMN\u00A0" + formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc));
+            if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc))
+                bsList.add("PLMN\u00A0" + formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc));
+            else if(!mSignalInfo.operator.isEmpty() &&
+                    !mSignalInfo.operator.contentEquals(String.format(Locale.US, "%d%d", mSignalInfo.mcc, mSignalInfo.mnc)))
+                bsList.add("PLMN\u00A0" + formatOperator(mSignalInfo.operator));
 
-                if (mSignalInfo.lac != Integer.MAX_VALUE)
-                    bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
+            if (mSignalInfo.lac != Integer.MAX_VALUE)
+                bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
 
-                if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc != mSignalInfo.lac)
-                    bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
+            if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc > 0 && mSignalInfo.rnc != mSignalInfo.lac)
+                bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
 
-                if (mSignalInfo.cid != Integer.MAX_VALUE)
-                    bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
+            if (mSignalInfo.cid != Integer.MAX_VALUE)
+                bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
 
-                if (mSignalInfo.psc != Integer.MAX_VALUE)
-                    bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
+            if (mSignalInfo.psc != Integer.MAX_VALUE)
+                bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
 
-                if (mSignalInfo.bsic != Integer.MAX_VALUE)
-                    bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
+            if (mSignalInfo.bsic != Integer.MAX_VALUE)
+                bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
 
-                if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
-                    bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+            if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
+                bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
 
-                if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
-                    bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
-            }
+            if (mSignalInfo.arfcn != Integer.MAX_VALUE)
+                bsList.add("ARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+
+            if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
+                bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
         }
 
         if (!bsList.isEmpty()) {
@@ -634,6 +652,13 @@ public final class SignalDetector extends AppCompatActivity {
             centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy,
                     mSignalInfo.avgSpeed, bearing, mSignalInfo.fixAge);
         addBsMarker();
+    }
+
+    private String formatOperator(String operator) {
+        if(Integer.valueOf(operator) > 0)
+            return operator.substring(0,3)+"-"+operator.substring(3);
+        else
+            return operator;
     }
 
     private boolean validTAC(int tac) {

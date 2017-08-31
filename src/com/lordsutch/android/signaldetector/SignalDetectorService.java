@@ -81,6 +81,22 @@ class otherLteCell implements Parcelable {
     int lteSigStrength = Integer.MAX_VALUE;
     int timingAdvance = Integer.MAX_VALUE;
 
+    @Override
+    public String toString() {
+        return "otherLteCell{" +
+                "gci=" + gci +
+                ", pci=" + pci +
+                ", tac=" + tac +
+                ", mcc=" + mcc +
+                ", mnc=" + mnc +
+                ", earfcn=" + earfcn +
+                ", lteBand=" + lteBand +
+                ", isFDD=" + isFDD +
+                ", lteSigStrength=" + lteSigStrength +
+                ", timingAdvance=" + timingAdvance +
+                '}';
+    }
+
     otherLteCell() {
     }
 
@@ -175,6 +191,7 @@ class signalInfo implements Parcelable {
     int gsmSigStrength = Integer.MAX_VALUE;
     int bsic = Integer.MAX_VALUE;
     int uarfcn = Integer.MAX_VALUE;
+    int arfcn = Integer.MAX_VALUE;
 
     int gsmMcc = Integer.MAX_VALUE;
     int gsmMnc = Integer.MAX_VALUE;
@@ -222,6 +239,7 @@ class signalInfo implements Parcelable {
         gsmSigStrength = in.readInt();
         bsic = in.readInt();
         uarfcn = in.readInt();
+        arfcn = in.readInt();
         gsmMcc = in.readInt();
         gsmMnc = in.readInt();
         phoneType = in.readInt();
@@ -267,6 +285,7 @@ class signalInfo implements Parcelable {
         dest.writeInt(gsmSigStrength);
         dest.writeInt(bsic);
         dest.writeInt(uarfcn);
+        dest.writeInt(arfcn);
         dest.writeInt(gsmMcc);
         dest.writeInt(gsmMnc);
         dest.writeInt(phoneType);
@@ -330,6 +349,7 @@ class signalInfo implements Parcelable {
                 ", gsmSigStrength=" + gsmSigStrength +
                 ", bsic=" + bsic +
                 ", uarfcn=" + uarfcn +
+                ", arfcn=" + arfcn +
                 ", gsmMcc=" + gsmMcc +
                 ", gsmMnc=" + gsmMnc +
                 ", phoneType=" + phoneType +
@@ -641,7 +661,7 @@ public class SignalDetectorService extends Service {
     }
 
     boolean validTimingAdvance(int timingAdvance) {
-        return (timingAdvance != Integer.MAX_VALUE);
+        return (timingAdvance > 0 && timingAdvance != Integer.MAX_VALUE);
     }
 
     boolean validRSSISignalStrength(int strength) {
@@ -1087,6 +1107,8 @@ public class SignalDetectorService extends Service {
                 if(item == null)
                     continue;
 
+//                Log.d(TAG, item.toString());
+
                 if (item instanceof CellInfoLte) {
                     CellSignalStrengthLte cstr = ((CellInfoLte) item).getCellSignalStrength();
                     CellIdentityLte cellid = ((CellInfoLte) item).getCellIdentity();
@@ -1094,6 +1116,8 @@ public class SignalDetectorService extends Service {
                     if (item.isRegistered()) {
                         if (cstr != null) {
                             signal.lteSigStrength = cstr.getDbm();
+                            if(signal.lteSigStrength > 0)
+                                signal.lteSigStrength = -(signal.lteSigStrength/10);
                             signal.timingAdvance = cstr.getTimingAdvance();
                         }
 
@@ -1116,6 +1140,8 @@ public class SignalDetectorService extends Service {
 
                         if (cstr != null) {
                             otherCell.lteSigStrength = cstr.getDbm();
+                            if(otherCell.lteSigStrength > 0)
+                                otherCell.lteSigStrength = -(otherCell.lteSigStrength/10);
                             otherCell.timingAdvance = cstr.getTimingAdvance();
                         }
 
@@ -1155,6 +1181,9 @@ public class SignalDetectorService extends Service {
 
                     signal.gsmSigStrength = cstr.getDbm();
 
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        signal.arfcn = cellid.getArfcn();
+                    }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         signal.bsic = cellid.getBsic();
                         signal.gsmTimingAdvance = cstr.getTimingAdvance();
@@ -1245,6 +1274,8 @@ public class SignalDetectorService extends Service {
         signal.fixAge = locationFixAge(mLocation);
 
         if (loggingEnabled && log) {
+            Log.d(TAG, signal.toString());
+
             TimeZone tz = TimeZone.getTimeZone("UTC");
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US); // Quoted "Z" to indicate UTC, no timezone offset
             df.setTimeZone(tz);
@@ -1351,10 +1382,11 @@ public class SignalDetectorService extends Service {
                         nowAsISO, now.getTime(), valueString(signal.bsic), valueString(signal.uarfcn),
                         valueString(signal.gsmTimingAdvance),
                         (signal.gsmTimingAdvance != Integer.MAX_VALUE ? signal.gsmTimingAdvance * 550 : ""),
-                        valueString(signal.gsmMcc), valueString(signal.gsmMnc));
+                        valueString(signal.gsmMcc), valueString(signal.gsmMnc),
+                        valueString(signal.arfcn));
                 if (GSMLine == null || !newGSMLine.equals(GSMLine)) {
 //                    Log.d(TAG, "Logging GSM cell.");
-                    appendLog("gsmcells.csv", newGSMLine, "latitude,longitude,altitude,accuracy,cid,rnc,lac,psc,rssi,timestamp,timeSinceEpoch,bsic,uarfcn,timingAdvance,estDistance,mcc,mnc");
+                    appendLog("gsmcells.csv", newGSMLine, "latitude,longitude,altitude,accuracy,cid,rnc,lac,psc,rssi,timestamp,timeSinceEpoch,bsic,uarfcn,timingAdvance,estDistance,mcc,mnc,arfcn");
                     GSMLine = newGSMLine;
                 }
             }
