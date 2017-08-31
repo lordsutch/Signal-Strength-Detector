@@ -1016,8 +1016,8 @@ public class SignalDetectorService extends Service {
             if (signal.sid <= 0)
                 signal.sid = Integer.MAX_VALUE;
 
-            signal.bslat = x.getBaseStationLatitude() != 0 ? x.getBaseStationLatitude() / 14400.0 : Double.NaN;
-            signal.bslon = x.getBaseStationLongitude() != 0 ? x.getBaseStationLongitude() / 14400.0 : Double.NaN;
+            signal.bslat = fixCDMAPosition(x.getBaseStationLatitude());
+            signal.bslon = fixCDMAPosition(x.getBaseStationLongitude());
 
             /* Deal with possiblity these may be swapped in Android 8 - thanks Mikejeep
              * https://issuetracker.google.com/issues/63130155 */
@@ -1047,6 +1047,10 @@ public class SignalDetectorService extends Service {
                 signal.fullCid = Integer.MAX_VALUE;
             }
         }
+    }
+
+    private double fixCDMAPosition(int coordinate) {
+        return (coordinate != 0 && coordinate != Integer.MAX_VALUE) ? coordinate / 14400.0 : Double.NaN;
     }
 
     private void updatelog(boolean log) {
@@ -1163,8 +1167,8 @@ public class SignalDetectorService extends Service {
                     CellIdentityCdma cellid = ((CellInfoCdma) item).getCellIdentity();
 
                     signal.bsid = cellid.getBasestationId();
-                    signal.bslat = cellid.getLatitude();
-                    signal.bslon = cellid.getLongitude();
+                    signal.bslat = fixCDMAPosition(cellid.getLatitude());
+                    signal.bslon = fixCDMAPosition(cellid.getLongitude());
                     signal.nid = cellid.getNetworkId();
                     signal.sid = cellid.getSystemId();
 
