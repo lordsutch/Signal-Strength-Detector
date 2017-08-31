@@ -634,7 +634,7 @@ public final class SignalDetector extends AppCompatActivity {
                 bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
 
             if (mSignalInfo.arfcn != Integer.MAX_VALUE)
-                bsList.add("ARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
+                bsList.add("ARFCN\u00A0" + String.valueOf(mSignalInfo.arfcn));
 
             if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
                 bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
