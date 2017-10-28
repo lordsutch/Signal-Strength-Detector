@@ -1,9 +1,10 @@
 buildscript {
     repositories {
         mavenCentral()
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.0.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -23,19 +24,20 @@ allprojects {
 }
 
 dependencies {
-//    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:0.5.1@aar'){
-//        transitive=true
-//    }
-//    compile ('com.cocoahero.android:geojson:1.0.0@aar'){
-//        transitive=true
-//    }
-    compile "com.android.support:appcompat-v7:26.0.0"
+    //    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:0.5.1@aar'){
+    //        transitive=true
+    //    }
+    //    compile ('com.cocoahero.android:geojson:1.0.0@aar'){
+    //        transitive=true
+    //    }
+    compile 'com.android.support:appcompat-v7:27.0.0'
     compile 'eu.chainfire:libsuperuser:1.0.0.+'
+    compile 'com.android.support:design:27.0.0'
 }
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.1"
+    buildToolsVersion '27.0.0'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -47,9 +49,9 @@ android {
         targetSdkVersion 26
         versionCode 12
         vectorDrawables.useSupportLibrary = true
-        jackOptions {
-            enabled true
-        }
+        //jackOptions {
+        //    enabled true
+        //}
     }
     sourceSets {
         main {

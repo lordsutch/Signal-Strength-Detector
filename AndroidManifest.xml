@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.lordsutch.android.signaldetector"
     android:installLocation="auto"
-    android:versionName="1.11" >
+    android:versionName="1.12" >
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
