@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.support.design.widget.Snackbar;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -22,9 +23,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
@@ -37,6 +40,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -45,6 +49,7 @@ import android.widget.TextView;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +59,8 @@ import java.util.Locale;
 
 public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
+    private static final int REQUEST_LOCATION = 0;
+    String SIG_INFO_KEY = "mSignalInfo";
 
     private WebView leafletView = null;
     public boolean pageAvailable = false;
@@ -71,9 +78,12 @@ public final class SignalDetector extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // getWindow().requestFeature(Window.FEATURE_PROGRESS);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if(savedInstanceState != null)
+            mSignalInfo = savedInstanceState.getParcelable(SIG_INFO_KEY);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
+
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
@@ -96,8 +106,6 @@ public final class SignalDetector extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setLoadsImagesAutomatically(true);
 
-        final Activity activity = this;
-
         leafletView.setWebChromeClient(new WebChromeClient() {
             public boolean onConsoleMessage(ConsoleMessage cm) {
                 Log.d(TAG, cm.message() + " -- From line "
@@ -116,6 +124,7 @@ public final class SignalDetector extends AppCompatActivity {
                 SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(SignalDetector.this);
                 setMapView(baseLayer);
                 addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));
+                updateGui();
             }
         });
 
@@ -131,21 +140,38 @@ public final class SignalDetector extends AppCompatActivity {
         webSettings.setBuiltInZoomControls(false);
         webSettings.setAllowFileAccess(true);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED ||
-                        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED)) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
+        if(ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION) ||
+                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Log.i(TAG,
+                    "Displaying location permission rationale to provide additional context.");
+            Snackbar.make(findViewById(R.id.root), R.string.permission_location_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            ActivityCompat.requestPermissions(SignalDetector.this,
+                                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    Manifest.permission.ACCESS_FINE_LOCATION},
+                                    REQUEST_LOCATION);
+                        }
+                    })
+                    .show();
+
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
         }
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
         reloadPreferences();
+        updateGui();
 
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 signalInfo s = intent.getParcelableExtra(SignalDetectorService.SD_MESSAGE);
                 updateSigInfo(s);
+                updateGui();
             }
         };
     }
@@ -153,11 +179,13 @@ public final class SignalDetector extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (requestCode == 0) {
+        if (requestCode == REQUEST_LOCATION) {
             if (mService != null && grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 mService.startGPS();
             }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -228,16 +256,6 @@ public final class SignalDetector extends AppCompatActivity {
         }
         Intent intent = new Intent(this, SignalDetectorService.class);
         stopService(intent);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-//        Log.d(TAG, "Resuming");
-        // leafletView.reload();
-        if (mSignalInfo != null)
-            updateGui();
     }
 
     private void enableLocationSettings() {
@@ -353,8 +371,6 @@ public final class SignalDetector extends AppCompatActivity {
 
     public void updateSigInfo(signalInfo signal) {
         mSignalInfo = signal;
-        if(this.hasWindowFocus())
-            updateGui();
     }
 
     /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
@@ -416,16 +432,16 @@ public final class SignalDetector extends AppCompatActivity {
     }
 
     private void updateGui() {
-        if(mSignalInfo == null)
+        Log.d(TAG, "updating GUI");
+        if(mSignalInfo == null || mService == null)
             return;
+        Log.d(TAG, mSignalInfo.toString());
 
         bslat = mSignalInfo.bslat;
         bslon = mSignalInfo.bslon;
 
         if (mSignalInfo.bearing > 0)
             bearing = mSignalInfo.bearing;
-
-//        Log.d(TAG, mSignalInfo.toString());
 
         TextView latlon = findViewById(R.id.positionLatLon);
 
@@ -446,7 +462,7 @@ public final class SignalDetector extends AppCompatActivity {
         TextView servingid = findViewById(R.id.cellid);
         TextView bsLabel = findViewById(R.id.bsLabel);
         TextView cdmaBS = findViewById(R.id.cdma_sysinfo);
-        TextView cdmaStrength = findViewById(R.id.cdmaSigStrength);
+        TextView voiceSigStrengthView = findViewById(R.id.cdmaSigStrength);
         TextView otherSites = findViewById(R.id.otherLteSites);
 
         LinearLayout voiceSignalBlock = findViewById(R.id.voiceSignalBlock);
@@ -488,11 +504,9 @@ public final class SignalDetector extends AppCompatActivity {
             Collections.sort(mSignalInfo.otherCells, new Comparator<otherLteCell>() {
                 @Override
                 public int compare(otherLteCell lhs, otherLteCell rhs) {
-                    int c1 = rhs.lteSigStrength - lhs.lteSigStrength;
-                    if(c1 == 0) { // Fall back to compare PCI
-                        return lhs.pci - rhs.pci;
-                    }
-                    return c1;
+                    int c1 = Integer.compare(lhs.lteSigStrength, rhs.lteSigStrength);
+
+                    return (c1 != 0 ? c1 : Integer.compare(lhs.pci, rhs.pci));
                 }
             });
 
@@ -526,7 +540,7 @@ public final class SignalDetector extends AppCompatActivity {
 
         TextView network = findViewById(R.id.networkString);
 
-        int dataSigStrength = Integer.MAX_VALUE;
+        int dataSigStrength;
         boolean voiceDataSame = true;
 
         if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
@@ -568,40 +582,44 @@ public final class SignalDetector extends AppCompatActivity {
                 break;
         }
 
-        String netText = networkString(mSignalInfo.networkType);
+        ArrayList<String> netInfo = new ArrayList<>();
+        netInfo.add(networkString(mSignalInfo.networkType));
+
         boolean operatorShown = false;
         String opString = "";
 
         if (lteMode && validMcc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
             opString = formatPLMN(mSignalInfo.mcc, mSignalInfo.mnc);
-        } else if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
+        } else if (mSignalInfo.phoneType != TelephonyManager.PHONE_TYPE_CDMA &&
+                validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
             opString = formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc);
-        } else if (!mSignalInfo.operator.isEmpty()) {
+        } else if (mSignalInfo.phoneType != TelephonyManager.PHONE_TYPE_CDMA &&
+                !mSignalInfo.operator.isEmpty()) {
             opString = formatOperator(mSignalInfo.operator);
         }
 
         if(!opString.isEmpty()) {
-            netText += " " + opString;
+            netInfo.add(opString);
             operatorShown = true;
         }
 
         if (lteMode && mSignalInfo.lteBand > 0) {
-            netText += String.format(Locale.getDefault(), " B%d", mSignalInfo.lteBand);
+            netInfo.add(String.format(Locale.getDefault(), "B%d", mSignalInfo.lteBand));
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
-            netText += String.format(Locale.getDefault(), " %d\u202FdBm", dataSigStrength);
+            netInfo.add(String.format(Locale.getDefault(), "%d\u202FdBm", dataSigStrength));
             if(mService.validTimingAdvance(mSignalInfo.timingAdvance))
-                netText += "\u00a0"+formatTimingAdvance(mSignalInfo.timingAdvance, mSignalInfo.isFDD);
+                netInfo.add(formatTimingAdvance(mSignalInfo.timingAdvance, mSignalInfo.isFDD));
         }
 
         if (mSignalInfo.roaming)
-            netText += " " + getString(R.string.roamingInd);
+            netInfo.add(getString(R.string.roamingInd));
 
-        network.setText(netText);
+        network.setText(TextUtils.join(" ", netInfo));
 
         if (!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
-            cdmaStrength.setText(String.valueOf(voiceSigStrength) + "\u202FdBm");
+            voiceSigStrengthView.setText(String.valueOf(voiceSigStrength) + "\u202FdBm");
             voiceSignalBlock.setVisibility(View.VISIBLE);
         } else {
             voiceSignalBlock.setVisibility(View.GONE);
@@ -727,7 +745,7 @@ public final class SignalDetector extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.KITKAT)
     // Use evaluateJavascript if available (KITKAT+), otherwise hack
     private void execJavascript(String script) {
-//        Log.d(TAG, script);
+        Log.d(TAG, script);
         if (!pageAvailable)
             return;
 
@@ -864,9 +882,10 @@ public final class SignalDetector extends AppCompatActivity {
         baseLayer = sharedPref.getString("tile_source", "osm");
         taAsDistance = sharedPref.getBoolean("ta_distance", false);
 
+        updateUnits();
+        updateGui();
         setMapView(baseLayer);
         addMapOverlays(sharedPref.getString("overlay_tile_source", "provider"));
-        updateUnits();
     }
 
     public void exitApp(MenuItem x) {
@@ -902,6 +921,12 @@ public final class SignalDetector extends AppCompatActivity {
                     })
                     .create();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable(SIG_INFO_KEY, mSignalInfo);
     }
 
     protected void addMapOverlays(String layer) {
