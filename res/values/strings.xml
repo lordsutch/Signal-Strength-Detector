@@ -79,4 +79,6 @@
     <string name="ta_distance_pref_on">Timing advance shown as distance.</string>
     <string name="group_1_name">Network Information</string>
     <string name="group_1_description">Information about available networks.</string>
+    <string name="ok">OK</string>
+    <string name="permission_location_rationale">To display or log signal information, this application requires access to your location.</string>
 </resources>
