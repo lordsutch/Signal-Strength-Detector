@@ -531,8 +531,8 @@ public class SignalDetectorService extends Service {
         // The user-visible description of the channel.
         String description = getString(R.string.group_1_description);
 
-        int importance = NotificationManager.IMPORTANCE_MIN;
-        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name,
+                NotificationManager.IMPORTANCE_LOW);
         // Configure the notification channel.
         mChannel.setDescription(description);
         mChannel.setShowBadge(false);
@@ -558,8 +558,9 @@ public class SignalDetectorService extends Service {
                 .setContentText("Loading…")
                 .setOnlyAlertOnce(true)
                 .setLocalOnly(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .addAction(R.drawable.ic_close_black_24dp, "Exit", exitIntent)
                 .setContentIntent(resultPendingIntent);
 
