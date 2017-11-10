@@ -183,6 +183,7 @@ class signalInfo implements Parcelable {
 
     // GSM/UMTS/W-CDMA
     String operator = "";
+    String operatorName = "";
     int lac = Integer.MAX_VALUE;
     int cid = Integer.MAX_VALUE;
     int psc = Integer.MAX_VALUE;
@@ -231,6 +232,7 @@ class signalInfo implements Parcelable {
         cdmaSigStrength = in.readInt();
         evdoSigStrength = in.readInt();
         operator = in.readString();
+        operatorName = in.readString();
         lac = in.readInt();
         cid = in.readInt();
         psc = in.readInt();
@@ -277,6 +279,7 @@ class signalInfo implements Parcelable {
         dest.writeInt(cdmaSigStrength);
         dest.writeInt(evdoSigStrength);
         dest.writeString(operator);
+        dest.writeString(operatorName);
         dest.writeInt(lac);
         dest.writeInt(cid);
         dest.writeInt(psc);
@@ -341,6 +344,7 @@ class signalInfo implements Parcelable {
                 ", cdmaSigStrength=" + cdmaSigStrength +
                 ", evdoSigStrength=" + evdoSigStrength +
                 ", operator='" + operator + '\'' +
+                ", operatorName='" + operatorName + '\'' +
                 ", lac=" + lac +
                 ", cid=" + cid +
                 ", psc=" + psc +
@@ -555,7 +559,7 @@ public class SignalDetectorService extends Service {
 
         mBuilder = new NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_0g)
                 .setContentTitle(getString(R.string.signal_detector_is_running))
-                .setContentText("Loading…")
+                .setContentText(getString(R.string.loading))
                 .setOnlyAlertOnce(true)
                 .setLocalOnly(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -952,6 +956,41 @@ public class SignalDetectorService extends Service {
         return 0;
     }
 
+    public String networkString(int networkType) {
+        switch (networkType) {
+            case TelephonyManager.NETWORK_TYPE_EHRPD:
+                return "eHRPD";
+            case TelephonyManager.NETWORK_TYPE_EVDO_0:
+                return "EVDO Rel. 0";
+            case TelephonyManager.NETWORK_TYPE_EVDO_A:
+                return "EVDO Rev. A";
+            case TelephonyManager.NETWORK_TYPE_EVDO_B:
+                return "EVDO Rev. B";
+            case TelephonyManager.NETWORK_TYPE_GPRS:
+                return "GPRS";
+            case TelephonyManager.NETWORK_TYPE_EDGE:
+                return "EDGE";
+            case TelephonyManager.NETWORK_TYPE_UMTS:
+                return "UMTS";
+            case TelephonyManager.NETWORK_TYPE_HSDPA:
+            case TelephonyManager.NETWORK_TYPE_HSUPA:
+            case TelephonyManager.NETWORK_TYPE_HSPA:
+                return "HSPA";
+            case TelephonyManager.NETWORK_TYPE_HSPAP:
+                return "HSPA+";
+            case TelephonyManager.NETWORK_TYPE_CDMA:
+                return "CDMA";
+            case TelephonyManager.NETWORK_TYPE_1xRTT:
+                return "1xRTT";
+            case TelephonyManager.NETWORK_TYPE_IDEN:
+                return "iDEN";
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                return "LTE";
+            default:
+                return "Unknown";
+        }
+    }
+
     private int networkIcon(int networkType) {
         int icon;
 
@@ -1064,7 +1103,7 @@ public class SignalDetectorService extends Service {
                 ActivityCompat.checkSelfPermission(this,
                         Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this,
-                        Manifest.permission.ACCESS_COARSE_LOCATION)  == PackageManager.PERMISSION_GRANTED) {
+                        Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mLocation = mLocationManager.getLastKnownLocation(provider);
         }
 
@@ -1090,6 +1129,7 @@ public class SignalDetectorService extends Service {
         signal.networkType = mManager.getNetworkType();
         signal.roaming = mManager.isNetworkRoaming();
         signal.operator = mManager.getNetworkOperator();
+        signal.operatorName = mManager.getNetworkOperatorName();
 
         signal.gsmSigStrength = mSignalStrength.getGsmSignalStrength();
         signal.gsmSigStrength = (signal.gsmSigStrength < 32 ? -113 + 2 * signal.gsmSigStrength : -9999);
@@ -1109,7 +1149,7 @@ public class SignalDetectorService extends Service {
             signal.otherCells = new ArrayList<>();
 
             for (CellInfo item : mCellInfo) {
-                if(item == null)
+                if (item == null)
                     continue;
 
 //                Log.d(TAG, item.toString());
@@ -1121,8 +1161,8 @@ public class SignalDetectorService extends Service {
                     if (item.isRegistered()) {
                         if (cstr != null) {
                             signal.lteSigStrength = cstr.getDbm();
-                            if(signal.lteSigStrength > 0)
-                                signal.lteSigStrength = -(signal.lteSigStrength/10);
+                            if (signal.lteSigStrength > 0)
+                                signal.lteSigStrength = -(signal.lteSigStrength / 10);
                             signal.timingAdvance = cstr.getTimingAdvance();
                         }
 
@@ -1145,8 +1185,8 @@ public class SignalDetectorService extends Service {
 
                         if (cstr != null) {
                             otherCell.lteSigStrength = cstr.getDbm();
-                            if(otherCell.lteSigStrength > 0)
-                                otherCell.lteSigStrength = -(otherCell.lteSigStrength/10);
+                            if (otherCell.lteSigStrength > 0)
+                                otherCell.lteSigStrength = -(otherCell.lteSigStrength / 10);
                             otherCell.timingAdvance = cstr.getTimingAdvance();
                         }
 
@@ -1199,7 +1239,7 @@ public class SignalDetectorService extends Service {
                     CellIdentityWcdma cellid = ((CellInfoWcdma) item).getCellIdentity();
 
                     signal.fullCid = signal.cid = cellid.getCid();
-                    if(signal.cid != Integer.MAX_VALUE) {
+                    if (signal.cid != Integer.MAX_VALUE) {
                         signal.rnc = signal.cid >> 16;
                         signal.cid = signal.cid & 0xffff;
                     }
@@ -1248,29 +1288,52 @@ public class SignalDetectorService extends Service {
         }
 
         String cellIdInfo = getString(R.string.none);
-        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
-                ((signal.gci != Integer.MAX_VALUE || signal.pci != Integer.MAX_VALUE))) {
-            ArrayList<String> cellIds = new ArrayList<>();
+        String basicCellInfo = cellIdInfo;
 
-            if (validTAC(signal.tac))
-                cellIds.add(String.format(Locale.US, "TAC\u00a0%04X", signal.tac));
-
-            if (validCellID(signal.gci))
-                cellIds.add(String.format(Locale.US, "GCI\u00a0%08X", signal.gci));
-
-            if (validPhysicalCellID(signal.pci))
-                cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", signal.pci));
-
-            if(validEARFCN(signal.earfcn)) {
-                cellIds.add(String.format(Locale.US, "EARFCN\u00a0%d", signal.earfcn));
-            }
-
-            if (cellIds.isEmpty())
-                cellIdInfo = getString(R.string.missing);
-            else
-                cellIdInfo = TextUtils.join(", ", cellIds);
+        if (signal.networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
+            basicCellInfo = String.format("%s %s", signal.operatorName,
+                    networkString(signal.networkType));
         }
-        mBuilder = mBuilder.setContentText(getString(R.string.serving_lte_cell_id) + ": " + cellIdInfo)
+
+        ArrayList<String> cellIds = new ArrayList<>();
+
+        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+            if (signal.lteBand != 0)
+                basicCellInfo += String.format(Locale.getDefault(), " band\u202f%d", signal.lteBand);
+
+            if (validLTESignalStrength(signal.lteSigStrength))
+                basicCellInfo += String.format(Locale.US, " %d\u202fdBm", signal.lteSigStrength);
+
+            if(validTimingAdvance(signal.timingAdvance))
+                basicCellInfo += String.format(Locale.US, " TA=%d\u202fµs", signal.timingAdvance);
+
+            cellIds = lteCellInfo(signal);
+        } else if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid)) {
+            int sigStrength = validRSSISignalStrength(signal.evdoSigStrength) ? signal.evdoSigStrength : signal.cdmaSigStrength;
+
+            basicCellInfo += String.format(Locale.US, " %d\u202fdBm", sigStrength);
+            if(validRSSISignalStrength(signal.evdoSigStrength))
+                basicCellInfo += String.format(Locale.US, " voice %d\u202fdBm", signal.cdmaSigStrength);
+
+            cellIds = cdmaCellInfo(signal);
+        } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid)) {
+            basicCellInfo += String.format(Locale.US, " %d\u202fdBm", signal.gsmSigStrength);
+            if(validTimingAdvance(signal.gsmTimingAdvance))
+                basicCellInfo += String.format(Locale.US, " TA=%d\u202fµs", signal.gsmTimingAdvance);
+
+            cellIds = gsmCellInfo(signal);
+        }
+
+        if (cellIds.isEmpty())
+            cellIdInfo = getString(R.string.missing);
+        else
+            cellIdInfo = TextUtils.join(", ", cellIds);
+
+        if (signal.roaming)
+            basicCellInfo += " " + getString(R.string.roamingInd);
+
+        mBuilder = mBuilder.setContentTitle(basicCellInfo)
+                .setContentText(cellIdInfo)
                 .setSmallIcon(networkIcon(signal.networkType));
 
         mNotification = mBuilder.build();
@@ -1398,6 +1461,142 @@ public class SignalDetectorService extends Service {
         }
 
         sendResult(signal);
+    }
+
+    public ArrayList<String> lteCellInfo(signalInfo signal) {
+        ArrayList<String> cellIds = new ArrayList<>();
+        String plmnString;
+
+        if (validMcc(signal.mcc) && validMnc(signal.mnc)) {
+            plmnString = formatPLMN(signal.mcc, signal.mnc);
+        } else {
+            plmnString = formatOperator(signal.operator);
+        }
+        cellIds.add("PLMN\u00A0" + plmnString);
+
+        if (validTAC(signal.tac))
+            cellIds.add(String.format(Locale.US, "TAC\u00a0%04X", signal.tac));
+
+        if (validCellID(signal.gci))
+            cellIds.add(String.format(Locale.US, "GCI\u00a0%08X", signal.gci));
+
+        if (validPhysicalCellID(signal.pci))
+            cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", signal.pci));
+
+        if(validEARFCN(signal.earfcn)) {
+            cellIds.add(String.format(Locale.US, "EARFCN\u00a0%d", signal.earfcn));
+        }
+
+        return cellIds;
+    }
+
+    public ArrayList<String> cdmaCellInfo(signalInfo signal) {
+        ArrayList<String> cellIds = new ArrayList<>();
+
+        cellIds.add("SID\u00A0" + signal.sid);
+
+        if(validNID(signal.nid))
+            cellIds.add("NID\u00A0" + signal.nid);
+
+        if(validBSID(signal.bsid))
+            cellIds.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)",
+                    signal.bsid, signal.bsid));
+
+        return cellIds;
+    }
+
+    // Swiped from https://en.wikipedia.org/wiki/Mobile_country_code
+    private List<Integer> threeDigitMNCList = Arrays.asList(
+            365, // Anguilla
+            344, // Antigua and Barbuda
+            722, // Argentina
+            342, // Barbados
+            348, // British Virgin Islands
+            302, // Canada
+            346, // Cayman Islands
+            732, // Columbia
+            366, // Dominica
+            750, // Falkland Islands
+            352, // Grenada
+            708, // Honduras
+            // India seems to be a mix of 2 and 3 digits?
+            338, // Jamaica
+            // Malaysia has several 3 digit codes, all >= 100
+            334, // Mexico
+            354, // Montserrat
+            330, // Puerto Rico mostly has 3-digit codes over 100
+            356, // Saint Kitts and Nevis
+            358, // Saint Lucia
+            360, // Saint Vincent and the Grenadines
+            376, // Turks and Caicos Islands
+            310, 311, 312, 313, 316 // USA; Guam
+    );
+
+    private boolean is3digitMnc(int mcc) {
+        return threeDigitMNCList.contains(mcc);
+    }
+
+    private String formatPLMN(int mcc, int mnc) {
+        if(mnc >= 100 || is3digitMnc(mcc)) {
+            return String.format(Locale.US, "%03d-%03d", mcc, mnc);
+        } else {
+            return String.format(Locale.US, "%03d-%02d", mcc, mnc);
+        }
+    }
+
+    private String formatOperator(String operator) {
+        try {
+            if (Integer.valueOf(operator) > 0)
+                return operator.substring(0, 3) + "-" + operator.substring(3);
+            else
+                return operator;
+        } catch (NumberFormatException e) {
+            return operator;
+        }
+    }
+
+    private boolean validMcc(int mcc) {
+        return (mcc > 0 && mcc <= 999);
+    }
+
+    private boolean validMnc(int mnc) {
+        return (mnc > 0 && mnc <= 999);
+    }
+
+    public ArrayList<String> gsmCellInfo(signalInfo signal) {
+        ArrayList<String> cellIds = new ArrayList<>();
+
+        String gsmOpString = "";
+
+        if (validMcc(signal.gsmMcc) && validMnc(signal.gsmMnc)) {
+            gsmOpString = formatPLMN(signal.gsmMcc, signal.gsmMnc);
+        } else {
+            gsmOpString = formatOperator(signal.operator);
+        }
+        cellIds.add("PLMN\u00A0" + gsmOpString);
+
+        if (signal.lac != Integer.MAX_VALUE)
+            cellIds.add("LAC\u00A0" + String.valueOf(signal.lac));
+
+        if (signal.rnc != Integer.MAX_VALUE && signal.rnc > 0 && signal.rnc != signal.lac)
+            cellIds.add("RNC\u00A0" + String.valueOf(signal.rnc));
+
+        if (signal.cid != Integer.MAX_VALUE)
+            cellIds.add("CID\u00A0" + String.valueOf(signal.cid));
+
+        if (signal.psc != Integer.MAX_VALUE)
+            cellIds.add("PSC\u00A0" + String.valueOf(signal.psc));
+
+        if (signal.bsic != Integer.MAX_VALUE)
+            cellIds.add("BSIC\u00A0" + String.valueOf(signal.bsic));
+
+        if (signal.uarfcn != Integer.MAX_VALUE)
+            cellIds.add("UARFCN\u00A0" + String.valueOf(signal.uarfcn));
+
+        if (signal.arfcn != Integer.MAX_VALUE)
+            cellIds.add("ARFCN\u00A0" + String.valueOf(signal.arfcn));
+
+        return cellIds;
     }
 
     protected boolean validLocation(double lon, double lat) {

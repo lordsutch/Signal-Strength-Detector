@@ -6,7 +6,7 @@
     <string name="cancel">Cancel</string>
     <string name="submit">Submit</string>
     <string name="lte_signal_strength">LTE Signal</string>
-    <string name="serving_lte_cell_id">LTE Cell ID</string>
+    <string name="serving_lte_cell_id">Cell ID</string>
     <string name="location">Location</string>
     <string name="enable_gps">Enable GPS</string>
     <string name="enable_gps_dialog">GPS provider not enabled. Would you like to enable it?</string>
@@ -81,4 +81,5 @@
     <string name="group_1_description">Information about available networks.</string>
     <string name="ok">OK</string>
     <string name="permission_location_rationale">To display or log signal information, this application requires access to your location.</string>
+    <string name="loading">Loading…</string>
 </resources>

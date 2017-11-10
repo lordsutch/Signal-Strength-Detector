@@ -471,19 +471,7 @@ public final class SignalDetector extends AppCompatActivity {
         LinearLayout preLteBlock = findViewById(R.id.preLteBlock);
 
         if (mSignalInfo.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
-            ArrayList<String> cellIds = new ArrayList<>();
-
-            if (validTAC(mSignalInfo.tac))
-                cellIds.add(String.format("TAC\u00a0%04X", mSignalInfo.tac));
-
-            if (validCellID(mSignalInfo.gci))
-                cellIds.add(String.format("GCI\u00a0%08X", mSignalInfo.gci));
-
-            if (validPhysicalCellID(mSignalInfo.pci))
-                cellIds.add(String.format(Locale.getDefault(), "PCI\u00a0%03d", mSignalInfo.pci));
-
-            if (validEARFCN(mSignalInfo.earfcn))
-                cellIds.add(String.format(Locale.getDefault(), "EARFCN\u00a0%d", mSignalInfo.earfcn));
+            ArrayList<String> cellIds = mService.lteCellInfo(mSignalInfo);
 
             if (!cellIds.isEmpty()) {
                 servingid.setText(TextUtils.join(", ", cellIds));
@@ -583,25 +571,27 @@ public final class SignalDetector extends AppCompatActivity {
         }
 
         ArrayList<String> netInfo = new ArrayList<>();
-        netInfo.add(networkString(mSignalInfo.networkType));
 
-        boolean operatorShown = false;
-        String opString = "";
+        String opString;
 
-        if (lteMode && validMcc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
+        if(!mSignalInfo.operatorName.isEmpty()) {
+            opString = mSignalInfo.operatorName;
+        } else if (lteMode && validMcc(mSignalInfo.mcc) && validMnc(mSignalInfo.mnc)) {
             opString = formatPLMN(mSignalInfo.mcc, mSignalInfo.mnc);
-        } else if (mSignalInfo.phoneType != TelephonyManager.PHONE_TYPE_CDMA &&
+        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
             opString = formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc);
-        } else if (mSignalInfo.phoneType != TelephonyManager.PHONE_TYPE_CDMA &&
+        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 !mSignalInfo.operator.isEmpty()) {
             opString = formatOperator(mSignalInfo.operator);
+        } else {
+            opString = "";
         }
 
-        if(!opString.isEmpty()) {
+        if (!opString.isEmpty())
             netInfo.add(opString);
-            operatorShown = true;
-        }
+
+        netInfo.add(mService.networkString(mSignalInfo.networkType));
 
         if (lteMode && mSignalInfo.lteBand > 0) {
             netInfo.add(String.format(Locale.getDefault(), "B%d", mSignalInfo.lteBand));
@@ -629,49 +619,15 @@ public final class SignalDetector extends AppCompatActivity {
 
         if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_CDMA && mService.validSID(mSignalInfo.sid)) {
             bsLabel.setText(R.string.cdma_1xrtt_base_station);
-            bsList.add("SID\u00A0" + mSignalInfo.sid);
-            if(mService.validNID(mSignalInfo.nid))
-                bsList.add("NID\u00A0" + mSignalInfo.nid);
-            if(mService.validBSID(mSignalInfo.bsid))
-                bsList.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)",
-                        mSignalInfo.bsid, mSignalInfo.bsid));
-        } else if (!lteMode || (mSignalInfo.lac != mSignalInfo.tac && mSignalInfo.fullCid != mSignalInfo.gci) ) {
+            bsList = mService.cdmaCellInfo(mSignalInfo);
+        } else if (mSignalInfo.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
+                (!lteMode || (mSignalInfo.lac != mSignalInfo.tac && mSignalInfo.fullCid != mSignalInfo.gci))) {
             // Devices seem to put LTE stuff into non-LTE fields...?
             bsLabel.setText(R.string._2g_3g_tower);
-
-            String gsmOpString = "";
-            if (validMcc(mSignalInfo.gsmMcc) && validMnc(mSignalInfo.gsmMnc)) {
-                gsmOpString = formatPLMN(mSignalInfo.gsmMcc, mSignalInfo.gsmMnc);
-            } else {
-                gsmOpString = formatOperator(mSignalInfo.operator);
-            }
-
-            if(!operatorShown || !gsmOpString.contentEquals(opString))
-                bsList.add("PLMN\u00A0" + gsmOpString);
-
-            if (mSignalInfo.lac != Integer.MAX_VALUE)
-                bsList.add("LAC\u00A0" + String.valueOf(mSignalInfo.lac));
-
-            if (mSignalInfo.rnc != Integer.MAX_VALUE && mSignalInfo.rnc > 0 && mSignalInfo.rnc != mSignalInfo.lac)
-                bsList.add("RNC\u00A0" + String.valueOf(mSignalInfo.rnc));
-
-            if (mSignalInfo.cid != Integer.MAX_VALUE)
-                bsList.add("CID\u00A0" + String.valueOf(mSignalInfo.cid));
-
-            if (mSignalInfo.psc != Integer.MAX_VALUE)
-                bsList.add("PSC\u00A0" + String.valueOf(mSignalInfo.psc));
-
-            if (mSignalInfo.bsic != Integer.MAX_VALUE)
-                bsList.add("BSIC\u00A0" + String.valueOf(mSignalInfo.bsic));
-
-            if (mSignalInfo.uarfcn != Integer.MAX_VALUE)
-                bsList.add("UARFCN\u00A0" + String.valueOf(mSignalInfo.uarfcn));
-
-            if (mSignalInfo.arfcn != Integer.MAX_VALUE)
-                bsList.add("ARFCN\u00A0" + String.valueOf(mSignalInfo.arfcn));
+            bsList = mService.gsmCellInfo(mSignalInfo);
 
             if(mSignalInfo.gsmTimingAdvance != Integer.MAX_VALUE)
-                bsList.add(formatGsmTimingAdvance(mSignalInfo.timingAdvance));
+                bsList.add(formatGsmTimingAdvance(mSignalInfo.gsmTimingAdvance));
         }
 
         if (!bsList.isEmpty()) {
@@ -705,41 +661,6 @@ public final class SignalDetector extends AppCompatActivity {
 
     private boolean validMnc(int mnc) {
         return (mnc > 0 && mnc <= 999);
-    }
-
-    private String networkString(int networkType) {
-        switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-                return "eHRPD";
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-                return "EVDO Rel. 0";
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-                return "EVDO Rev. A";
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-                return "EVDO Rev. B";
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-                return "GPRS";
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-                return "EDGE";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-                return "UMTS";
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-                return "HSPA";
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "HSPA+";
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-                return "CDMA";
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-                return "1xRTT";
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "iDEN";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "LTE";
-            default:
-                return "Unknown";
-        }
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
