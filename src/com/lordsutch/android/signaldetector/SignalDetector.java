@@ -382,7 +382,7 @@ public final class SignalDetector extends AppCompatActivity {
     private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
         if(timingAdvance == Integer.MAX_VALUE)
             return Double.NaN;
-        return (isFDD ? timingAdvance : timingAdvance-20) * 149.85;
+        return (isFDD ? timingAdvance : timingAdvance-19) * 149.85;
     }
 
     /* Uses tradunits setting */
