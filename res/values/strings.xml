@@ -82,4 +82,6 @@
     <string name="ok">OK</string>
     <string name="permission_location_rationale">To display or log signal information, this application requires access to your location.</string>
     <string name="loading">Loading…</string>
+    <string name="share_logs">Share logs to...</string>
+    <string name="share">Share</string>
 </resources>

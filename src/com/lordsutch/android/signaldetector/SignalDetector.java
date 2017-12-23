@@ -29,7 +29,10 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v4.content.FileProvider;
+import android.support.v7.widget.ShareActionProvider;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -49,6 +52,7 @@ import android.widget.TextView;
 
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 
+import java.io.File;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,6 +60,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+
+import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
+import static android.support.v4.content.FileProvider.getUriForFile;
 
 public final class SignalDetector extends AppCompatActivity {
     public static final String TAG = SignalDetector.class.getSimpleName();
@@ -69,6 +76,7 @@ public final class SignalDetector extends AppCompatActivity {
     private String baseLayer = "shields";
     private String coverageLayer = "provider";
     private BroadcastReceiver receiver;
+    private ShareActionProvider mShareActionProvider;
 
     /**
      * Called when the activity is first created.
@@ -164,7 +172,6 @@ public final class SignalDetector extends AppCompatActivity {
 
         leafletView.loadUrl("file:///android_asset/leaflet.html");
         reloadPreferences();
-        updateGui();
 
         receiver = new BroadcastReceiver() {
             @Override
@@ -197,6 +204,9 @@ public final class SignalDetector extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
+
+        MenuItem item = menu.findItem(R.id.menu_item_share);
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
 
         return true;
     }
@@ -642,6 +652,8 @@ public final class SignalDetector extends AppCompatActivity {
             centerMap(mSignalInfo.latitude, mSignalInfo.longitude, mSignalInfo.accuracy,
                     mSignalInfo.avgSpeed, bearing, mSignalInfo.fixAge);
         addBsMarker();
+
+        setupSharing();
     }
 
     private String formatOperator(String operator) {
@@ -848,6 +860,30 @@ public final class SignalDetector extends AppCompatActivity {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelable(SIG_INFO_KEY, mSignalInfo);
+    }
+
+    private void setupSharing() {
+        ArrayList<Uri> logUris = new ArrayList<>();
+        File logPath = getExternalFilesDir("");
+        List<String> logNames = Arrays.asList("cellinfolte.csv", "ltecells.csv",
+                "esmrcells.csv", "cdmacells.csv", "gsmcells.csv");
+
+        for (String fileName : logNames) {
+            File logFile = new File(logPath, fileName);
+
+            if (logFile.exists())
+                logUris.add(getUriForFile(getApplicationContext(),
+                        "com.lordsutch.android.signaldetector.fileprovider", logFile));
+        }
+
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+        shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, logUris);
+        shareIntent.setType("text/csv");
+        shareIntent.setFlags(FLAG_GRANT_READ_URI_PERMISSION);
+
+        if(mShareActionProvider != null)
+            mShareActionProvider.setShareIntent(shareIntent);
     }
 
     protected void addMapOverlays(String layer) {

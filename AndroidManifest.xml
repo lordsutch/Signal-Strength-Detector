@@ -39,7 +39,17 @@
             android:label="@string/title_activity_settings"
             android:parentActivityName="com.lordsutch.android.signaldetector.SignalDetector">
         </activity>
-        
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.lordsutch.android.signaldetector.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <service
             android:name="SignalDetectorService"
             android:enabled="true"
