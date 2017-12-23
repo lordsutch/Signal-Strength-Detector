@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.0'
+        classpath 'com.android.tools.build:gradle:3.0.1'
     }
 }
 apply plugin: 'com.android.application'
@@ -30,14 +30,14 @@ dependencies {
     //    compile ('com.cocoahero.android:geojson:1.0.0@aar'){
     //        transitive=true
     //    }
-    compile 'com.android.support:appcompat-v7:27.0.0'
+    compile 'com.android.support:appcompat-v7:27.0.2'
     compile 'eu.chainfire:libsuperuser:1.0.0.+'
-    compile 'com.android.support:design:27.0.0'
+    compile 'com.android.support:design:27.0.2'
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '27.0.0'
+    compileSdkVersion 27
+    buildToolsVersion '27.0.2'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -46,7 +46,7 @@ android {
 
     defaultConfig {
         minSdkVersion 17
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 12
         vectorDrawables.useSupportLibrary = true
         //jackOptions {
