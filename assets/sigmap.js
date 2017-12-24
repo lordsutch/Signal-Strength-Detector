@@ -37,6 +37,13 @@ var sensorlyATT = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_31
 var sensorlyVerizon = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310verizon/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
+var sensorlyCSpire = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_311230/{z}/{x}/{x}/{y}/{y}.png?s=256',
+                           {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
+
+var sensorlyUSCellular = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310uscellular/{z}/{x}/{x}/{y}/{y}.png?s=256',
+                           {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
+
+
 var baseLayers = {'US Shields' : shields,
                   'Mapquest Open' : mapquest,
                   'Mapquest Aerial' : mqaerial,
@@ -84,6 +91,10 @@ function setOverlayLayer(operator) {
         overlayLayer = sensorlyATT
     else if(operator == '310010' || operator == '311480')
         overlayLayer = sensorlyVerizon
+    else if(operator == '311580')
+        overlayLayer = sensorlyUSCellular
+    else if(operator == '311230')
+        overlayLayer = sensorlyCSpire
     else // Sprint 1900 (Band 25) is 310120; 2500 (Band 41) is 311490; ESMR (Band 26) is 316010?
         overlayLayer = sensorlySprint
 

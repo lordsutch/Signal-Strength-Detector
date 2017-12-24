@@ -60,10 +60,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 import eu.chainfire.libsuperuser.Shell;
@@ -546,6 +548,11 @@ public class SignalDetectorService extends Service {
         }
     }
 
+    private static final String[] SET_VALUES = new String[] { "cdma", "esmr", "gsm", "lte" };
+    private static final Set<String> DEFAULT_LOGS = new HashSet<>(Arrays.asList(SET_VALUES));
+
+    private Set<String> logFilesEnabled = DEFAULT_LOGS;
+
     @SuppressLint("WrongConstant")
     public IBinder onBind(Intent intent) {
         Intent resultIntent = new Intent(this, SignalDetector.class);
@@ -581,6 +588,8 @@ public class SignalDetectorService extends Service {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this.getApplication());
 
         loggingEnabled = sharedPref.getBoolean("logging", true);
+        logFilesEnabled = sharedPref.getStringSet("sitesToLog", DEFAULT_LOGS);
+
         startGPS();
 
         return mBinder;
@@ -1354,6 +1363,7 @@ public class SignalDetectorService extends Service {
             String slon = Location.convert(signal.longitude, Location.FORMAT_DEGREES);
 
             if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE &&
+                    logFilesEnabled.contains("lte") &&
                     (validLTESignalStrength(signal.lteSigStrength) ||
                             validPhysicalCellID(signal.pci) || validCellID(signal.gci))) {
                 double estDistance = timingAdvanceToMeters(signal.timingAdvance, signal.isFDD);
@@ -1382,7 +1392,7 @@ public class SignalDetectorService extends Service {
                 }
             }
 
-            if (mCellInfo != null) {
+            if (mCellInfo != null && logFilesEnabled.contains("lte")) {
                 for (CellInfo item : mCellInfo) {
                     if (item instanceof CellInfoLte) {
                         CellIdentityLte mIdentity = ((CellInfoLte) item).getCellIdentity();
@@ -1426,7 +1436,8 @@ public class SignalDetectorService extends Service {
                 }
             }
 
-            if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid)) {
+            if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid) &&
+                    logFilesEnabled.contains("cdma")) {
                 boolean isValid = validLocation(signal.bslon, signal.bslat);
 
                 String bslatstr = (isValid ? Location.convert(signal.bslat, Location.FORMAT_DEGREES) : "");
@@ -1442,7 +1453,8 @@ public class SignalDetectorService extends Service {
                             newCdmaLine, "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy,timestamp,timeSinceEpoch");
                     CdmaLine = newCdmaLine;
                 }
-            } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid)) {
+            } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid) &&
+                    logFilesEnabled.contains("gsm")) {
                 String newGSMLine = String.format(Locale.US, "%s,%s,%.0f,%.0f,%s,%s,%s,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s", slat, slon,
                         signal.altitude, signal.accuracy,
                         valueString(signal.cid), valueString(signal.rnc), valueString(signal.lac),

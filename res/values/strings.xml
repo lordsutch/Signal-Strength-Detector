@@ -84,4 +84,8 @@
     <string name="loading">Loading…</string>
     <string name="share_logs">Share logs to...</string>
     <string name="share">Share</string>
+    <string name="sitesToLog">Types of cellular sites to log</string>
+    <string name="clearLogSummary">Delete base station logs from user storage.</string>
+    <string name="clearLogTitle">Clear log files</string>
+    <string name="logFilesToast">Log files removed.</string>
 </resources>

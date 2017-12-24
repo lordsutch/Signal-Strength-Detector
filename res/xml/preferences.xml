@@ -12,7 +12,6 @@
         android:key="overlay_tile_source"
         android:entries="@array/sensorlyLayers"
         android:entryValues="@array/sensorlyValues"
-        android:summary="@string/sensorlySummary"
         android:title="@string/sensorlyTitle" />
 
     <CheckBoxPreference
@@ -46,6 +45,20 @@
         android:summaryOff="@string/logging_pref_off"
         android:summaryOn="@string/logging_pref_on"
         android:title="@string/logging_pref" />
+
+    <MultiSelectListPreference
+        android:defaultValue="@array/logFiles"
+        android:dependency="logging"
+        android:entries="@array/logFileEntries"
+        android:entryValues="@array/logFileValues"
+        android:key="logFiles"
+        android:title="@string/sitesToLog" />
+
+    <Preference
+        android:key="clear_log"
+        android:persistent="false"
+        android:summary="@string/clearLogSummary"
+        android:title="@string/clearLogTitle" />
 
     <CheckBoxPreference
         android:defaultValue="false"

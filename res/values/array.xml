@@ -23,6 +23,8 @@
         <item>310010</item>
         <item>310260</item>
         <item>310410</item>
+        <item>311230</item>
+        <item>311580</item>
     </string-array>
 
     <string-array name="sensorlyLayers">
@@ -32,5 +34,25 @@
         <item>Verizon</item>
         <item>T-Mobile USA</item>
         <item>AT&amp;T</item>
+        <item>CSpire</item>
+        <item>U.S. Cellular</item>
+    </string-array>
+
+    <string-array name="logFiles">
+        <item>lte</item>
+        <item>cdma</item>
+        <item>gsm</item>
+    </string-array>
+
+    <string-array name="logFileEntries">
+        <item>LTE</item>
+        <item>CDMA</item>
+        <item>GSM/UMTS</item>
+    </string-array>
+
+    <string-array name="logFileValues">
+        <item>lte</item>
+        <item>cdma</item>
+        <item>gsm</item>
     </string-array>
 </resources>
