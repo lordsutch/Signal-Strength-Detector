@@ -30,6 +30,23 @@ custom ROMs based on Android 4.1 and later that implement the
 CellIdentityLte API.  Other features should work with any CDMA Android
 4.1+ phone.
 
+Other Tools:
+-----------
+
+cellfinder - https://github.com/lordsutch/cellfinder
+
+This Python code will take the cellinfolte.csv files produced by
+SignalDetector and use them to try to geolocate base
+stations.
+
+Generally speaking it works pretty well (in my experience, it gets
+"ground truth" about 90% of the time), but if you only have
+observations passing a tower in a straight line at a substantial
+distance, there may not be a single mathematical solution and it will
+converge on the wrong one. For example, if you are on a straight road
+that passes east of a tower (i.e. it goes past you to the west), the
+tower may be geolocated east of the road rather than west of it.
+
 License:
 -------
 
