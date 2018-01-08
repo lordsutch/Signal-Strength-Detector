@@ -757,7 +757,7 @@ public class SignalDetectorService extends Service {
     private double timingAdvanceToMeters(int timingAdvance, boolean isFDD) {
         if (!validTimingAdvance(timingAdvance))
             return Double.NaN;
-        return (isFDD ? timingAdvance : timingAdvance - 19) * 149.85;
+        return (isFDD ? timingAdvance : timingAdvance - 20) * 149.85;
     }
 
     private boolean isBandFDD(int lteBand) {
