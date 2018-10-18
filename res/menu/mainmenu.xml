@@ -7,7 +7,7 @@
         android:icon="@drawable/ic_share_black_24dp"
         android:title="@string/share"
         app:showAsAction="ifRoom"
-        app:actionProviderClass="android.support.v7.widget.ShareActionProvider" />
+        app:actionProviderClass="androidx.appcompat.widget.ShareActionProvider" />
 
     <item
         android:id="@+id/settings"

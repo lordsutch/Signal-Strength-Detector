@@ -2,7 +2,7 @@ package com.lordsutch.android.signaldetector;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 import android.view.View;
 
 public class SettingsActivity extends PreferenceActivity {
