@@ -1,13 +1,16 @@
 buildscript {
+    ext.kotlin_version = '1.2.71'
     repositories {
         mavenCentral()
         google()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 repositories {
     mavenCentral()
@@ -33,6 +36,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation 'eu.chainfire:libsuperuser:1.0.0.+'
     implementation 'com.google.android.material:material:1.0.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.preference:preference:1.0.0'
+    implementation 'androidx.fragment:fragment:1.0.0'
 }
 
 android {
