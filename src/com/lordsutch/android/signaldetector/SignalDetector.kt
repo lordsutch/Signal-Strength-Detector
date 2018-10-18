@@ -378,7 +378,7 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun gsmTimingAdvanceToMeters(timingAdvance: Int): Double {
-        return if (timingAdvance == Integer.MAX_VALUE) java.lang.Double.NaN else timingAdvance * 550.0
+        return if (timingAdvance == Integer.MAX_VALUE) Double.NaN else timingAdvance * 550.0
 // See http://www.telecomhall.com/parameter-timing-advance-ta.aspx
     }
 
@@ -428,7 +428,8 @@ class SignalDetector : AppCompatActivity() {
 
         if (bearing > 0.0)
             speed.text = String.format(Locale.getDefault(), "%3.1f %s %s",
-                    mSignalInfo!!.speed * speedFactor, speedLabel, directionForBearing(bearing.toDouble()))
+                    mSignalInfo!!.speed * speedFactor, speedLabel,
+                    directionForBearing(bearing))
         else
             speed.text = String.format(Locale.getDefault(), "%3.1f %s",
                     mSignalInfo!!.speed * speedFactor, speedLabel)
@@ -447,7 +448,7 @@ class SignalDetector : AppCompatActivity() {
         if (mSignalInfo!!.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             val cellIds = mService!!.lteCellInfo(mSignalInfo)
 
-            if (!cellIds.isEmpty()) {
+            if (cellIds.isNotEmpty()) {
                 servingid.text = TextUtils.join(", ", cellIds)
             } else {
                 servingid.setText(R.string.missing)
@@ -485,7 +486,7 @@ class SignalDetector : AppCompatActivity() {
                     if (mService!!.validEARFCN(otherCell.earfcn) && otherCell.earfcn != mSignalInfo!!.earfcn)
                         sigList.add(String.format(Locale.getDefault(), "EARFCN=%d", otherCell.earfcn))
 
-                    if (!sigList.isEmpty())
+                    if (sigList.isNotEmpty())
                         sigInfo += String.format(Locale.getDefault(), "\u00a0(%s)",
                                 TextUtils.join(" ", sigList))
 
@@ -540,20 +541,20 @@ class SignalDetector : AppCompatActivity() {
 
         val opString: String
 
-        if (!mSignalInfo!!.operatorName.isEmpty()) {
+        if (mSignalInfo!!.operatorName.isNotEmpty()) {
             opString = mSignalInfo!!.operatorName
         } else if (lteMode && validMcc(mSignalInfo!!.mcc) && validMnc(mSignalInfo!!.mnc)) {
             opString = formatPLMN(mSignalInfo!!.mcc, mSignalInfo!!.mnc)
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 validMcc(mSignalInfo!!.gsmMcc) && validMnc(mSignalInfo!!.gsmMnc)) {
             opString = formatPLMN(mSignalInfo!!.gsmMcc, mSignalInfo!!.gsmMnc)
-        } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && !mSignalInfo!!.operator.isEmpty()) {
+        } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && mSignalInfo!!.operator.isNotEmpty()) {
             opString = formatOperator(mSignalInfo!!.operator)
         } else {
             opString = ""
         }
 
-        if (!opString.isEmpty())
+        if (opString.isNotEmpty())
             netInfo.add(opString)
 
         netInfo.add(mService!!.networkString(mSignalInfo!!.networkType))
@@ -594,7 +595,7 @@ class SignalDetector : AppCompatActivity() {
                 bsList.add(formatGsmTimingAdvance(mSignalInfo!!.gsmTimingAdvance))
         }
 
-        if (!bsList.isEmpty()) {
+        if (bsList.isNotEmpty()) {
             cdmaBS.text = TextUtils.join(", ", bsList)
             preLteBlock.visibility = View.VISIBLE
         } else {
@@ -618,15 +619,15 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun validTAC(tac: Int): Boolean {
-        return tac > 0x0000 && tac < 0xFFFF // 0, 0xFFFF are reserved values
+        return tac in 0x1..0xFFFE // 0, 0xFFFF are reserved values
     }
 
     private fun validMcc(mcc: Int): Boolean {
-        return mcc > 0 && mcc <= 999
+        return mcc in 1..999
     }
 
     private fun validMnc(mnc: Int): Boolean {
-        return mnc > 0 && mnc <= 999
+        return mnc in 1..999
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
