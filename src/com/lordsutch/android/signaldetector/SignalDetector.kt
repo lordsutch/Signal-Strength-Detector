@@ -84,7 +84,7 @@ class SignalDetector : AppCompatActivity() {
     private var bslat = Double.NaN
     private var bslon = Double.NaN
 
-    private var mSignalInfo : signalInfo? = null
+    private var mSignalInfo : SignalInfo? = null
 
     private var speedFactor = 3.6
     private var speedLabel = "km/h"
@@ -188,7 +188,7 @@ class SignalDetector : AppCompatActivity() {
 
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                val s = intent.getParcelableExtra<signalInfo>(SignalDetectorService.SD_MESSAGE)
+                val s = intent.getParcelableExtra<SignalInfo>(SignalDetectorService.SD_MESSAGE)
                 updateSigInfo(this@SignalDetector, s)
                 updateGui()
             }
@@ -325,7 +325,7 @@ class SignalDetector : AppCompatActivity() {
      * This seems to be round-trip time, so one-way distance is half that.
      */
     private fun timingAdvanceToMeters(timingAdvance: Int, isFDD: Boolean): Double {
-        return if (timingAdvance == Integer.MAX_VALUE) java.lang.Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
+        return if (timingAdvance == Integer.MAX_VALUE) Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
     }
 
     /* Uses tradunits setting */
@@ -870,7 +870,7 @@ class SignalDetector : AppCompatActivity() {
 */
     }
 
-    fun updateSigInfo(signalDetector: SignalDetector, signal: signalInfo) {
+    fun updateSigInfo(signalDetector: SignalDetector, signal: SignalInfo) {
         signalDetector.mSignalInfo = signal
     }
 }

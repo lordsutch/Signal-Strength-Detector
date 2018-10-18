@@ -641,7 +641,7 @@ class SignalDetectorService : Service() {
         return if (value == Integer.MAX_VALUE) "" else value.toString()
     }
 
-    private fun getLegacyCellLocationData(signal: signalInfo) {
+    private fun getLegacyCellLocationData(signal: SignalInfo) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
@@ -718,7 +718,7 @@ class SignalDetectorService : Service() {
         if (mLocation == null)
             mLocation = Location(provider)
 
-        var signal = signalInfo()
+        var signal = SignalInfo()
 
         signal.latitude = mLocation!!.latitude
         signal.longitude = mLocation!!.longitude
@@ -792,7 +792,7 @@ class SignalDetectorService : Service() {
                             gotID = true
                         }
                     } else {
-                        val otherCell = otherLteCell()
+                        val otherCell = OtherLteCell()
 
                         if (cstr != null) {
                             otherCell.lteSigStrength = cstr.dbm
@@ -1137,7 +1137,7 @@ class SignalDetectorService : Service() {
             ""
     }
 
-    fun lteCellInfo(signal: signalInfo): ArrayList<String> {
+    fun lteCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
         val plmnString: String
 
@@ -1164,7 +1164,7 @@ class SignalDetectorService : Service() {
         return cellIds
     }
 
-    fun cdmaCellInfo(signal: signalInfo): ArrayList<String> {
+    fun cdmaCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
 
         cellIds.add("SID\u00A0" + signal.sid)
@@ -1210,7 +1210,7 @@ class SignalDetectorService : Service() {
         return mnc in 1..999
     }
 
-    fun gsmCellInfo(signal: signalInfo): ArrayList<String> {
+    fun gsmCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
         var gsmOpString: String
 

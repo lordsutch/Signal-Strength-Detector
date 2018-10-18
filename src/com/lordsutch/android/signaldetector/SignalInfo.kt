@@ -5,7 +5,7 @@ import android.telephony.TelephonyManager
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
-data class otherLteCell(var gci: Int = Int.MAX_VALUE,
+data class OtherLteCell(var gci: Int = Int.MAX_VALUE,
                         var pci: Int = Int.MAX_VALUE,
                         var tac: Int = Int.MAX_VALUE,
                         var mcc: Int = Int.MAX_VALUE,
@@ -16,11 +16,10 @@ data class otherLteCell(var gci: Int = Int.MAX_VALUE,
                         var lteBand: Int = 0,
                         var isFDD: Boolean = false,
                         var lteSigStrength: Int = Int.MAX_VALUE,
-                        var timingAdvance: Int = Int.MAX_VALUE
-) : Parcelable
+                        var timingAdvance: Int = Int.MAX_VALUE) : Parcelable
 
 @Parcelize
-data class signalInfo(
+data class SignalInfo(
         var longitude: Double = 0.0,
         var latitude: Double = 0.0,
         var altitude: Double = 0.0,
@@ -79,5 +78,4 @@ data class signalInfo(
 
         var roaming: Boolean = false,
 
-        var otherCells: MutableList<otherLteCell>? = null
-) : Parcelable
+        var otherCells: MutableList<OtherLteCell>? = null) : Parcelable
