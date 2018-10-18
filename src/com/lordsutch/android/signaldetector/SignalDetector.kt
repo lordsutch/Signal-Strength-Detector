@@ -39,7 +39,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder
 
 import java.io.File
-import java.util.ArrayList
 import java.util.Locale
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ShareActionProvider
@@ -48,7 +47,11 @@ import androidx.core.view.MenuItemCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.res.Configuration
+import android.os.LocaleList
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider.getUriForFile
+import kotlin.collections.ArrayList
 
 class SignalDetector : AppCompatActivity() {
     val TAG = SignalDetector::class.java.simpleName
@@ -128,6 +131,20 @@ class SignalDetector : AppCompatActivity() {
 */
 
         leafletView = findViewById(R.id.leafletView)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val config = resources.configuration
+
+            if (!isSupportedLocale(config.locales.get(0))) {
+                val supportedLocales = filterUnsupportedLocales(config.locales)
+
+                if (!supportedLocales.isEmpty) {
+                    config.locales = supportedLocales
+                    // updateConfiguration() is deprecated in SDK 25, but the alternative
+                    // requires restarting the activity, which we don't want to do here.
+                    resources.updateConfiguration(config, resources.displayMetrics)
+                }
+            }
+        }
 
         val webSettings = leafletView!!.settings
         webSettings.allowFileAccessFromFileURLs = true
@@ -872,5 +889,39 @@ class SignalDetector : AppCompatActivity() {
 
     fun updateSigInfo(signalDetector: SignalDetector, signal: SignalInfo) {
         signalDetector.mSignalInfo = signal
+    }
+
+    override fun attachBaseContext(base: Context) {
+        var base = base
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val currentLocales = base.resources.configuration.locales
+            if (!isSupportedLocale(currentLocales.get(0))) {
+                val supportedLocales = filterUnsupportedLocales(currentLocales)
+                if (!supportedLocales.isEmpty) {
+                    val config = Configuration()
+                    config.locales = supportedLocales
+                    base = base.createConfigurationContext(config)
+                }
+            }
+        }
+        super.attachBaseContext(base)
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private fun filterUnsupportedLocales(locales: LocaleList) : LocaleList {
+        val filtered = ArrayList<Locale>(locales.size())
+
+        for (i in 0 until locales.size()) {
+            val loc = locales[i];
+            if (isSupportedLocale(loc)) {
+                filtered.add(loc)
+            }
+        }
+        return LocaleList(*filtered.toTypedArray())
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun isSupportedLocale(locale: Locale) : Boolean {
+        return locale.language in BuildConfig.LOCALES || locale.toLanguageTag() in BuildConfig.LOCALES
     }
 }
