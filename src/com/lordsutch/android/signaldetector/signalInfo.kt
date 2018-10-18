@@ -1,6 +1,5 @@
 package com.lordsutch.android.signaldetector
 
-import android.os.Parcel
 import android.os.Parcelable
 import android.telephony.TelephonyManager
 import kotlinx.android.parcel.Parcelize
@@ -11,6 +10,8 @@ data class otherLteCell(var gci: Int = Int.MAX_VALUE,
                         var tac: Int = Int.MAX_VALUE,
                         var mcc: Int = Int.MAX_VALUE,
                         var mnc: Int = Int.MAX_VALUE,
+                        var mccString: String? = null,
+                        var mncString: String? = null,
                         var earfcn: Int = Int.MAX_VALUE,
                         var lteBand: Int = 0,
                         var isFDD: Boolean = false,
@@ -35,6 +36,8 @@ data class signalInfo(
         var tac: Int = Int.MAX_VALUE,
         var mcc: Int = Int.MAX_VALUE,
         var mnc: Int = Int.MAX_VALUE,
+        var mccString: String? = null,
+        var mncString: String? = null,
         var earfcn: Int = Int.MAX_VALUE,
         var lteSigStrength: Int = Int.MAX_VALUE,
         var timingAdvance: Int = Int.MAX_VALUE,
@@ -68,11 +71,13 @@ data class signalInfo(
 
         var gsmMcc: Int = Int.MAX_VALUE,
         var gsmMnc: Int = Int.MAX_VALUE,
+        var gsmMccString: String? = null,
+        var gsmMncString: String? = null,
 
         var phoneType: Int = TelephonyManager.PHONE_TYPE_NONE,
         var networkType: Int = TelephonyManager.NETWORK_TYPE_UNKNOWN,
 
         var roaming: Boolean = false,
 
-        var otherCells: MutableList<otherLteCell>? = null        
+        var otherCells: MutableList<otherLteCell>? = null
 ) : Parcelable

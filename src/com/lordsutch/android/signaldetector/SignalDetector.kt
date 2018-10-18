@@ -94,33 +94,6 @@ class SignalDetector : AppCompatActivity() {
 
     private var bearing = 0.0
 
-    // Swiped from https://en.wikipedia.org/wiki/Mobile_country_code
-    private val threeDigitMNCList = intArrayOf(
-            365, // Anguilla
-            344, // Antigua and Barbuda
-            722, // Argentina
-            342, // Barbados
-            348, // British Virgin Islands
-            302, // Canada
-            346, // Cayman Islands
-            732, // Columbia
-            366, // Dominica
-            750, // Falkland Islands
-            352, // Grenada
-            708, // Honduras
-            // India seems to be a mix of 2 and 3 digits?
-            338, // Jamaica
-            // Malaysia has several 3 digit codes, all >= 100
-            334, // Mexico
-            354, // Montserrat
-            330, // Puerto Rico mostly has 3-digit codes over 100
-            356, // Saint Kitts and Nevis
-            358, // Saint Lucia
-            360, // Saint Vincent and the Grenadines
-            376, // Turks and Caicos Islands
-            310, 311, 312, 313, 316 // USA; Guam
-    )
-
     private var tradunits = false
     private var bsmarker = false
     private var taAsDistance = false
@@ -307,27 +280,22 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun validLTESignalStrength(strength: Int): Boolean {
-        return strength in -140..0
+        return strength in -139..-1
     }
 
     private fun validRSSISignalStrength(strength: Int): Boolean {
-        return strength in -120..0 
+        return strength in -119..-1
     }
 
     private fun validCellID(eci: Int): Boolean {
         return eci in 0..0x0FFFFFFF
     }
 
-    private fun is3digitMnc(mcc: Int): Boolean {
-        return threeDigitMNCList.contains(mcc)
-    }
-
-    private fun formatPLMN(mcc: Int, mnc: Int): String {
-        return if (mnc >= 100 || is3digitMnc(mcc)) {
-            String.format(Locale.US, "%03d-%03d", mcc, mnc)
-        } else {
-            String.format(Locale.US, "%03d-%02d", mcc, mnc)
-        }
+    private fun formatPLMN(mccString: String?, mncString: String?): String {
+        return if (mccString.isNullOrEmpty() || mncString.isNullOrEmpty())
+            ""
+        else
+            String.format(Locale.US, "%s-%s", mccString, mncString)
     }
 
     private fun directionForBearing(bearing: Double): String {
@@ -446,7 +414,7 @@ class SignalDetector : AppCompatActivity() {
         val preLteBlock = findViewById<LinearLayout>(R.id.preLteBlock)
 
         if (mSignalInfo!!.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
-            val cellIds = mService!!.lteCellInfo(mSignalInfo)
+            val cellIds = mService!!.lteCellInfo(mSignalInfo!!)
 
             if (cellIds.isNotEmpty()) {
                 servingid.text = TextUtils.join(", ", cellIds)
@@ -544,10 +512,10 @@ class SignalDetector : AppCompatActivity() {
         if (mSignalInfo!!.operatorName.isNotEmpty()) {
             opString = mSignalInfo!!.operatorName
         } else if (lteMode && validMcc(mSignalInfo!!.mcc) && validMnc(mSignalInfo!!.mnc)) {
-            opString = formatPLMN(mSignalInfo!!.mcc, mSignalInfo!!.mnc)
+            opString = formatPLMN(mSignalInfo!!.mccString, mSignalInfo!!.mncString)
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 validMcc(mSignalInfo!!.gsmMcc) && validMnc(mSignalInfo!!.gsmMnc)) {
-            opString = formatPLMN(mSignalInfo!!.gsmMcc, mSignalInfo!!.gsmMnc)
+            opString = formatPLMN(mSignalInfo!!.gsmMccString, mSignalInfo!!.gsmMncString)
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && mSignalInfo!!.operator.isNotEmpty()) {
             opString = formatOperator(mSignalInfo!!.operator)
         } else {
@@ -585,11 +553,11 @@ class SignalDetector : AppCompatActivity() {
 
         if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_CDMA && mService!!.validSID(mSignalInfo!!.sid)) {
             bsLabel.setText(R.string.cdma_1xrtt_base_station)
-            bsList = mService!!.cdmaCellInfo(mSignalInfo)
+            bsList = mService!!.cdmaCellInfo(mSignalInfo!!)
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && (!lteMode || mSignalInfo!!.lac != mSignalInfo!!.tac && mSignalInfo!!.fullCid != mSignalInfo!!.gci)) {
             // Devices seem to put LTE stuff into non-LTE fields...?
             bsLabel.setText(R.string._2g_3g_tower)
-            bsList = mService!!.gsmCellInfo(mSignalInfo)
+            bsList = mService!!.gsmCellInfo(mSignalInfo!!)
 
             if (mSignalInfo!!.gsmTimingAdvance != Integer.MAX_VALUE)
                 bsList.add(formatGsmTimingAdvance(mSignalInfo!!.gsmTimingAdvance))
@@ -646,22 +614,18 @@ class SignalDetector : AppCompatActivity() {
         }
     }
 
-    private fun zoomForSpeed(speed: Float): Int {
-        var speed = speed
-        speed = speed * 3.6.toFloat() // Convert to km/h from m/s
+    private fun zoomForSpeed(speed: Double): Int {
+        var speed = speed * 3.6 // Convert to km/h from m/s
 
-        if (speed >= 83)
-            return 13
-        else if (speed >= 63)
-            return 14
-        else if (speed >= 43)
-            return 15
-        else if (speed >= 23)
-            return 16
-        else if (speed >= 5)
-            return 17
-
-        return 0 // Don't zoom
+        when {
+            speed >= 83 -> return 13
+            speed >= 63 -> return 14
+            speed >= 43 -> return 15
+            speed >= 23 -> return 16
+            speed >= 5 -> return 17
+            // Don't zoom
+            else -> return 0
+        }
     }
 
     private fun centerMap(latitude: Double, longitude: Double, accuracy: Double, speed: Double,
