@@ -5,8 +5,6 @@ package com.lordsutch.android.signaldetector;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-
-import com.google.android.material.snackbar.Snackbar;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -25,13 +23,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.core.view.MenuItemCompat;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
-import androidx.appcompat.widget.ShareActionProvider;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -48,6 +39,7 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.lordsutch.android.signaldetector.SignalDetectorService.LocalBinder;
 
 import java.io.File;
@@ -57,6 +49,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.ShareActionProvider;
+import androidx.core.app.ActivityCompat;
+import androidx.core.view.MenuItemCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 import static androidx.core.content.FileProvider.getUriForFile;
