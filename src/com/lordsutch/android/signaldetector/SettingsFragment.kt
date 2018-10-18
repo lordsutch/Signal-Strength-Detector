@@ -12,7 +12,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setPreferencesFromResource(R.xml.preferences, rootKey)
 
         var myPref = findPreference("clear_cache")
-        myPref.setOnPreferenceClickListener { preference ->
+        myPref.setOnPreferenceClickListener {
             val context = activity
             val text = context?.getString(R.string.map_tile_cache_cleared)
             val duration = Toast.LENGTH_SHORT
@@ -25,7 +25,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         myPref = findPreference("clear_log")
-        myPref.setOnPreferenceClickListener { preference ->
+        myPref.setOnPreferenceClickListener {
             val context = activity
             val text = context?.getString(R.string.logFilesToast)
             val duration = Toast.LENGTH_SHORT
@@ -38,13 +38,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 val logFile = File(logPath, fileName)
 
                 if (logFile.exists()) {
-                    val deleted = logFile.delete()
+                    logFile.delete()
                 }
             }
 
             Toast.makeText(context, text, duration).show()
             false
         }
-
     }
 }
