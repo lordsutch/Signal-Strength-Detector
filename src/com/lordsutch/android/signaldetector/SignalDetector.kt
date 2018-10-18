@@ -617,14 +617,14 @@ class SignalDetector : AppCompatActivity() {
     private fun zoomForSpeed(speed: Double): Int {
         var speed = speed * 3.6 // Convert to km/h from m/s
 
-        when {
-            speed >= 83 -> return 13
-            speed >= 63 -> return 14
-            speed >= 43 -> return 15
-            speed >= 23 -> return 16
-            speed >= 5 -> return 17
+        return when {
+            speed >= 83 -> 13
+            speed >= 63 -> 14
+            speed >= 43 -> 15
+            speed >= 23 -> 16
+            speed >= 5 -> 17
             // Don't zoom
-            else -> return 0
+            else -> 0
         }
     }
 

@@ -897,12 +897,10 @@ class SignalDetectorService : Service() {
             signal.lteSigStrength = parseSignalStrength()
 
         if (!gotID && mHTCManager != null) {
-            var m: Method? = null
-
             try {
                 val cellID: String
 
-                m = mHTCManager!!.javaClass.getMethod("getSectorId", Int::class.javaPrimitiveType!!)
+                val m = mHTCManager!!.javaClass.getMethod("getSectorId", Int::class.javaPrimitiveType!!)
                 cellID = m!!.invoke(mHTCManager, *arrayOf<Any>(Integer.valueOf(1))) as String
                 signal.gci = Integer.parseInt(cellID, 16)
             } catch (e: NoSuchMethodException) {
@@ -918,10 +916,9 @@ class SignalDetectorService : Service() {
         }
 
         if (!validLTESignalStrength(signal.lteSigStrength)) {
-            val m: Method
-
             try {
-                m = mSignalStrength!!.javaClass.getMethod("getLteRsrp")
+                val m: Method = mSignalStrength!!.javaClass.getMethod("getLteRsrp")
+
                 signal.lteSigStrength = m.invoke(mSignalStrength) as Int
             } catch (e: NoSuchMethodException) {
                 // TODO Auto-generated catch block
