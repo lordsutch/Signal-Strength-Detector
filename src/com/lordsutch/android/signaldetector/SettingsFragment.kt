@@ -9,7 +9,7 @@ import java.io.File
 class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         // Load the preferences from an XML resource
-        setPreferencesFromResource(R.xml.preferences, rootKey)
+        addPreferencesFromResource(R.xml.preferences)
 
         var myPref = findPreference("clear_cache")
         myPref.setOnPreferenceClickListener {
