@@ -25,16 +25,23 @@ var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 var shields = L.tileLayer('http://{s}.tile.openstreetmap.us/osmus_shields/{z}/{x}/{y}.png',
                            {maxZoom: 18, subdomains: "abc", attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>.'});
 
-var sensorlySprint = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
+var sensorlyURLstart = 'https://tiles0.sensorly.com/tiles/v1.0/consumer/'
+var sensorlyURLend = '/{z}/{x}/{y}.png?type=google&scale=1'
+
+var sensorlySprint = L.tileLayer(sensorlyURLstart + '2984' + sensorlyURLend,
+//'http://tiles-day.cdn.sensorly.net/tile/any/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
-var sensorlyTMobileUS = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310260/{z}/{x}/{x}/{y}/{y}.png?s=256',
+var sensorlyTMobileUS = L.tileLayer(sensorlyURLstart + '3118' + sensorlyURLend,
+//'http://tiles-day.cdn.sensorly.net/tile/any/lte_310260/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
-var sensorlyATT = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310410/{z}/{x}/{x}/{y}/{y}.png?s=256',
+var sensorlyATT = L.tileLayer(sensorlyURLstart + '3122' + sensorlyURLend,
+//'http://tiles-day.cdn.sensorly.net/tile/any/lte_310410/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
-var sensorlyVerizon = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_310verizon/{z}/{x}/{x}/{y}/{y}.png?s=256',
+var sensorlyVerizon = L.tileLayer(sensorlyURLstart + '18' + sensorlyURLend,
+//'http://tiles-day.cdn.sensorly.net/tile/any/lte_310verizon/{z}/{x}/{x}/{y}/{y}.png?s=256',
                            {maxZoom: 18, detectRetina: true, attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'});
 
 var sensorlyCSpire = L.tileLayer('http://tiles-day.cdn.sensorly.net/tile/any/lte_311230/{z}/{x}/{x}/{y}/{y}.png?s=256',
