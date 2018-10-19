@@ -41,9 +41,9 @@ class SignalDetectorService : Service() {
     private var mLocation: Location? = null
     private var mNotifyMgr: NotificationManager? = null
 
-    private var mCellInfo: MutableList<CellInfo>? = null
+    private var mCellInfo: List<CellInfo>? = null
 
-    internal var mBinder: IBinder = LocalBinder()      // interface for clients that bind
+    private var mBinder: IBinder = LocalBinder()      // interface for clients that bind
 
     private var loggingEnabled = false
     private var mLocationManager: LocationManager? = null
@@ -119,20 +119,25 @@ class SignalDetectorService : Service() {
 
     // Listener for signal strength.
     internal val mListener: PhoneStateListener = object : PhoneStateListener() {
-        override fun onCellLocationChanged(mLocation: CellLocation) {
-            mCellLocation = mLocation
+        override fun onCellLocationChanged(mLocation: CellLocation?) {
+            super.onCellLocationChanged(mLocation)
+            if (mLocation != null)
+                mCellLocation = mLocation
             updatelog(true)
         }
 
-        override fun onCellInfoChanged(cellInfo: MutableList<CellInfo>?) {
+        override fun onCellInfoChanged(cellInfo: List<CellInfo>?) {
             super.onCellInfoChanged(cellInfo)
-            mCellInfo = cellInfo
+            if (mCellInfo != null)
+                mCellInfo = cellInfo
+
             updatelog(true)
         }
 
         override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
             super.onSignalStrengthsChanged(signalStrength)
-            mSignalStrength = signalStrength
+            if (signalStrength != null)
+                mSignalStrength = signalStrength
             //            if (mSignalStrength != null) {
             //                Log.d(TAG, mSignalStrength.toString());
             //            }
@@ -781,14 +786,19 @@ class SignalDetectorService : Service() {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                 signal.mccString = cellid.mccString
                                 signal.mncString = cellid.mncString
-                            } else {
-                                signal.mccString = formatMcc(signal.mcc)
-                                signal.mncString = formatMnc(signal.mcc, signal.mnc)
                             }
+
+                            if (signal.mccString == null)
+                                signal.mccString = formatMcc(signal.mcc)
+
+                            if (signal.mncString == null)
+                                signal.mncString = formatMnc(signal.mcc, signal.mnc)
+
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                                 signal.earfcn = cellid.earfcn
                             else
                                 signal.earfcn = EARFCN
+
                             signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci, signal.earfcn)
                             signal.isFDD = isBandFDD(signal.lteBand)
                             gotID = true
@@ -842,13 +852,17 @@ class SignalDetectorService : Service() {
                     signal.lac = cellid.lac
                     signal.gsmMcc = cellid.mcc
                     signal.gsmMnc = cellid.mnc
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         signal.gsmMccString = cellid.mccString
                         signal.gsmMncString = cellid.mncString
-                    } else {
-                        signal.gsmMccString = formatMcc(signal.gsmMcc)
-                        signal.gsmMncString = formatMnc(signal.gsmMnc, signal.gsmMcc)
                     }
+
+                    if (signal.gsmMccString == null)
+                        signal.gsmMccString = formatMcc(signal.gsmMcc)
+
+                    if (signal.gsmMncString == null)
+                        signal.gsmMncString = formatMnc(signal.gsmMnc, signal.gsmMcc)
 
                     val cid = cellid.cid
                     signal.cid = cid
@@ -1042,16 +1056,18 @@ class SignalDetectorService : Service() {
                         val pci = mIdentity.pci
                         val mcc = mIdentity.mcc
                         val mnc = mIdentity.mnc
-                        var mccString: String
-                        var mncString: String
+                        var mccString: String? = null
+                        var mncString: String? = null
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                             mccString = mIdentity.mccString
                             mncString = mIdentity.mncString
-                        } else {
-                            mccString = formatMcc(mcc)
-                            mncString = formatMnc(mcc, mnc)
                         }
+
+                        if(mccString == null)
+                            mccString = formatMcc(mcc)
+                        if(mncString == null)
+                            mncString = formatMnc(mcc, mnc)
 
                         var earfcn = Integer.MAX_VALUE
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
