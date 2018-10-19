@@ -14,5 +14,6 @@
         android:name="com.lordsutch.android.signaldetector.SettingsFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/toolbar" />
+        android:layout_below="@id/toolbar"
+        tools:layout="@android:layout/list_content" />
 </RelativeLayout>

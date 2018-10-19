@@ -1,6 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <ListPreference
-        android:defaultValue="shields"
+        android:defaultValue="osm"
         android:key="tile_source"
         android:entries="@array/mapLayers"
         android:entryValues="@array/mapLayerValues"

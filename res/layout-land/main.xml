@@ -8,155 +8,173 @@
     android:layout_gravity="fill"
     android:background="@android:color/white"
     android:gravity="fill"
+    android:orientation="vertical"
     tools:context=".SignalDetector">
 
-    <ScrollView
-        android:id="@+id/scrollView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="6"
-        android:padding="3dp">
+    <include xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/toolbar"
+        layout="@layout/toolbar" />
 
-        <LinearLayout
-            android:layout_width="fill_parent"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="0dp"
-            android:paddingEnd="3dp">
-
-            <TextView
-                android:id="@+id/textView1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/location"
-                android:textColor="@color/primaryColor" />
-
-            <TextView
-                android:id="@+id/positionLatLon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/black"
-                android:textIsSelectable="true" />
-
-            <TextView
-                android:id="@+id/textview6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speed"
-                android:textColor="@color/primaryColor" />
-
-            <TextView
-                android:id="@+id/speed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/black"
-                android:textIsSelectable="true" />
-
-            <TextView
-                android:id="@+id/TextView03"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/current_network"
-                android:textColor="@color/primaryColor" />
-
-            <TextView
-                android:id="@+id/networkString"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/none"
-                android:textColor="@android:color/black"
-                android:textIsSelectable="true" />
+            android:layout_weight="6"
+            android:padding="3dp">
 
             <LinearLayout
-                android:id="@id/lteBlock"
                 android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="0dp"
+                android:paddingEnd="3dp">
 
                 <TextView
-                    android:id="@+id/textView2"
+                    android:id="@+id/textView1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/serving_lte_cell_id"
+                    android:text="@string/location"
                     android:textColor="@color/primaryColor" />
 
                 <TextView
-                    android:id="@+id/cellid"
+                    android:id="@+id/positionLatLon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/black"
+                    android:textIsSelectable="true" />
+
+                <TextView
+                    android:id="@+id/textview6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/speed"
+                    android:textColor="@color/primaryColor" />
+
+                <TextView
+                    android:id="@+id/speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/black"
+                    android:textIsSelectable="true" />
+
+                <TextView
+                    android:id="@+id/TextView03"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/current_network"
+                    android:textColor="@color/primaryColor" />
+
+                <TextView
+                    android:id="@+id/networkString"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/none"
                     android:textColor="@android:color/black"
                     android:textIsSelectable="true" />
+
+                <LinearLayout
+                    android:id="@id/lteBlock"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/textView2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/serving_lte_cell_id"
+                        android:textColor="@color/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/cellid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/none"
+                        android:textColor="@android:color/black"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@id/lteOtherBlock"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/textView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/other_lte_sites"
+                        android:textColor="@color/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/otherLteSites"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/none"
+                        android:textColor="@android:color/black"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@id/preLteBlock"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/bsLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/cdma_1xrtt_base_station"
+                        android:textColor="@color/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/cdma_sysinfo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/none"
+                        android:textColor="@android:color/black"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@id/voiceSignalBlock"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/sigStrengthLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/voice_signal"
+                        android:textColor="@color/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/cdmaSigStrength"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/no_signal"
+                        android:textColor="@android:color/black"
+                        android:textIsSelectable="true" />
+                </LinearLayout>
+
             </LinearLayout>
+        </ScrollView>
 
-            <LinearLayout
-                android:id="@id/lteOtherBlock"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="vertical">
+        <WebView
+            android:id="@+id/leafletView"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="6" />
 
-                <TextView
-                    android:id="@+id/textView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/other_lte_sites"
-                    android:textColor="@color/primaryColor" />
-
-                <TextView
-                    android:id="@+id/otherLteSites"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/none"
-                    android:textColor="@android:color/black"
-                    android:textIsSelectable="true" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@id/preLteBlock"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/bsLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cdma_1xrtt_base_station"
-                    android:textColor="@color/primaryColor" />
-
-                <TextView
-                    android:id="@+id/cdma_sysinfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/none"
-                    android:textColor="@android:color/black"
-                    android:textIsSelectable="true" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@id/voiceSignalBlock"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/sigStrengthLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/voice_signal"
-                    android:textColor="@color/primaryColor" />
-
-                <TextView
-                    android:id="@+id/cdmaSigStrength"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/no_signal"
-                    android:textColor="@android:color/black"
-                    android:textIsSelectable="true" />
-            </LinearLayout>
-
-        </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
 
     <!--
     <com.mapbox.mapboxsdk.views.MapView
@@ -165,11 +183,5 @@
         android:layout_height="fill_parent"
         android:layout_weight="5"
         mapbox:mapid="NONE" /> -->
-
-    <WebView
-        android:id="@+id/leafletView"
-        android:layout_width="0dp"
-        android:layout_height="fill_parent"
-        android:layout_weight="6" />
 
 </LinearLayout>
