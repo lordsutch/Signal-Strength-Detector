@@ -234,26 +234,26 @@ class SignalDetector : AppCompatActivity() {
         return true
     }
 
-    // Define a DialogFragment that displays the error dialog
-    class ErrorDialogFragment : DialogFragment() {
-        // Global field to contain the error dialog
-        private var mDialog: Dialog? = null
-
-        // Default constructor. Sets the dialog field to null
-        init {
-            mDialog = null
-        }
-
-        // Set the dialog to display
-        fun setDialog(dialog: Dialog) {
-            mDialog = dialog
-        }
-
-        // Return a Dialog to the DialogFragment.
-        override fun onCreateDialog(savedInstanceState: Bundle): Dialog? {
-            return mDialog
-        }
-    }
+//    // Define a DialogFragment that displays the error dialog
+//    class ErrorDialogFragment : DialogFragment() {
+//        // Global field to contain the error dialog
+//        private var mDialog: Dialog? = null
+//
+//        // Default constructor. Sets the dialog field to null
+//        init {
+//            mDialog = null
+//        }
+//
+//        // Set the dialog to display
+//        fun setDialog(dialog: Dialog) {
+//            mDialog = dialog
+//        }
+//
+//        // Return a Dialog to the DialogFragment.
+//        override fun onCreateDialog(savedInstanceState: Bundle): Dialog? {
+//            return mDialog
+//        }
+//    }
 
     override fun onStart() {
         super.onStart()

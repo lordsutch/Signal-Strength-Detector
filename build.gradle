@@ -42,6 +42,16 @@ dependencies {
     implementation 'androidx.fragment:fragment:1.0.0'
 }
 
+ext {
+    // Include the default language and base languages for runtime use
+    supportedLocales = ['en-rUS', 'fr']
+    // Convert Android locale qualifier values to standard identifiers
+    // - Remove the 'r' before the region
+    // - Remove the 'b+' prefix on BPC 47 tags
+    // - Change '+' to '-' in BPC 47 tags
+    resToLoc = { res -> res.replaceAll(/-r/, '-').replaceAll(/^b\+/, '').replaceAll(/\+/, '-') }
+}
+
 android {
     compileSdkVersion 28
     buildToolsVersion '28.0.3'
@@ -56,10 +66,8 @@ android {
         targetSdkVersion 28
         versionCode 12
         vectorDrawables.useSupportLibrary = true
-        resConfigs 'en-rUS', 'fr'
-        //jackOptions {
-        //    enabled true
-        //}
+        resConfigs supportedLocales
+        buildConfigField "String[]", "LOCALES", '{"' + supportedLocales.collect { resToLoc(it) }.join('","') + '"}'
     }
     sourceSets {
         main {
