@@ -41,7 +41,7 @@ class SignalDetectorService : Service() {
     private var mLocation: Location? = null
     private var mNotifyMgr: NotificationManager? = null
 
-    private var mCellInfo: List<CellInfo>? = null
+    private var mCellInfo: MutableList<CellInfo>? = null
 
     internal var mBinder: IBinder = LocalBinder()      // interface for clients that bind
 
@@ -124,13 +124,15 @@ class SignalDetectorService : Service() {
             updatelog(true)
         }
 
-        override fun onCellInfoChanged(cellInfo: List<CellInfo>) {
+        override fun onCellInfoChanged(cellInfo: MutableList<CellInfo>?) {
+            super.onCellInfoChanged(cellInfo)
             mCellInfo = cellInfo
             updatelog(true)
         }
 
-        override fun onSignalStrengthsChanged(sStrength: SignalStrength) {
-            mSignalStrength = sStrength
+        override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+            super.onSignalStrengthsChanged(signalStrength)
+            mSignalStrength = signalStrength
             //            if (mSignalStrength != null) {
             //                Log.d(TAG, mSignalStrength.toString());
             //            }
