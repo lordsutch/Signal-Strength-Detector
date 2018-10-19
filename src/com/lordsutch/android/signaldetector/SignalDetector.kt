@@ -62,7 +62,7 @@ class SignalDetector : AppCompatActivity() {
     var pageAvailable = false
     //    private MapView mapView = null;
     private var mTelephonyManager: TelephonyManager? = null
-    private var baseLayer: String? = "shields"
+    private var baseLayer: String? = "osm"
     private var coverageLayer: String? = "provider"
     private var receiver: BroadcastReceiver? = null
     private var mShareActionProvider: ShareActionProvider? = null
