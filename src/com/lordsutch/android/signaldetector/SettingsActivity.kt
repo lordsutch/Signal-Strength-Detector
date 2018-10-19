@@ -12,9 +12,9 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.settings_activity)
+        setSupportActionBar(findViewById(R.id.toolbar))
 
-        val actionbar = supportActionBar
-        actionbar.title = "Settings"
-        actionbar.setToolbarNavigationOnClickListener { this@SettingsActivity.finish() }
+        supportActionBar?.setTitle(R.string.title_activity_settings)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 }

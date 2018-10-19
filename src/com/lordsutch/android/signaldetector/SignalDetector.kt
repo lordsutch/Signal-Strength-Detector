@@ -114,6 +114,7 @@ class SignalDetector : AppCompatActivity() {
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.main)
+        setSupportActionBar(findViewById(R.id.toolbar))
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
