@@ -27,7 +27,6 @@
                 android:id="@+id/textView1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="6sp"
                 android:layout_marginEnd="6sp"
                 android:text="@string/location"
                 android:textColor="@android:color/black" />
@@ -113,8 +112,8 @@
 
             <TextView
                 android:id="@+id/otherLteSites"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_column="1"
                 android:text="@string/none"
                 android:textColor="@android:color/black"

@@ -11,10 +11,10 @@
 
     <item
         android:id="@+id/settings"
-        android:icon="@drawable/ic_settings_white_24dp"
+        android:icon="@drawable/ic_settings_black_24dp"
         android:onClick="launchSettings"
         android:title="@string/title_activity_settings"
-        app:showAsAction="ifRoom"></item>
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/exit"

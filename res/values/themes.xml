@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SignalDetectorTheme" parent="Theme.AppCompat">
-        <!-- colorPrimary is used for the default action bar background -->
-        <item name="colorPrimary">@color/primaryColor</item>
-
-    <!-- colorPrimaryDark is used for the status bar -->
-        <item name="colorPrimaryDark">@color/primaryDarkColor</item>
-
-    <!-- colorAccent is used as the default value for colorControlActivated,
-         which is used to tint widgets -->
-        <item name="colorAccent">@color/primaryAccentColor</item>
-
-    <!-- You can also set colorControlNormal, colorControlActivated
-         colorControlHighlight, and colorSwitchThumbNormal. -->
+    <style name="Theme.SignalDetectorTheme" parent="Theme.AppCompat.Light">
+        <!-- your app branding color for the app bar -->
+        <item name="colorPrimary">@color/primary_material_light</item>
+        <!-- darker variant for the status bar and contextual app bars -->
+        <item name="colorPrimaryDark">@color/primary_dark_material_light</item>
+        <!-- theme UI controls like checkboxes and text fields -->
+        <item name="colorAccent">@color/accent_material_light</item>
     </style>
 </resources>
