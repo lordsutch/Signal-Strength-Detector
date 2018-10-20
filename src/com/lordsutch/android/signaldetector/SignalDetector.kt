@@ -391,11 +391,11 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun updateGui() {
-        Log.d(TAG, "updating GUI")
+//        Log.d(TAG, "updating GUI")
         if (mSignalInfo == null || mService == null)
             return
 
-        Log.d(TAG, mSignalInfo!!.toString())
+//        Log.d(TAG, mSignalInfo.toString())
 
         bslat = mSignalInfo!!.bslat
         bslon = mSignalInfo!!.bslon
@@ -431,7 +431,24 @@ class SignalDetector : AppCompatActivity() {
         val lteOtherBlock = findViewById<LinearLayout>(R.id.lteOtherBlock)
         val preLteBlock = findViewById<LinearLayout>(R.id.preLteBlock)
 
-        if (mSignalInfo!!.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+        var networkType = mSignalInfo!!.networkType
+
+        val isIWLAN = (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+
+        if (isIWLAN) {
+            if (mSignalInfo!!.lteBand > 0 && validLTESignalStrength(mSignalInfo!!.lteSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_LTE
+            else if (validRSSISignalStrength(mSignalInfo!!.evdoSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_EHRPD
+            else if (validRSSISignalStrength(mSignalInfo!!.cdmaSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_1xRTT
+            else if (mSignalInfo!!.lac != Int.MAX_VALUE)
+                networkType = TelephonyManager.NETWORK_TYPE_UMTS
+            else if (validRSSISignalStrength(mSignalInfo!!.gsmSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_GPRS
+        }
+
+        if (networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             val cellIds = mService!!.lteCellInfo(mSignalInfo!!)
 
             if (cellIds.isNotEmpty()) {
@@ -489,6 +506,7 @@ class SignalDetector : AppCompatActivity() {
 
         var dataSigStrength: Int
         var voiceDataSame = true
+        var lteMode = false
 
         if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
             dataSigStrength = mSignalInfo!!.cdmaSigStrength
@@ -500,10 +518,12 @@ class SignalDetector : AppCompatActivity() {
             else
                 mSignalInfo!!.gsmSigStrength
         }
-        var lteMode = false
 
-        when (mSignalInfo!!.networkType) {
-            TelephonyManager.NETWORK_TYPE_LTE -> if (validLTESignalStrength(mSignalInfo!!.lteSigStrength)) {
+        val voiceSigStrength = dataSigStrength
+
+        when (networkType) {
+            TelephonyManager.NETWORK_TYPE_LTE -> if (validLTESignalStrength(mSignalInfo!!.lteSigStrength) &&
+                    validRSSISignalStrength(voiceSigStrength)) {
                 //                    getSupportActionBar().setLogo(R.drawable.ic_launcher);
                 voiceDataSame = false
                 dataSigStrength = mSignalInfo!!.lteSigStrength
@@ -514,7 +534,7 @@ class SignalDetector : AppCompatActivity() {
 
             TelephonyManager.NETWORK_TYPE_EHRPD, TelephonyManager.NETWORK_TYPE_EVDO_0, TelephonyManager.NETWORK_TYPE_EVDO_A, TelephonyManager.NETWORK_TYPE_EVDO_B ->
                 //                getSupportActionBar().setLogo(R.drawable.ic_stat_non4g);
-                if (validRSSISignalStrength(mSignalInfo!!.evdoSigStrength)) {
+                if (validRSSISignalStrength(mSignalInfo!!.evdoSigStrength) && validRSSISignalStrength(mSignalInfo!!.cdmaSigStrength)) {
                     voiceDataSame = false
                     dataSigStrength = mSignalInfo!!.evdoSigStrength
                 }
@@ -530,10 +550,10 @@ class SignalDetector : AppCompatActivity() {
         if (mSignalInfo!!.operatorName.isNotEmpty()) {
             opString = mSignalInfo!!.operatorName
         } else if (lteMode && validMcc(mSignalInfo!!.mcc) && validMnc(mSignalInfo!!.mnc)) {
-            opString = formatPLMN(mSignalInfo!!.mccString, mSignalInfo!!.mncString)
+            opString = mSignalInfo!!.formatPLMN()
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 validMcc(mSignalInfo!!.gsmMcc) && validMnc(mSignalInfo!!.gsmMnc)) {
-            opString = formatPLMN(mSignalInfo!!.gsmMccString, mSignalInfo!!.gsmMncString)
+            opString = mSignalInfo!!.formatGsmPLMN()
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && mSignalInfo!!.operator.isNotEmpty()) {
             opString = formatOperator(mSignalInfo!!.operator)
         } else {
@@ -543,7 +563,7 @@ class SignalDetector : AppCompatActivity() {
         if (opString.isNotEmpty())
             netInfo.add(opString)
 
-        netInfo.add(mService!!.networkString(mSignalInfo!!.networkType))
+        netInfo.add(mService!!.networkString(networkType))
 
         if (lteMode && mSignalInfo!!.lteBand > 0) {
             netInfo.add(String.format(Locale.getDefault(), "B%d", mSignalInfo!!.lteBand))
@@ -558,10 +578,13 @@ class SignalDetector : AppCompatActivity() {
         if (mSignalInfo!!.roaming)
             netInfo.add(getString(R.string.roamingInd))
 
+        if (isIWLAN)
+            netInfo.add("WiFi")
+
         network.text = TextUtils.join(" ", netInfo)
 
-        if (!voiceDataSame && validRSSISignalStrength(dataSigStrength)) {
-            voiceSigStrengthView.text = dataSigStrength.toString() + "\u202FdBm"
+        if (!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
+            voiceSigStrengthView.text = String.format(Locale.US, "%d dBm", voiceSigStrength)
             voiceSignalBlock.visibility = View.VISIBLE
         } else {
             voiceSignalBlock.visibility = View.GONE
@@ -892,8 +915,8 @@ class SignalDetector : AppCompatActivity() {
         signalDetector.mSignalInfo = signal
     }
 
-    override fun attachBaseContext(base: Context) {
-        var base = base
+    override fun attachBaseContext(baseContext: Context) {
+        var base = baseContext
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val currentLocales = base.resources.configuration.locales
             if (!isSupportedLocale(currentLocales.get(0))) {

@@ -123,6 +123,7 @@ class SignalDetectorService : Service() {
             super.onCellLocationChanged(mLocation)
             if (mLocation != null)
                 mCellLocation = mLocation
+
             updatelog(true)
         }
 
@@ -620,6 +621,7 @@ class SignalDetectorService : Service() {
             TelephonyManager.NETWORK_TYPE_1xRTT -> return "1xRTT"
             TelephonyManager.NETWORK_TYPE_IDEN -> return "iDEN"
             TelephonyManager.NETWORK_TYPE_LTE -> return "LTE"
+            TelephonyManager.NETWORK_TYPE_IWLAN -> return "IWLAN"
             else -> return "Unknown"
         }
     }
@@ -952,14 +954,31 @@ class SignalDetectorService : Service() {
         var cellIdInfo = getString(R.string.none)
         var basicCellInfo = cellIdInfo
 
-        if (signal.networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
+        var networkType = signal.networkType
+
+        val isIWLAN = (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+
+        if (isIWLAN) {
+            if (signal.lteBand > 0 && validLTESignalStrength(signal.lteSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_LTE
+            else if (validRSSISignalStrength(signal.evdoSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_EHRPD
+            else if (validRSSISignalStrength(signal.cdmaSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_1xRTT
+            else if (signal.lac != Int.MAX_VALUE)
+                networkType = TelephonyManager.NETWORK_TYPE_UMTS
+            else if (validRSSISignalStrength(signal.gsmSigStrength))
+                networkType = TelephonyManager.NETWORK_TYPE_GPRS
+        }
+
+        if (networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
             basicCellInfo = String.format("%s %s", signal.operatorName,
-                    networkString(signal.networkType))
+                    networkString(networkType))
         }
 
         var cellIds = ArrayList<String>()
 
-        if (signal.networkType == TelephonyManager.NETWORK_TYPE_LTE) {
+        if (networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             if (signal.lteBand != 0)
                 basicCellInfo += String.format(Locale.getDefault(), " band\u202f%d", signal.lteBand)
 
@@ -994,9 +1013,12 @@ class SignalDetectorService : Service() {
         if (signal.roaming)
             basicCellInfo += " " + getString(R.string.roamingInd)
 
+        if (isIWLAN)
+            basicCellInfo += " WiFi"
+
         mBuilder = mBuilder!!.setContentTitle(basicCellInfo)
                 .setContentText(cellIdInfo)
-                .setSmallIcon(networkIcon(signal.networkType))
+                .setSmallIcon(networkIcon(networkType))
 
         mNotification = mBuilder!!.build()
         mNotifyMgr!!.notify(mNotificationId, mNotification)
@@ -1157,7 +1179,7 @@ class SignalDetectorService : Service() {
         val plmnString: String
 
         if (validMcc(signal.mcc) && validMnc(signal.mnc)) {
-            plmnString = formatPLMN(signal.mccString, signal.mncString)
+            plmnString = signal.formatPLMN()
         } else {
             plmnString = formatOperator(signal.operator)
         }
@@ -1198,13 +1220,6 @@ class SignalDetectorService : Service() {
         return threeDigitMNCList.contains(mcc)
     }
 
-    private fun formatPLMN(mccString: String?, mncString: String?): String {
-        return if (mccString.isNullOrEmpty() or mncString.isNullOrEmpty())
-            ""
-        else
-            String.format(Locale.US, "%s-%s", mccString!!, mncString!!)
-    }
-
     private fun formatOperator(operator: String): String {
         try {
             return if (Integer.valueOf(operator) > 0)
@@ -1227,10 +1242,10 @@ class SignalDetectorService : Service() {
 
     fun gsmCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
-        var gsmOpString: String
+        val gsmOpString: String
 
         if (validMcc(signal.gsmMcc) && validMnc(signal.gsmMnc)) {
-            gsmOpString = formatPLMN(signal.gsmMccString, signal.gsmMncString)
+            gsmOpString = signal.formatGsmPLMN()
         } else {
             gsmOpString = formatOperator(signal.operator)
         }
