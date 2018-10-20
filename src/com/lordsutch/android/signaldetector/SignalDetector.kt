@@ -333,7 +333,7 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun validEARFCN(earfcn: Int): Boolean {
-        return earfcn != Integer.MAX_VALUE
+        return earfcn != Int.MAX_VALUE
     }
 
     /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
@@ -343,7 +343,7 @@ class SignalDetector : AppCompatActivity() {
      * This seems to be round-trip time, so one-way distance is half that.
      */
     private fun timingAdvanceToMeters(timingAdvance: Int, isFDD: Boolean): Double {
-        return if (timingAdvance == Integer.MAX_VALUE) Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
+        return if (timingAdvance == Int.MAX_VALUE) Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
     }
 
     /* Uses tradunits setting */
@@ -356,7 +356,7 @@ class SignalDetector : AppCompatActivity() {
             /* TA offset for TDD seems to be ~10 microseconds  */
             String.format(Locale.getDefault(), "TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance, isFDD), taDistanceUnits)
-        } else if (timingAdvance != Integer.MAX_VALUE) {
+        } else if (timingAdvance != Int.MAX_VALUE) {
             String.format(Locale.getDefault(), "TA=%d\u202fµs", timingAdvance)
         } else {
             ""
@@ -364,7 +364,7 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun gsmTimingAdvanceToMeters(timingAdvance: Int): Double {
-        return if (timingAdvance == Integer.MAX_VALUE) Double.NaN else timingAdvance * 550.0
+        return if (timingAdvance == Int.MAX_VALUE) Double.NaN else timingAdvance * 550.0
 // See http://www.telecomhall.com/parameter-timing-advance-ta.aspx
     }
 
@@ -377,7 +377,7 @@ class SignalDetector : AppCompatActivity() {
         return if (taAsDistance) {
             String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
                     gsmTimingAdvanceToDistance(timingAdvance), taDistanceUnits)
-        } else if (timingAdvance != Integer.MAX_VALUE) {
+        } else if (timingAdvance != Int.MAX_VALUE) {
             String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance)
         } else {
             ""
@@ -601,7 +601,7 @@ class SignalDetector : AppCompatActivity() {
             bsLabel.setText(R.string._2g_3g_tower)
             bsList = mService!!.gsmCellInfo(mSignalInfo!!)
 
-            if (mSignalInfo!!.gsmTimingAdvance != Integer.MAX_VALUE)
+            if (mSignalInfo!!.gsmTimingAdvance != Int.MAX_VALUE)
                 bsList.add(formatGsmTimingAdvance(mSignalInfo!!.gsmTimingAdvance))
         }
 
@@ -622,7 +622,7 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun formatOperator(operator: String): String {
-        return if (Integer.valueOf(operator) > 0)
+        return if (operator.toInt() > 0)
             operator.substring(0, 3) + "-" + operator.substring(3)
         else
             operator
@@ -686,7 +686,7 @@ class SignalDetector : AppCompatActivity() {
 
         if (mSignalInfo != null) {
             towerRadius = timingAdvanceToMeters(mSignalInfo!!.timingAdvance, mSignalInfo!!.isFDD)
-            if (mSignalInfo!!.gsmTimingAdvance != Integer.MAX_VALUE)
+            if (mSignalInfo!!.gsmTimingAdvance != Int.MAX_VALUE)
                 towerRadius = gsmTimingAdvanceToMeters(mSignalInfo!!.gsmTimingAdvance)
         }
 

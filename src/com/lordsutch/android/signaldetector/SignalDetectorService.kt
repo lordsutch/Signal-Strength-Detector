@@ -242,7 +242,7 @@ class SignalDetectorService : Service() {
             // Strip off "$QCRSRP: " from beginning and split into fields, convert to list of strings
             val fields = ArrayList(Arrays.asList(*rawRootOutput.substring(9).split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()))
             // Return only the EARFCN as Int
-            return Integer.parseInt(fields[1])
+            return fields[1].toInt()
         }
         // return Int.MAX_VALUE to signify no change
         return Int.MAX_VALUE
@@ -379,7 +379,7 @@ class SignalDetectorService : Service() {
         val bits = sstrength.split("\\s+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         if (bits.size >= 10)
             try {
-                strength = Integer.parseInt(bits[9])
+                strength = bits[9].toInt()
             } catch (e: NumberFormatException) {
             }
 
@@ -930,7 +930,7 @@ class SignalDetectorService : Service() {
 
                 val m = mHTCManager!!.javaClass.getMethod("getSectorId", Int::class.javaPrimitiveType!!)
                 cellID = m!!.invoke(mHTCManager, *arrayOf<Any>(Integer.valueOf(1))) as String
-                signal.gci = Integer.parseInt(cellID, 16)
+                signal.gci = cellID.toInt(16)
             } catch (e: NoSuchMethodException) {
                 // TODO Auto-generated catch block
                 e.printStackTrace()
@@ -1232,7 +1232,7 @@ class SignalDetectorService : Service() {
 
     private fun formatOperator(operator: String): String {
         try {
-            return if (Integer.valueOf(operator) > 0)
+            return if (operator.toInt() > 0)
                 operator.substring(0, 3) + "-" + operator.substring(3)
             else
                 operator
