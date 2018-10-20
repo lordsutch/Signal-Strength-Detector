@@ -711,9 +711,6 @@ class SignalDetectorService : Service() {
     }
 
     private fun updatelog(log: Boolean) {
-        if (mSignalStrength == null)
-            return
-
         var gotID = false
 
         if (mLocation == null &&
@@ -727,7 +724,11 @@ class SignalDetectorService : Service() {
         if (mLocation == null)
             mLocation = Location(provider)
 
-        var signal = SignalInfo()
+        if (mSignalStrength == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            mSignalStrength = mManager!!.signalStrength
+        }
+
+        val signal = SignalInfo()
 
         signal.latitude = mLocation!!.latitude
         signal.longitude = mLocation!!.longitude
@@ -747,6 +748,11 @@ class SignalDetectorService : Service() {
         signal.roaming = mManager!!.isNetworkRoaming
         signal.operator = mManager!!.networkOperator
         signal.operatorName = mManager!!.networkOperatorName
+
+        if (mSignalStrength == null) {
+            sendResult(signal)
+            return
+        }
 
         signal.gsmSigStrength = mSignalStrength!!.gsmSignalStrength
         signal.gsmSigStrength = if (signal.gsmSigStrength < 32) -113 + 2 * signal.gsmSigStrength else -9999
@@ -1325,7 +1331,7 @@ class SignalDetectorService : Service() {
         super.onDestroy()
     }
 
-    fun sendResult(message: Parcelable?) {
+    fun sendResult(message: SignalInfo?) {
         val intent = Intent(SD_RESULT)
         if (message != null)
             intent.putExtra(SD_MESSAGE, message)
