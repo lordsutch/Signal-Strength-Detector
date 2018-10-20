@@ -29,7 +29,7 @@ var sensorlyURLstart = 'https://tiles0.sensorly.com/tiles/v1.0/consumer/'
 var sensorlyURLend = '/{z}/{x}/{y}.png?type=google&scale=1'
 
 var sensorlyParams = {maxZoom: 18, detectRetina: true, opacity: 0.5,
-    attribution: '&copy; <a href="http://www.sensorly.com/">Sensorly</a>.'}
+    attribution: '&copy; <a href="https://www.sensorly.com/">Sensorly</a>.'}
 
 var sensorlySprint = L.tileLayer(sensorlyURLstart + '2984' + sensorlyURLend, sensorlyParams)
 //'http://tiles-day.cdn.sensorly.net/tile/any/lte_310sprint/{z}/{x}/{x}/{y}/{y}.png?s=256',
@@ -74,6 +74,13 @@ var currentBaseLayer = null;
 var currentOverlayLayer = null;
 
 function setBaseLayer(base) {
+    if (base == 'none') {
+        if (currentBaseLayer)
+            map.removeLayer(currentBaseLayer)
+        currentBaseLayer = null
+        return
+    }
+
     var baseLayer = baseLayerNames[base]
 
     if(baseLayer != currentBaseLayer) {
