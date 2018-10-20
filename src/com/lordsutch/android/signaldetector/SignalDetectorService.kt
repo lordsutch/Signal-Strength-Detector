@@ -870,6 +870,13 @@ class SignalDetectorService : Service() {
                     signal.cid = cid
                     signal.fullCid = cid
                     signal.gsmSigStrength = cstr.dbm
+                    if (cid != Integer.MAX_VALUE) {
+                        signal.rnc = cid shr 16
+                        signal.cid = cid and 0xffff
+                    } else {
+                        signal.rnc = Int.MAX_VALUE
+                        signal.cid = Int.MAX_VALUE
+                    }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         signal.arfcn = cellid.arfcn
@@ -888,6 +895,9 @@ class SignalDetectorService : Service() {
                         if (cid != Integer.MAX_VALUE) {
                             signal.rnc = cid shr 16
                             signal.cid = cid and 0xffff
+                        } else {
+                            signal.rnc = Int.MAX_VALUE
+                            signal.cid = Int.MAX_VALUE
                         }
 
                         signal.lac = cellid.lac

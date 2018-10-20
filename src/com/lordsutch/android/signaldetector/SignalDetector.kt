@@ -468,7 +468,7 @@ class SignalDetector : AppCompatActivity() {
             val otherSitesList = ArrayList<String>()
 
             mSignalInfo!!.otherCells!!.sortWith( Comparator { lhs, rhs ->
-                val c1 = compareValues(lhs.lteSigStrength, rhs.lteSigStrength)
+                val c1 = -compareValues(lhs.lteSigStrength, rhs.lteSigStrength)
                 val c2 = compareValues(lhs.pci, rhs.pci)
 
                 if (c1 != 0) c1 else if (c2 != 0) c2 else compareValues(lhs.lteBand, rhs.lteBand)
@@ -522,10 +522,11 @@ class SignalDetector : AppCompatActivity() {
         val voiceSigStrength = dataSigStrength
 
         when (networkType) {
-            TelephonyManager.NETWORK_TYPE_LTE -> if (validLTESignalStrength(mSignalInfo!!.lteSigStrength) &&
-                    validRSSISignalStrength(voiceSigStrength)) {
+            TelephonyManager.NETWORK_TYPE_LTE -> if (validLTESignalStrength(mSignalInfo!!.lteSigStrength)) {
                 //                    getSupportActionBar().setLogo(R.drawable.ic_launcher);
-                voiceDataSame = false
+                if (validRSSISignalStrength(voiceSigStrength))
+                    voiceDataSame = false
+
                 dataSigStrength = mSignalInfo!!.lteSigStrength
                 lteMode = true
                 //                } else {
