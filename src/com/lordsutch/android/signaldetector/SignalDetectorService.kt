@@ -55,7 +55,7 @@ class SignalDetectorService : Service() {
 
     private var rootSessionCat: Shell.Interactive? = null
     private var rootSessionEcho: Shell.Interactive? = null
-    private var EARFCN = Integer.MAX_VALUE
+    private var EARFCN = Int.MAX_VALUE
 
     private var logFilesEnabled: Set<String>? = DEFAULT_LOGS
 
@@ -244,8 +244,8 @@ class SignalDetectorService : Service() {
             // Return only the EARFCN as Int
             return Integer.parseInt(fields[1])
         }
-        // return Integer.MAX_VALUE to signify no change
-        return Integer.MAX_VALUE
+        // return Int.MAX_VALUE to signify no change
+        return Int.MAX_VALUE
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -387,7 +387,7 @@ class SignalDetectorService : Service() {
     }
 
     internal fun validTimingAdvance(timingAdvance: Int): Boolean {
-        return timingAdvance > 0 && timingAdvance != Integer.MAX_VALUE
+        return timingAdvance > 0 && timingAdvance != Int.MAX_VALUE
     }
 
     internal fun validRSSISignalStrength(strength: Int): Boolean {
@@ -412,8 +412,8 @@ class SignalDetectorService : Service() {
 
     internal fun validEARFCN(earfcn: Int): Boolean {
         // Some phones (Samsung S7 Edge) report 0, which is impossible so we'll ignore that too.
-        return earfcn != Integer.MAX_VALUE && earfcn > 0
-    } // Integer.MAX_VALUE signifies no change or empty / default EARFCN
+        return earfcn != Int.MAX_VALUE && earfcn > 0
+    } // Int.MAX_VALUE signifies no change or empty / default EARFCN
 
     private fun calcAverageSpeed(): Double {
         var totspeed = 0.0
@@ -647,7 +647,7 @@ class SignalDetectorService : Service() {
     }
 
     protected fun valueString(value: Int): String {
-        return if (value == Integer.MAX_VALUE) "" else value.toString()
+        return if (value == Int.MAX_VALUE) "" else value.toString()
     }
 
     private fun getLegacyCellLocationData(signal: SignalInfo) {
@@ -663,13 +663,13 @@ class SignalDetectorService : Service() {
             signal.sid = x.systemId
 
             if (signal.bsid < 0)
-                signal.bsid = Integer.MAX_VALUE
+                signal.bsid = Int.MAX_VALUE
 
             if (signal.nid <= 0)
-                signal.nid = Integer.MAX_VALUE
+                signal.nid = Int.MAX_VALUE
 
             if (signal.sid <= 0)
-                signal.sid = Integer.MAX_VALUE
+                signal.sid = Int.MAX_VALUE
 
             signal.bslat = fixCDMAPosition(x.baseStationLatitude)
             signal.bslon = fixCDMAPosition(x.baseStationLongitude)
@@ -686,11 +686,11 @@ class SignalDetectorService : Service() {
 
             signal.lac = x!!.lac
             if (signal.lac < 0 || signal.lac > 0xffff)
-                signal.lac = Integer.MAX_VALUE
+                signal.lac = Int.MAX_VALUE
 
             signal.psc = x.psc
             if (signal.psc < 0)
-                signal.psc = Integer.MAX_VALUE
+                signal.psc = Int.MAX_VALUE
 
             val cid = x.cid
 
@@ -699,15 +699,15 @@ class SignalDetectorService : Service() {
                 signal.cid = cid and 0xffff
                 signal.fullCid = cid
             } else {
-                signal.rnc = Integer.MAX_VALUE
-                signal.cid = Integer.MAX_VALUE
-                signal.fullCid = Integer.MAX_VALUE
+                signal.rnc = Int.MAX_VALUE
+                signal.cid = Int.MAX_VALUE
+                signal.fullCid = Int.MAX_VALUE
             }
         }
     }
 
     private fun fixCDMAPosition(coordinate: Int): Double {
-        return if (coordinate != 0 && coordinate != Integer.MAX_VALUE) coordinate / 14400.0 else java.lang.Double.NaN
+        return if (coordinate != 0 && coordinate != Int.MAX_VALUE) coordinate / 14400.0 else java.lang.Double.NaN
     }
 
     private fun updatelog(log: Boolean) {
@@ -870,7 +870,7 @@ class SignalDetectorService : Service() {
                     signal.cid = cid
                     signal.fullCid = cid
                     signal.gsmSigStrength = cstr.dbm
-                    if (cid != Integer.MAX_VALUE) {
+                    if (cid != Int.MAX_VALUE) {
                         signal.rnc = cid shr 16
                         signal.cid = cid and 0xffff
                     } else {
@@ -892,7 +892,7 @@ class SignalDetectorService : Service() {
 
                         val cid = cellid.cid
                         signal.fullCid = cid
-                        if (cid != Integer.MAX_VALUE) {
+                        if (cid != Int.MAX_VALUE) {
                             signal.rnc = cid shr 16
                             signal.cid = cid and 0xffff
                         } else {
@@ -1101,7 +1101,7 @@ class SignalDetectorService : Service() {
                         if(mncString == null)
                             mncString = formatMnc(mcc, mnc)
 
-                        var earfcn = Integer.MAX_VALUE
+                        var earfcn = Int.MAX_VALUE
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                             earfcn = mIdentity.earfcn
                         val rsrp = mSS.dbm
@@ -1159,7 +1159,7 @@ class SignalDetectorService : Service() {
                         valueString(signal.psc), valueString(signal.gsmSigStrength),
                         nowAsISO, now.time, valueString(signal.bsic), valueString(signal.uarfcn),
                         valueString(signal.gsmTimingAdvance),
-                        if (signal.gsmTimingAdvance != Integer.MAX_VALUE) signal.gsmTimingAdvance * 550 else "",
+                        if (signal.gsmTimingAdvance != Int.MAX_VALUE) signal.gsmTimingAdvance * 550 else "",
                         signal.gsmMccString, signal.gsmMncString,
                         valueString(signal.arfcn))
                 if (GSMLine == null || newGSMLine != GSMLine) {
@@ -1261,25 +1261,25 @@ class SignalDetectorService : Service() {
         }
         cellIds.add("PLMN\u00A0$gsmOpString")
 
-        if (signal.lac != Integer.MAX_VALUE)
+        if (signal.lac != Int.MAX_VALUE)
             cellIds.add("LAC\u00A0" + signal.lac.toString())
 
-        if (signal.rnc != Integer.MAX_VALUE && signal.rnc > 0 && signal.rnc != signal.lac)
+        if (signal.rnc != Int.MAX_VALUE && signal.rnc > 0 && signal.rnc != signal.lac)
             cellIds.add("RNC\u00A0" + signal.rnc.toString())
 
-        if (signal.cid != Integer.MAX_VALUE)
+        if (signal.cid != Int.MAX_VALUE)
             cellIds.add("CID\u00A0" + signal.cid.toString())
 
-        if (signal.psc != Integer.MAX_VALUE)
+        if (signal.psc != Int.MAX_VALUE)
             cellIds.add("PSC\u00A0" + signal.psc.toString())
 
-        if (signal.bsic != Integer.MAX_VALUE)
+        if (signal.bsic != Int.MAX_VALUE)
             cellIds.add("BSIC\u00A0" + signal.bsic.toString())
 
-        if (signal.uarfcn != Integer.MAX_VALUE)
+        if (signal.uarfcn != Int.MAX_VALUE)
             cellIds.add("UARFCN\u00A0" + signal.uarfcn.toString())
 
-        if (signal.arfcn != Integer.MAX_VALUE)
+        if (signal.arfcn != Int.MAX_VALUE)
             cellIds.add("ARFCN\u00A0" + signal.arfcn.toString())
 
         return cellIds
