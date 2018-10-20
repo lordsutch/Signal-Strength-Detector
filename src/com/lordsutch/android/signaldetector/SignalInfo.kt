@@ -3,6 +3,7 @@ package com.lordsutch.android.signaldetector
 import android.os.Parcelable
 import android.telephony.TelephonyManager
 import kotlinx.android.parcel.Parcelize
+import java.util.*
 
 @Parcelize
 data class OtherLteCell(var gci: Int = Int.MAX_VALUE,
@@ -16,7 +17,14 @@ data class OtherLteCell(var gci: Int = Int.MAX_VALUE,
                         var lteBand: Int = 0,
                         var isFDD: Boolean = false,
                         var lteSigStrength: Int = Int.MAX_VALUE,
-                        var timingAdvance: Int = Int.MAX_VALUE) : Parcelable
+                        var timingAdvance: Int = Int.MAX_VALUE) : Parcelable {
+    fun formatPLMN() : String {
+        if(mccString != null && mncString != null)
+            return String.format(Locale.US, "%s-%s", mccString, mncString)
+        else
+            return ""
+    }
+}
 
 @Parcelize
 data class SignalInfo(
@@ -78,4 +86,19 @@ data class SignalInfo(
 
         var roaming: Boolean = false,
 
-        var otherCells: MutableList<OtherLteCell>? = null) : Parcelable
+        var otherCells: MutableList<OtherLteCell>? = null) : Parcelable {
+
+    fun formatPLMN() : String {
+        if(mccString != null && mncString != null)
+            return String.format(Locale.US, "%s-%s", mccString, mncString)
+        else
+            return ""
+    }
+
+    fun formatGsmPLMN() : String {
+        if(gsmMccString != null && gsmMncString != null)
+            return String.format(Locale.US, "%s-%s", gsmMccString, gsmMncString)
+        else
+            return ""
+    }
+}
