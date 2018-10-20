@@ -1265,7 +1265,8 @@ class SignalDetectorService : Service() {
         } else {
             gsmOpString = formatOperator(signal.operator)
         }
-        cellIds.add("PLMN\u00A0$gsmOpString")
+        if (gsmOpString.isNotBlank())
+            cellIds.add("PLMN\u00A0$gsmOpString")
 
         if (signal.lac != Int.MAX_VALUE)
             cellIds.add("LAC\u00A0" + signal.lac.toString())
