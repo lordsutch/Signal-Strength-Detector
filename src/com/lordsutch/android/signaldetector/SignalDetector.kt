@@ -52,6 +52,8 @@ import android.os.LocaleList
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider.getUriForFile
 import kotlin.collections.ArrayList
+import kotlin.math.abs
+import kotlin.math.min
 
 class SignalDetector : AppCompatActivity() {
     val TAG = SignalDetector::class.java.simpleName
@@ -59,7 +61,7 @@ class SignalDetector : AppCompatActivity() {
     private var SIGINFOKEY = "mSignalInfo"
 
     private var leafletView: WebView? = null
-    var pageAvailable = false
+    private var pageAvailable = false
     //    private MapView mapView = null;
     private var mTelephonyManager: TelephonyManager? = null
     private var baseLayer: String? = "osm"
@@ -67,7 +69,7 @@ class SignalDetector : AppCompatActivity() {
     private var receiver: BroadcastReceiver? = null
     private var mShareActionProvider: ShareActionProvider? = null
 
-    private var REQUEST_LOCATION = 0
+    private var REQUESTLOCATION = 0
     private var mService: SignalDetectorService? = null
     private var mBound = false
 
@@ -100,7 +102,8 @@ class SignalDetector : AppCompatActivity() {
     private var tradunits = false
     private var bsmarker = false
     private var taAsDistance = false
-    private var taDistanceUnits = "mi"
+    private var taDistanceUnits = "km"
+    private var distFactor = 1000.0
 
     /**
      * Called when the activity is first created.
@@ -186,14 +189,13 @@ class SignalDetector : AppCompatActivity() {
         webSettings.allowFileAccess = true
 
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION) || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-            Log.i(TAG,
-                    "Displaying location permission rationale to provide additional context.")
+            Log.i(TAG,"Displaying location permission rationale to provide additional context.")
             Snackbar.make(findViewById(R.id.root), R.string.permission_location_rationale,
                     Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.ok) {
                         ActivityCompat.requestPermissions(this@SignalDetector,
                                 arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
-                                REQUEST_LOCATION)
+                                REQUESTLOCATION)
                     }
                     .show()
 
@@ -215,7 +217,7 @@ class SignalDetector : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
-        if (requestCode == REQUEST_LOCATION) {
+        if (requestCode == REQUESTLOCATION) {
             if (mService != null && grantResults.isNotEmpty()
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 mService!!.startGPS()
@@ -313,7 +315,7 @@ class SignalDetector : AppCompatActivity() {
         return if (mccString.isNullOrEmpty() || mncString.isNullOrEmpty())
             ""
         else
-            String.format(Locale.US, "%s-%s", mccString, mncString)
+            "$mccString-$mncString"
     }
 
     private fun directionForBearing(bearing: Double): String {
@@ -330,10 +332,6 @@ class SignalDetector : AppCompatActivity() {
 
     private fun validPhysicalCellID(pci: Int): Boolean {
         return pci in 0..503
-    }
-
-    private fun validEARFCN(earfcn: Int): Boolean {
-        return earfcn != Int.MAX_VALUE
     }
 
     /* Speed of light in air at sea level is approx. 299,700 km/s according to Wikipedia
@@ -357,14 +355,14 @@ class SignalDetector : AppCompatActivity() {
             String.format(Locale.getDefault(), "TA=%.1f\u202f%s",
                     timingAdvanceToDistance(timingAdvance, isFDD), taDistanceUnits)
         } else if (timingAdvance != Int.MAX_VALUE) {
-            String.format(Locale.getDefault(), "TA=%d\u202fµs", timingAdvance)
+            "TA=$timingAdvance\u202fµs"
         } else {
             ""
         }
     }
 
     private fun gsmTimingAdvanceToMeters(timingAdvance: Int): Double {
-        return if (timingAdvance == Int.MAX_VALUE) Double.NaN else timingAdvance * 550.0
+        return if (timingAdvance != Int.MAX_VALUE) timingAdvance * 550.0 else Double.NaN
 // See http://www.telecomhall.com/parameter-timing-advance-ta.aspx
     }
 
@@ -378,7 +376,7 @@ class SignalDetector : AppCompatActivity() {
             String.format(Locale.getDefault(), "\u00a0TA=%.1f\u202f%s",
                     gsmTimingAdvanceToDistance(timingAdvance), taDistanceUnits)
         } else if (timingAdvance != Int.MAX_VALUE) {
-            String.format(Locale.getDefault(), "\u00a0TA=%d\u202fµs", timingAdvance)
+            "TA=$timingAdvance\u202fµs"
         } else {
             ""
         }
@@ -407,8 +405,8 @@ class SignalDetector : AppCompatActivity() {
         val latlon = findViewById<TextView>(R.id.positionLatLon)
 
         latlon.text = String.format(Locale.getDefault(), "%3.5f\u00b0%s %3.5f\u00b0%s (\u00b1%.0f\u202f%s)",
-                Math.abs(mSignalInfo!!.latitude), resources.getString(if (mSignalInfo!!.latitude >= 0) R.string.bearing_north else R.string.bearing_south),
-                Math.abs(mSignalInfo!!.longitude), resources.getString(if (mSignalInfo!!.longitude >= 0) R.string.bearing_east else R.string.bearing_west),
+                abs(mSignalInfo!!.latitude), resources.getString(if (mSignalInfo!!.latitude >= 0) R.string.bearing_north else R.string.bearing_south),
+                abs(mSignalInfo!!.longitude), resources.getString(if (mSignalInfo!!.longitude >= 0) R.string.bearing_east else R.string.bearing_west),
                 mSignalInfo!!.accuracy * accuracyFactor, accuracyLabel)
 
         val speed = findViewById<TextView>(R.id.speed)
@@ -482,17 +480,16 @@ class SignalDetector : AppCompatActivity() {
                     var sigInfo = String.format(Locale.getDefault(), "%03d", otherCell.pci)
 
                     if (validLTESignalStrength(otherCell.lteSigStrength))
-                        sigList.add(String.format(Locale.getDefault(), "%d\u202FdBm", otherCell.lteSigStrength))
+                        sigList.add("${otherCell.lteSigStrength}\u202FdBm")
 
                     if (mService!!.validTimingAdvance(otherCell.timingAdvance))
                         sigList.add(formatTimingAdvance(otherCell.timingAdvance, otherCell.isFDD))
 
                     if (mService!!.validEARFCN(otherCell.earfcn) && otherCell.earfcn != mSignalInfo!!.earfcn)
-                        sigList.add(String.format(Locale.getDefault(), "EARFCN=%d", otherCell.earfcn))
+                        sigList.add("EARFCN=${otherCell.earfcn}")
 
                     if (sigList.isNotEmpty())
-                        sigInfo += String.format(Locale.getDefault(), "\u00a0(%s)",
-                                TextUtils.join(" ", sigList))
+                        sigInfo += "\u00a0(${TextUtils.join(" ", sigList)})"
 
                     otherSitesList.add(sigInfo)
                 }
@@ -568,11 +565,11 @@ class SignalDetector : AppCompatActivity() {
         netInfo.add(mService!!.networkString(networkType))
 
         if (lteMode && mSignalInfo!!.lteBand > 0) {
-            netInfo.add(String.format(Locale.getDefault(), "B%d", mSignalInfo!!.lteBand))
+            netInfo.add("B${mSignalInfo!!.lteBand}")
         }
 
         if (validLTESignalStrength(dataSigStrength)) {
-            netInfo.add(String.format(Locale.getDefault(), "%d\u202FdBm", dataSigStrength))
+            netInfo.add("$dataSigStrength\u202FdBm")
             if (mService!!.validTimingAdvance(mSignalInfo!!.timingAdvance))
                 netInfo.add(formatTimingAdvance(mSignalInfo!!.timingAdvance, mSignalInfo!!.isFDD))
         }
@@ -586,7 +583,7 @@ class SignalDetector : AppCompatActivity() {
         network.text = TextUtils.join(" ", netInfo)
 
         if (!voiceDataSame && validRSSISignalStrength(voiceSigStrength)) {
-            voiceSigStrengthView.text = String.format(Locale.US, "%d dBm", voiceSigStrength)
+            voiceSigStrengthView.text = "$voiceSigStrength dBm"
             voiceSignalBlock.visibility = View.VISIBLE
         } else {
             voiceSignalBlock.visibility = View.GONE
@@ -623,8 +620,8 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun formatOperator(operator: String): String {
-        return if (operator.toInt() > 0)
-            operator.substring(0, 3) + "-" + operator.substring(3)
+        return if (TextUtils.isDigitsOnly(operator) && operator.length >= 5)
+            "${operator.take(3)}-${operator.substring(3)}"
         else
             operator
     }
@@ -658,17 +655,12 @@ class SignalDetector : AppCompatActivity() {
     }
 
     private fun zoomForSpeed(speed: Double): Int {
-        var speed = speed * 3.6 // Convert to km/h from m/s
+        val speedmps = speed * 3.6 // Convert to km/h from m/s
 
-        return when {
-            speed >= 83 -> 13
-            speed >= 63 -> 14
-            speed >= 43 -> 15
-            speed >= 23 -> 16
-            speed >= 5 -> 17
-            // Don't zoom
-            else -> 0
-        }
+        if (speedmps < 5)
+            return 0
+
+        return min(13, 17-((speedmps/20.0).toInt()))
     }
 
     private fun centerMap(latitude: Double, longitude: Double, accuracy: Double, speed: Double,
@@ -686,9 +678,10 @@ class SignalDetector : AppCompatActivity() {
         var towerRadius = 0.0
 
         if (mSignalInfo != null) {
-            towerRadius = timingAdvanceToMeters(mSignalInfo!!.timingAdvance, mSignalInfo!!.isFDD)
             if (mSignalInfo!!.gsmTimingAdvance != Int.MAX_VALUE)
                 towerRadius = gsmTimingAdvanceToMeters(mSignalInfo!!.gsmTimingAdvance)
+            else
+                towerRadius = timingAdvanceToMeters(mSignalInfo!!.timingAdvance, mSignalInfo!!.isFDD)
         }
 
         /*
@@ -698,9 +691,7 @@ class SignalDetector : AppCompatActivity() {
             mapView.setZoom(zoom);
         // TODO Add markers here
 */
-        execJavascript(String.format(Locale.US, "recenter(%.5f,%.5f,%f,%.0f,%.0f,%s,\"%s\",\"%s\",%.0f);",
-                latitude, longitude, accuracy, speed, bearing, staleFix, coverageLayer, baseLayer,
-                towerRadius))
+        execJavascript("recenter($latitude, $longitude, $accuracy, $speed, $bearing, $staleFix, \"$coverageLayer\", \"$baseLayer\", $towerRadius")
     }
 
     //    private Marker baseMarker = null;
@@ -726,7 +717,7 @@ class SignalDetector : AppCompatActivity() {
 */
 
         if (bsmarker && mService!!.validLocation(bslon, bslat))
-            execJavascript(String.format(Locale.US, "placeMarker(%.5f,%.5f);", bslat, bslon))
+            execJavascript("placeMarker($bslat, $bslon);")
         else
             execJavascript("clearMarker();")
     }
@@ -738,12 +729,14 @@ class SignalDetector : AppCompatActivity() {
             accuracyFactor = 3.28084
             accuracyLabel = "ft"
             taDistanceUnits = "mi"
+            distFactor = 1609.334
         } else {
             speedFactor = 3.6
             speedLabel = "km/h"
             accuracyFactor = 1.0
             accuracyLabel = "m"
             taDistanceUnits = "km"
+            distFactor = 1000.0
         }
     }
 
@@ -913,7 +906,7 @@ class SignalDetector : AppCompatActivity() {
 */
     }
 
-    fun updateSigInfo(signalDetector: SignalDetector, signal: SignalInfo) {
+    private fun updateSigInfo(signalDetector: SignalDetector, signal: SignalInfo) {
         signalDetector.mSignalInfo = signal
     }
 

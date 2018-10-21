@@ -30,6 +30,8 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
+import kotlin.math.sign
 
 class SignalDetectorService : Service() {
     private val mNotificationId = 1
@@ -464,6 +466,10 @@ class SignalDetectorService : Service() {
         return lteBand !in 33..52
     }
 
+    private fun boolToString(test: Boolean) : String {
+        return if (test) "1" else "0"
+    }
+
     private fun guessLteBandFromEARFCN(earfcn: Int): Int {
         // Stolen from http://niviuk.free.fr/lte_band.php
         return when {
@@ -646,7 +652,7 @@ class SignalDetectorService : Service() {
         return (SystemClock.elapsedRealtimeNanos() - loc.elapsedRealtimeNanos) / (1000 * 1000)
     }
 
-    protected fun valueString(value: Int): String {
+    private fun valueString(value: Int): String {
         return if (value == Int.MAX_VALUE) "" else value.toString()
     }
 
@@ -685,7 +691,7 @@ class SignalDetectorService : Service() {
             val x = mCellLocation as GsmCellLocation?
 
             signal.lac = x!!.lac
-            if (signal.lac < 0 || signal.lac > 0xffff)
+            if (!(signal.lac in 0..0xffff))
                 signal.lac = Int.MAX_VALUE
 
             signal.psc = x.psc
@@ -708,6 +714,14 @@ class SignalDetectorService : Service() {
 
     private fun fixCDMAPosition(coordinate: Int): Double {
         return if (coordinate != 0 && coordinate != Int.MAX_VALUE) coordinate / 14400.0 else java.lang.Double.NaN
+    }
+
+    private fun validString(test: Boolean, content: String) : String {
+        return if(test) content else ""
+    }
+
+    private fun validNumberToString(test: Boolean, content: Number) : String {
+        return if(test) content.toInt().toString() else ""
     }
 
     private fun updatelog(log: Boolean) {
@@ -935,7 +949,7 @@ class SignalDetectorService : Service() {
                 val cellID: String
 
                 val m = mHTCManager!!.javaClass.getMethod("getSectorId", Int::class.javaPrimitiveType!!)
-                cellID = m!!.invoke(mHTCManager, *arrayOf<Any>(Integer.valueOf(1))) as String
+                cellID = m.invoke(mHTCManager, *arrayOf<Any>(Integer.valueOf(1))) as String
                 signal.gci = cellID.toInt(16)
             } catch (e: NoSuchMethodException) {
                 // TODO Auto-generated catch block
@@ -988,35 +1002,34 @@ class SignalDetectorService : Service() {
         }
 
         if (networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
-            basicCellInfo = String.format("%s %s", signal.operatorName,
-                    networkString(networkType))
+            basicCellInfo = "${signal.operatorName} ${networkString(networkType)}"
         }
 
         var cellIds = ArrayList<String>()
 
         if (networkType == TelephonyManager.NETWORK_TYPE_LTE) {
             if (signal.lteBand != 0)
-                basicCellInfo += String.format(Locale.getDefault(), " band\u202f%d", signal.lteBand)
+                basicCellInfo += " band\u202f${signal.lteBand}"
 
             if (validLTESignalStrength(signal.lteSigStrength))
-                basicCellInfo += String.format(Locale.US, " %d\u202fdBm", signal.lteSigStrength)
+                basicCellInfo += " ${signal.lteSigStrength}\u202fdBm"
 
             if (validTimingAdvance(signal.timingAdvance))
-                basicCellInfo += String.format(Locale.US, " TA=%d\u202fµs", signal.timingAdvance)
+                basicCellInfo += " TA=${signal.timingAdvance}\u202fµs"
 
             cellIds = lteCellInfo(signal)
         } else if (validRSSISignalStrength(signal.cdmaSigStrength) && validSID(signal.sid)) {
             val sigStrength = if (validRSSISignalStrength(signal.evdoSigStrength)) signal.evdoSigStrength else signal.cdmaSigStrength
 
-            basicCellInfo += String.format(Locale.US, " %d\u202fdBm", sigStrength)
+            basicCellInfo += " $sigStrength\u202fdBm"
             if (validRSSISignalStrength(signal.evdoSigStrength))
-                basicCellInfo += String.format(Locale.US, " voice %d\u202fdBm", signal.cdmaSigStrength)
+                basicCellInfo += " voice ${signal.cdmaSigStrength}\u202fdBm"
 
             cellIds = cdmaCellInfo(signal)
         } else if (validRSSISignalStrength(signal.gsmSigStrength) && validCID(signal.cid)) {
-            basicCellInfo += String.format(Locale.US, " %d\u202fdBm", signal.gsmSigStrength)
+            basicCellInfo += " ${signal.gsmSigStrength}\u202fdBm"
             if (validTimingAdvance(signal.gsmTimingAdvance))
-                basicCellInfo += String.format(Locale.US, " TA=%d\u202fµs", signal.gsmTimingAdvance)
+                basicCellInfo += " TA=${signal.gsmTimingAdvance}\u202fµs"
 
             cellIds = gsmCellInfo(signal)
         }
@@ -1058,23 +1071,23 @@ class SignalDetectorService : Service() {
                     (validLTESignalStrength(signal.lteSigStrength) ||
                             validPhysicalCellID(signal.pci) || validCellID(signal.gci))) {
                 val estDistance = timingAdvanceToMeters(signal.timingAdvance, signal.isFDD)
+                val gciString = validString(validCellID(signal.gci), String.format(Locale.US, "%08X", signal.gci))
 
-                val newLteLine = slat + "," + slon + "," +
-                        (if (validCellID(signal.gci)) String.format(Locale.US, "%08X", signal.gci) else "") + "," +
-                        valueString(signal.pci) + "," +
-                        (if (validLTESignalStrength(signal.lteSigStrength)) signal.lteSigStrength.toString() else "") + "," +
-                        String.format(Locale.US, "%.0f", signal.altitude) + "," +
-                        (if (validTAC(signal.tac)) String.format(Locale.US, "%04X", signal.tac) else "") + "," +
-                        String.format(Locale.US, "%.0f", signal.accuracy) + "," +
-                        (if (validCellID(signal.gci)) String.format(Locale.US, "%06X", signal.gci / 256) else "") + "," +
-                        (if (signal.lteBand > 0) valueString(signal.lteBand) else "") + "," +
-                        valueString(signal.timingAdvance) + "," +
-                        (if (validEARFCN(signal.earfcn)) valueString(signal.earfcn) else "") + "," +
-                        nowAsISO + "," + now.time.toString() + "," +
-                        (if (isBandFDD(signal.lteBand)) "1" else "0") + "," +
-                        (if (java.lang.Double.isNaN(estDistance)) "" else String.format(Locale.US, "%.0f", estDistance)) + "," +
-                        signal.mccString + "," +
-                        signal.mncString
+                val lineBits = arrayOf(slat, slon, gciString, valueString(signal.pci),
+                        validNumberToString(validLTESignalStrength(signal.lteSigStrength), signal.lteSigStrength),
+                        signal.altitude.roundToInt().toString(),
+                        validNumberToString(validTAC(signal.tac), signal.tac),
+                        signal.accuracy.roundToInt().toString(),
+                        gciString.take(6),
+                        validNumberToString(signal.lteBand > 0, signal.lteBand),
+                        valueString(signal.timingAdvance),
+                        validNumberToString(validEARFCN(signal.earfcn), signal.earfcn),
+                        nowAsISO, now.time.toString(),
+                        boolToString(isBandFDD(signal.lteBand)),
+                        validNumberToString(estDistance.isFinite(), estDistance.roundToInt()),
+                        signal.mccString, signal.mncString)
+
+                val newLteLine = TextUtils.join(",", lineBits)
 
                 if (lteLine == null || newLteLine != lteLine) {
                     //                    Log.d(TAG, "Logging LTE cell.");
@@ -1107,35 +1120,37 @@ class SignalDetectorService : Service() {
                         if(mncString == null)
                             mncString = formatMnc(mcc, mnc)
 
-                        var earfcn = Int.MAX_VALUE
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                            earfcn = mIdentity.earfcn
+                        val earfcn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) mIdentity.earfcn else Int.MAX_VALUE
+
                         val rsrp = mSS.dbm
                         val timingAdvance = mSS.timingAdvance
                         val lteBand = guessLteBand(mcc, mnc, eci, earfcn)
                         val isFDD = isBandFDD(lteBand)
                         val estDistance = timingAdvanceToMeters(timingAdvance, isFDD)
 
-                        val cellLine = slat + "," + slon + "," +
-                                String.format(Locale.US, "%.0f", signal.accuracy) + "," +
-                                String.format(Locale.US, "%.0f", signal.altitude) + "," +
-                                mccString + "," + mncString + "," +
-                                (if (validTAC(tac)) String.format(Locale.US, "%04X", tac) else "") + "," +
-                                (if (validCellID(eci)) String.format(Locale.US, "%08X", eci) else "") + "," +
-                                (if (validPhysicalCellID(pci)) pci.toString() else "") + "," +
-                                (if (validLTESignalStrength(rsrp)) rsrp.toString() else "") + "," +
-                                (if (item.isRegistered()) "1" else "0") + "," +
-                                (if (validCellID(eci)) String.format(Locale.US, "%06X", eci / 256) else "") + "," +
-                                (if (lteBand > 0) lteBand.toString() else "") + "," +
-                                valueString(timingAdvance) + "," +
-                                (if (validEARFCN(earfcn)) String.format(Locale.US, "%d", earfcn) else "") + "," +
-                                nowAsISO + "," + now.time.toString() + "," +
-                                (if (isFDD) "1" else "0") + "," +
-                                if (java.lang.Double.isNaN(estDistance)) "" else String.format(Locale.US, "%.0f", estDistance)
+                        val gciString = validString(validCellID(eci), String.format(Locale.US, "%08X", eci))
+
+                        val lineBits = arrayOf(slat, slon,
+                                signal.accuracy.roundToInt().toString(),
+                                signal.altitude.roundToInt().toString(),
+                                mccString, mncString,
+                                validNumberToString(validTAC(tac), tac),
+                                gciString,
+                                validNumberToString(validPhysicalCellID(pci), pci),
+                                validNumberToString(validLTESignalStrength(rsrp), rsrp),
+                                boolToString(item.isRegistered),
+                                gciString.take(6),
+                                validNumberToString(lteBand > 0, lteBand),
+                                valueString(timingAdvance),
+                                validNumberToString(validEARFCN(earfcn), earfcn),
+                                nowAsISO, now.time.toString(),
+                                boolToString(isFDD),
+                                validNumberToString(estDistance.isFinite(), estDistance.roundToInt()))
+
+                        val cellLine = TextUtils.join(",", lineBits)
 
                         appendLog("cellinfolte.csv", cellLine,
                                 "latitude,longitude,accuracy,altitude,mcc,mnc,tac,gci,pci,rsrp,registered,baseGci,band,timingAdvance,earfcn,timestamp,timeSinceEpoch,fdd,estDistance")
-
                     }
                 }
             }
@@ -1165,7 +1180,7 @@ class SignalDetectorService : Service() {
                         valueString(signal.psc), valueString(signal.gsmSigStrength),
                         nowAsISO, now.time, valueString(signal.bsic), valueString(signal.uarfcn),
                         valueString(signal.gsmTimingAdvance),
-                        if (signal.gsmTimingAdvance != Int.MAX_VALUE) signal.gsmTimingAdvance * 550 else "",
+                        if (validTimingAdvance(signal.gsmTimingAdvance)) signal.gsmTimingAdvance * 550 else "",
                         signal.gsmMccString, signal.gsmMncString,
                         valueString(signal.arfcn))
                 if (GSMLine == null || newGSMLine != GSMLine) {
@@ -1211,7 +1226,7 @@ class SignalDetectorService : Service() {
             cellIds.add(String.format(Locale.US, "PCI\u00a0%03d", signal.pci))
 
         if (validEARFCN(signal.earfcn)) {
-            cellIds.add(String.format(Locale.US, "EARFCN\u00a0%d", signal.earfcn))
+            cellIds.add("EARFCN\u00a0${signal.earfcn}")
         }
 
         return cellIds
@@ -1220,10 +1235,10 @@ class SignalDetectorService : Service() {
     fun cdmaCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
 
-        cellIds.add("SID\u00A0" + signal.sid)
+        cellIds.add("SID\u00A0${signal.sid}")
 
         if (validNID(signal.nid))
-            cellIds.add("NID\u00A0" + signal.nid)
+            cellIds.add("NID\u00A0${signal.nid}")
 
         if (validBSID(signal.bsid))
             cellIds.add(String.format(Locale.US, "BSID\u00A0%d\u00A0(x%X)",
@@ -1239,7 +1254,7 @@ class SignalDetectorService : Service() {
     private fun formatOperator(operator: String): String {
         try {
             return if (operator.toInt() > 0)
-                operator.substring(0, 3) + "-" + operator.substring(3)
+                "${operator.take(3)}-${operator.substring(3)}"
             else
                 operator
         } catch (e: NumberFormatException) {
@@ -1269,25 +1284,25 @@ class SignalDetectorService : Service() {
             cellIds.add("PLMN\u00A0$gsmOpString")
 
         if (signal.lac != Int.MAX_VALUE)
-            cellIds.add("LAC\u00A0" + signal.lac.toString())
+            cellIds.add("LAC\u00A0${signal.lac}")
 
         if (signal.rnc != Int.MAX_VALUE && signal.rnc > 0 && signal.rnc != signal.lac)
-            cellIds.add("RNC\u00A0" + signal.rnc.toString())
+            cellIds.add("RNC\u00A0${signal.rnc}")
 
         if (signal.cid != Int.MAX_VALUE)
-            cellIds.add("CID\u00A0" + signal.cid.toString())
+            cellIds.add("CID\u00A0${signal.cid}")
 
         if (signal.psc != Int.MAX_VALUE)
-            cellIds.add("PSC\u00A0" + signal.psc.toString())
+            cellIds.add("PSC\u00A0${signal.psc}")
 
         if (signal.bsic != Int.MAX_VALUE)
-            cellIds.add("BSIC\u00A0" + signal.bsic.toString())
+            cellIds.add("BSIC\u00A0${signal.bsic}")
 
         if (signal.uarfcn != Int.MAX_VALUE)
-            cellIds.add("UARFCN\u00A0" + signal.uarfcn.toString())
+            cellIds.add("UARFCN\u00A0${signal.uarfcn}")
 
         if (signal.arfcn != Int.MAX_VALUE)
-            cellIds.add("ARFCN\u00A0" + signal.arfcn.toString())
+            cellIds.add("ARFCN\u00A0${signal.arfcn}")
 
         return cellIds
     }
@@ -1353,7 +1368,7 @@ class SignalDetectorService : Service() {
         private val SET_VALUES = arrayOf("cdma", "esmr", "gsm", "lte")
         private val DEFAULT_LOGS = HashSet(Arrays.asList(*SET_VALUES))
 
-        private const val FIVE_SECONDS = (5 * 1000).toLong()
+        private const val FIVE_SECONDS = (5 * 1000)
 
         const val SD_RESULT = "com.lordsutch.android.signaldetector.SignalServiceBroadcast"
         const val SD_MESSAGE = "com.lordsutch.android.signaldetector.SignalInfo"
