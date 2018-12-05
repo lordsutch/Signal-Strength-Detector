@@ -692,7 +692,7 @@ class SignalDetector : AppCompatActivity() {
             mapView.setZoom(zoom);
         // TODO Add markers here
 */
-        execJavascript("recenter($latitude, $longitude, $accuracy, $speed, $bearing, $staleFix, \"$coverageLayer\", \"$baseLayer\", $towerRadius")
+        execJavascript("recenter($latitude, $longitude, $accuracy, $speed, $bearing, $staleFix, \"$coverageLayer\", \"$baseLayer\", $towerRadius)")
     }
 
     //    private Marker baseMarker = null;
