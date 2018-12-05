@@ -30,8 +30,9 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.max
+import kotlin.math.round
 import kotlin.math.roundToInt
-import kotlin.math.sign
 
 class SignalDetectorService : Service() {
     private val mNotificationId = 1
@@ -459,7 +460,7 @@ class SignalDetectorService : Service() {
     }
 
     private fun timingAdvanceToMeters(timingAdvance: Int, isFDD: Boolean): Double {
-        return if (!validTimingAdvance(timingAdvance)) Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
+        return if (!validTimingAdvance(timingAdvance)) Double.NaN else max((if (isFDD) timingAdvance else timingAdvance - 19) * 149.85, 0.0)
     }
 
     private fun isBandFDD(lteBand: Int): Boolean {
@@ -723,6 +724,12 @@ class SignalDetectorService : Service() {
     private fun validNumberToString(test: Boolean, content: Number) : String {
         return if(test) content.toInt().toString() else ""
     }
+
+    private fun validNumberToRoundedString(test: Boolean, content: Double) : String {
+        return if(test) content.roundToInt().toString() else ""
+    }
+
+
 
     private fun updatelog(log: Boolean) {
         var gotID = false
@@ -1084,7 +1091,7 @@ class SignalDetectorService : Service() {
                         validNumberToString(validEARFCN(signal.earfcn), signal.earfcn),
                         nowAsISO, now.time.toString(),
                         boolToString(isBandFDD(signal.lteBand)),
-                        validNumberToString(estDistance.isFinite(), estDistance.roundToInt()),
+                        validNumberToRoundedString(estDistance.isFinite(), estDistance),
                         signal.mccString, signal.mncString)
 
                 val newLteLine = TextUtils.join(",", lineBits)
@@ -1145,7 +1152,7 @@ class SignalDetectorService : Service() {
                                 validNumberToString(validEARFCN(earfcn), earfcn),
                                 nowAsISO, now.time.toString(),
                                 boolToString(isFDD),
-                                validNumberToString(estDistance.isFinite(), estDistance.roundToInt()))
+                                validNumberToRoundedString(estDistance.isFinite(), estDistance))
 
                         val cellLine = TextUtils.join(",", lineBits)
 
