@@ -53,6 +53,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider.getUriForFile
 import kotlin.collections.ArrayList
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 class SignalDetector : AppCompatActivity() {
@@ -341,7 +342,7 @@ class SignalDetector : AppCompatActivity() {
      * This seems to be round-trip time, so one-way distance is half that.
      */
     private fun timingAdvanceToMeters(timingAdvance: Int, isFDD: Boolean): Double {
-        return if (timingAdvance == Int.MAX_VALUE) Double.NaN else (if (isFDD) timingAdvance else timingAdvance - 20) * 149.85
+        return if (!mService!!.validTimingAdvance(timingAdvance)) Double.NaN else max((if (isFDD) timingAdvance else timingAdvance - 19) * 149.85, 0.0)
     }
 
     /* Uses tradunits setting */
