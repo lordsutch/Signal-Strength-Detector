@@ -308,17 +308,6 @@ class SignalDetector : AppCompatActivity() {
         return strength in -119..-1
     }
 
-    private fun validCellID(eci: Int): Boolean {
-        return eci in 0..0x0FFFFFFF
-    }
-
-    private fun formatPLMN(mccString: String?, mncString: String?): String {
-        return if (mccString.isNullOrEmpty() || mncString.isNullOrEmpty())
-            ""
-        else
-            "$mccString-$mncString"
-    }
-
     private fun directionForBearing(bearing: Double): String {
         return if (bearing > 0) {
             val index = Math.ceil((bearing + 11.25) / 22.5).toInt()
@@ -433,7 +422,11 @@ class SignalDetector : AppCompatActivity() {
 
         var networkType = mSignalInfo!!.networkType
 
-        val isIWLAN = (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+        val isIWLAN = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+        } else {
+            false
+        }
 
         if (isIWLAN) {
             if (mSignalInfo!!.lteBand > 0 && validLTESignalStrength(mSignalInfo!!.lteSigStrength))
@@ -507,12 +500,12 @@ class SignalDetector : AppCompatActivity() {
         var voiceDataSame = true
         var lteMode = false
 
-        if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
-            dataSigStrength = mSignalInfo!!.cdmaSigStrength
+        dataSigStrength = if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+            mSignalInfo!!.cdmaSigStrength
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM) {
-            dataSigStrength = mSignalInfo!!.gsmSigStrength
+            mSignalInfo!!.gsmSigStrength
         } else {
-            dataSigStrength = if (validRSSISignalStrength(mSignalInfo!!.cdmaSigStrength))
+            if (validRSSISignalStrength(mSignalInfo!!.cdmaSigStrength))
                 mSignalInfo!!.cdmaSigStrength
             else
                 mSignalInfo!!.gsmSigStrength
@@ -545,19 +538,17 @@ class SignalDetector : AppCompatActivity() {
 
         val netInfo = ArrayList<String>()
 
-        val opString: String
-
-        if (mSignalInfo!!.operatorName.isNotEmpty()) {
-            opString = mSignalInfo!!.operatorName
+        val opString = if (mSignalInfo!!.operatorName.isNotEmpty()) {
+            mSignalInfo!!.operatorName
         } else if (lteMode && validMcc(mSignalInfo!!.mcc) && validMnc(mSignalInfo!!.mnc)) {
-            opString = mSignalInfo!!.formatPLMN()
+            mSignalInfo!!.formatPLMN()
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM &&
                 validMcc(mSignalInfo!!.gsmMcc) && validMnc(mSignalInfo!!.gsmMnc)) {
-            opString = mSignalInfo!!.formatGsmPLMN()
+            mSignalInfo!!.formatGsmPLMN()
         } else if (mSignalInfo!!.phoneType == TelephonyManager.PHONE_TYPE_GSM && mSignalInfo!!.operator.isNotEmpty()) {
-            opString = formatOperator(mSignalInfo!!.operator)
+            formatOperator(mSignalInfo!!.operator)
         } else {
-            opString = ""
+            ""
         }
 
         if (opString.isNotEmpty())
@@ -625,10 +616,6 @@ class SignalDetector : AppCompatActivity() {
             "${operator.take(3)}-${operator.substring(3)}"
         else
             operator
-    }
-
-    private fun validTAC(tac: Int): Boolean {
-        return tac in 0x1..0xFFFE // 0, 0xFFFF are reserved values
     }
 
     private fun validMcc(mcc: Int): Boolean {
@@ -799,7 +786,7 @@ class SignalDetector : AppCompatActivity() {
             return AlertDialog.Builder(activity)
                     .setTitle(R.string.enable_gps)
                     .setMessage(R.string.enable_gps_dialog)
-                    .setPositiveButton(R.string.enable_gps) { dialog, which -> enableLocationSettings() }
+                    .setPositiveButton(R.string.enable_gps) { _, _ -> enableLocationSettings() }
                     .create()
         }
     }
@@ -833,8 +820,8 @@ class SignalDetector : AppCompatActivity() {
             mShareActionProvider!!.setShareIntent(shareIntent)
     }
 
-    protected fun addMapOverlays(layer: String) {
-        var layer = layer
+    private fun addMapOverlays(layer_: String) {
+        var layer = layer_
         var layerName = layer
 
         if (layer.equals("provider", ignoreCase = true)) {
@@ -860,7 +847,7 @@ class SignalDetector : AppCompatActivity() {
 */
     }
 
-    protected fun setMapView(layer: String) {
+    private fun setMapView(layer: String) {
         baseLayer = layer
         execJavascript("setBaseLayer(\"$layer\")")
         /*
@@ -932,7 +919,7 @@ class SignalDetector : AppCompatActivity() {
         val filtered = ArrayList<Locale>(locales.size())
 
         for (i in 0 until locales.size()) {
-            val loc = locales[i];
+            val loc = locales[i]
             if (isSupportedLocale(loc)) {
                 filtered.add(loc)
             }

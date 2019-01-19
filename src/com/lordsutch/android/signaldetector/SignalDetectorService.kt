@@ -31,7 +31,6 @@ import java.lang.reflect.Method
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
-import kotlin.math.round
 import kotlin.math.roundToInt
 
 class SignalDetectorService : Service() {
@@ -138,7 +137,7 @@ class SignalDetectorService : Service() {
             updatelog(true)
         }
 
-        override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+        override fun onSignalStrengthsChanged(signalStrength: SignalStrength?) {
             super.onSignalStrengthsChanged(signalStrength)
             if (signalStrength != null)
                 mSignalStrength = signalStrength
@@ -186,7 +185,7 @@ class SignalDetectorService : Service() {
     }
 
     private fun openRootSessionForCat() {
-        rootSessionCat = Shell.Builder().useSU().setWantSTDERR(true).setMinimalLogging(false).open { commandCode, exitCode, output ->
+        rootSessionCat = Shell.Builder().useSU().setWantSTDERR(true).setMinimalLogging(false).open { commandCode, exitCode, _ ->
             // Callback to report whether the shell was successfully started up
             if (exitCode != Shell.OnCommandResultListener.SHELL_RUNNING) {
                 Log.e(TAG, "Error opening root shell: exitCode $exitCode")
@@ -198,7 +197,7 @@ class SignalDetectorService : Service() {
     }
 
     private fun openRootSessionForEcho() {
-        rootSessionEcho = Shell.Builder().useSU().setWantSTDERR(true).setMinimalLogging(false).setWatchdogTimeout(5).open { commandCode, exitCode, output ->
+        rootSessionEcho = Shell.Builder().useSU().setWantSTDERR(true).setMinimalLogging(false).setWatchdogTimeout(5).open { commandCode, exitCode, _ ->
             // Callback to report whether the shell was successfully started up
             if (exitCode != Shell.OnCommandResultListener.SHELL_RUNNING) {
                 Log.e(TAG, "Error opening root shell: exitCode $exitCode")
@@ -212,7 +211,7 @@ class SignalDetectorService : Service() {
     private fun sendRootEARFCN() {
         if (rootSessionEcho != null && rootSessionCat != null) {
             rootSessionEcho!!.addCommand(arrayOf("echo \"AT\\\$QCRSRP?\\r\\n\" > /dev/smd11"), 0
-            ) { commandCode, exitCode, output ->
+            ) { commandCode, exitCode, _ ->
                 if (exitCode < 0) {
                     Log.e(TAG, "Error executing echo: exitCode $exitCode")
                     if (exitCode == -1) {
@@ -633,20 +632,14 @@ class SignalDetectorService : Service() {
         }
     }
 
-    private fun networkIcon(networkType: Int): Int {
-        val icon: Int
+    private fun networkIcon(networkType: Int): Int = when (networkType) {
+        TelephonyManager.NETWORK_TYPE_LTE -> R.drawable.ic_stat_4g
 
-        when (networkType) {
-            TelephonyManager.NETWORK_TYPE_LTE -> icon = R.drawable.ic_stat_4g
+        TelephonyManager.NETWORK_TYPE_UMTS, TelephonyManager.NETWORK_TYPE_EVDO_0, TelephonyManager.NETWORK_TYPE_EVDO_A, TelephonyManager.NETWORK_TYPE_EVDO_B, TelephonyManager.NETWORK_TYPE_EHRPD, TelephonyManager.NETWORK_TYPE_HSDPA /* 3.5G? */, TelephonyManager.NETWORK_TYPE_HSPA, TelephonyManager.NETWORK_TYPE_HSPAP, TelephonyManager.NETWORK_TYPE_HSUPA, TelephonyManager.NETWORK_TYPE_EDGE, TelephonyManager.NETWORK_TYPE_1xRTT, TelephonyManager.NETWORK_TYPE_CDMA -> R.drawable.ic_stat_3g
 
-            TelephonyManager.NETWORK_TYPE_UMTS, TelephonyManager.NETWORK_TYPE_EVDO_0, TelephonyManager.NETWORK_TYPE_EVDO_A, TelephonyManager.NETWORK_TYPE_EVDO_B, TelephonyManager.NETWORK_TYPE_EHRPD, TelephonyManager.NETWORK_TYPE_HSDPA /* 3.5G? */, TelephonyManager.NETWORK_TYPE_HSPA, TelephonyManager.NETWORK_TYPE_HSPAP, TelephonyManager.NETWORK_TYPE_HSUPA, TelephonyManager.NETWORK_TYPE_EDGE, TelephonyManager.NETWORK_TYPE_1xRTT, TelephonyManager.NETWORK_TYPE_CDMA -> icon = R.drawable.ic_stat_3g
+        TelephonyManager.NETWORK_TYPE_GPRS, TelephonyManager.NETWORK_TYPE_IDEN -> R.drawable.ic_stat_2g
 
-            TelephonyManager.NETWORK_TYPE_GPRS, TelephonyManager.NETWORK_TYPE_IDEN -> icon = R.drawable.ic_stat_2g
-
-            else -> icon = R.drawable.ic_stat_0g
-        }
-
-        return icon
+        else -> R.drawable.ic_stat_0g
     }
 
     private fun locationFixAge(loc: Location): Long {
@@ -692,7 +685,7 @@ class SignalDetectorService : Service() {
             val x = mCellLocation as GsmCellLocation?
 
             signal.lac = x!!.lac
-            if (!(signal.lac in 0..0xffff))
+            if (signal.lac !in 0..0xffff)
                 signal.lac = Int.MAX_VALUE
 
             signal.psc = x.psc
@@ -993,7 +986,11 @@ class SignalDetectorService : Service() {
 
         var networkType = signal.networkType
 
-        val isIWLAN = (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+        val isIWLAN = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            (networkType == TelephonyManager.NETWORK_TYPE_IWLAN)
+        } else {
+            false
+        }
 
         if (isIWLAN) {
             if (signal.lteBand > 0 && validLTESignalStrength(signal.lteSigStrength))
@@ -1041,10 +1038,10 @@ class SignalDetectorService : Service() {
             cellIds = gsmCellInfo(signal)
         }
 
-        if (cellIds.isEmpty())
-            cellIdInfo = getString(R.string.missing)
+        cellIdInfo = if (cellIds.isEmpty())
+            getString(R.string.missing)
         else
-            cellIdInfo = TextUtils.join(", ", cellIds)
+            TextUtils.join(", ", cellIds)
 
         if (signal.roaming)
             basicCellInfo += " " + getString(R.string.roamingInd)
@@ -1175,7 +1172,7 @@ class SignalDetectorService : Service() {
                         bslatstr, bslonstr, signal.altitude, signal.accuracy, nowAsISO, now.time)
                 if (CdmaLine == null || newCdmaLine != CdmaLine) {
                     //                    Log.d(TAG, "Logging CDMA cell.");
-                    appendLog(if (signal.sid >= 22404 && signal.sid <= 22451) "esmrcells.csv" else "cdmacells.csv",
+                    appendLog(if (signal.sid in 22404..22451) "esmrcells.csv" else "cdmacells.csv",
                             newCdmaLine, "latitude,longitude,sid,nid,bsid,rssi,bslat,bslon,altitude,accuracy,timestamp,timeSinceEpoch")
                     CdmaLine = newCdmaLine
                 }
@@ -1214,13 +1211,13 @@ class SignalDetectorService : Service() {
 
     fun lteCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
-        val plmnString: String
 
-        if (validMcc(signal.mcc) && validMnc(signal.mnc)) {
-            plmnString = signal.formatPLMN()
+        val plmnString = if (validMcc(signal.mcc) && validMnc(signal.mnc)) {
+            signal.formatPLMN()
         } else {
-            plmnString = formatOperator(signal.operator)
+            formatOperator(signal.operator)
         }
+
         cellIds.add("PLMN\u00A0$plmnString")
 
         if (validTAC(signal.tac))
@@ -1259,13 +1256,13 @@ class SignalDetectorService : Service() {
     }
 
     private fun formatOperator(operator: String): String {
-        try {
-            return if (operator.toInt() > 0)
+        return try {
+            if (operator.toInt() > 0)
                 "${operator.take(3)}-${operator.substring(3)}"
             else
                 operator
         } catch (e: NumberFormatException) {
-            return operator
+            operator
         }
 
     }
@@ -1280,13 +1277,13 @@ class SignalDetectorService : Service() {
 
     fun gsmCellInfo(signal: SignalInfo): ArrayList<String> {
         val cellIds = ArrayList<String>()
-        val gsmOpString: String
 
-        if (validMcc(signal.gsmMcc) && validMnc(signal.gsmMnc)) {
-            gsmOpString = signal.formatGsmPLMN()
+        val gsmOpString = if (validMcc(signal.gsmMcc) && validMnc(signal.gsmMnc)) {
+            signal.formatGsmPLMN()
         } else {
-            gsmOpString = formatOperator(signal.operator)
+            formatOperator(signal.operator)
         }
+
         if (gsmOpString.isNotBlank())
             cellIds.add("PLMN\u00A0$gsmOpString")
 
@@ -1322,15 +1319,15 @@ class SignalDetectorService : Service() {
         return sid in 1..0x7fff
     }
 
-    protected fun validNID(nid: Int): Boolean { // CDMA System Identifier
+    private fun validNID(nid: Int): Boolean { // CDMA System Identifier
         return nid in 0..0xffff
     }
 
-    protected fun validBSID(bsid: Int): Boolean {
+    private fun validBSID(bsid: Int): Boolean {
         return bsid in 0..0xffff
     }
 
-    protected fun validCID(cid: Int): Boolean { // GSM cell ID
+    private fun validCID(cid: Int): Boolean { // GSM cell ID
         return cid in 0..0xffff
     }
 
@@ -1354,7 +1351,7 @@ class SignalDetectorService : Service() {
         super.onDestroy()
     }
 
-    fun sendResult(message: SignalInfo?) {
+    private fun sendResult(message: SignalInfo?) {
         val intent = Intent(SD_RESULT)
         if (message != null)
             intent.putExtra(SD_MESSAGE, message)
