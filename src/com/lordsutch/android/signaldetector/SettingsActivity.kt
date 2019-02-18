@@ -1,11 +1,7 @@
 package com.lordsutch.android.signaldetector
 
 import android.os.Bundle
-import android.preference.PreferenceActivity
-import androidx.appcompat.widget.Toolbar
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
