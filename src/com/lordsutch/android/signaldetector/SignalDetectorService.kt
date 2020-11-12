@@ -335,11 +335,13 @@ class SignalDetectorService : Service() {
         mCriteria.accuracy = if (lessPower) Criteria.NO_REQUIREMENT else Criteria.ACCURACY_FINE
 
         provider = mLocationManager!!.getBestProvider(mCriteria, true)
-        Log.d(TAG, "Using GPS provider " + provider!!)
+        if (provider != null) {
+            Log.d(TAG, "Using GPS provider " + provider!!)
 
-        mLocationManager!!.requestLocationUpdates(provider, 1000, 0f, mLocListener)
-        mLocation = mLocationManager!!.getLastKnownLocation(provider)
-        listening = true
+            mLocationManager!!.requestLocationUpdates(provider!!, 1000, 0f, mLocListener)
+            mLocation = mLocationManager!!.getLastKnownLocation(provider!!)
+            listening = true
+        }
     }
 
     private fun appendLog(logfile: String, text: String, header: String) {
@@ -722,8 +724,6 @@ class SignalDetectorService : Service() {
         return if(test) content.roundToInt().toString() else ""
     }
 
-
-
     private fun updatelog(log: Boolean) {
         var gotID = false
 
@@ -732,7 +732,7 @@ class SignalDetectorService : Service() {
                         Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this,
                         Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            mLocation = mLocationManager!!.getLastKnownLocation(provider)
+            mLocation = mLocationManager!!.getLastKnownLocation(provider!!)
         }
 
         if (mLocation == null)
@@ -792,67 +792,61 @@ class SignalDetectorService : Service() {
                     val cellid = item.cellIdentity
 
                     if (item.isRegistered) {
-                        if (cstr != null) {
-                            signal.lteSigStrength = cstr.dbm
-                            if (signal.lteSigStrength > 0)
-                                signal.lteSigStrength = -(signal.lteSigStrength / 10)
-                            signal.timingAdvance = cstr.timingAdvance
+                        signal.lteSigStrength = cstr.dbm
+                        if (signal.lteSigStrength > 0)
+                            signal.lteSigStrength = -(signal.lteSigStrength / 10)
+                        signal.timingAdvance = cstr.timingAdvance
+
+                        signal.gci = cellid.ci
+                        signal.pci = cellid.pci
+                        signal.tac = cellid.tac
+                        signal.mcc = cellid.mcc
+                        signal.mnc = cellid.mnc
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            signal.mccString = cellid.mccString
+                            signal.mncString = cellid.mncString
                         }
 
-                        if (cellid != null) {
-                            signal.gci = cellid.ci
-                            signal.pci = cellid.pci
-                            signal.tac = cellid.tac
-                            signal.mcc = cellid.mcc
-                            signal.mnc = cellid.mnc
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                signal.mccString = cellid.mccString
-                                signal.mncString = cellid.mncString
-                            }
+                        if (signal.mccString == null)
+                            signal.mccString = formatMcc(signal.mcc)
 
-                            if (signal.mccString == null)
-                                signal.mccString = formatMcc(signal.mcc)
+                        if (signal.mncString == null)
+                            signal.mncString = formatMnc(signal.mcc, signal.mnc)
 
-                            if (signal.mncString == null)
-                                signal.mncString = formatMnc(signal.mcc, signal.mnc)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                            signal.earfcn = cellid.earfcn
+                        else
+                            signal.earfcn = EARFCN
 
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                                signal.earfcn = cellid.earfcn
-                            else
-                                signal.earfcn = EARFCN
-
-                            signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci, signal.earfcn)
-                            signal.isFDD = isBandFDD(signal.lteBand)
-                            gotID = true
-                        }
+                        signal.lteBand = guessLteBand(signal.mcc, signal.mnc, signal.gci, signal.earfcn)
+                        signal.isFDD = isBandFDD(signal.lteBand)
+                        gotID = true
                     } else {
                         val otherCell = OtherLteCell()
 
-                        if (cstr != null) {
-                            otherCell.lteSigStrength = cstr.dbm
-                            if (otherCell.lteSigStrength > 0)
-                                otherCell.lteSigStrength = -(otherCell.lteSigStrength / 10)
-                            otherCell.timingAdvance = cstr.timingAdvance
-                        }
+                        otherCell.lteSigStrength = cstr.dbm
+                        if (otherCell.lteSigStrength > 0)
+                            otherCell.lteSigStrength = -(otherCell.lteSigStrength / 10)
+                        otherCell.timingAdvance = cstr.timingAdvance
 
-                        if (cellid != null) {
-                            otherCell.gci = cellid.ci
-                            otherCell.pci = cellid.pci
-                            otherCell.tac = cellid.tac
-                            otherCell.mcc = cellid.mcc
-                            otherCell.mnc = cellid.mnc
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                otherCell.mccString = cellid.mccString
-                                otherCell.mncString = cellid.mncString
-                            } else {
-                                otherCell.mccString = formatMcc(otherCell.mcc)
-                                otherCell.mncString = formatMnc(otherCell.mcc, otherCell.mnc)
-                            }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                                otherCell.earfcn = cellid.earfcn
-                            otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci, otherCell.earfcn)
-                            otherCell.isFDD = isBandFDD(otherCell.lteBand)
+                        otherCell.gci = cellid.ci
+                        otherCell.pci = cellid.pci
+                        otherCell.tac = cellid.tac
+                        otherCell.mcc = cellid.mcc
+                        otherCell.mnc = cellid.mnc
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            otherCell.mccString = cellid.mccString
+                            otherCell.mncString = cellid.mncString
+                        } else {
+                            otherCell.mccString = formatMcc(otherCell.mcc)
+                            otherCell.mncString = formatMnc(otherCell.mcc, otherCell.mnc)
                         }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                            otherCell.earfcn = cellid.earfcn
+                        otherCell.lteBand = guessLteBand(otherCell.mcc, otherCell.mnc, otherCell.gci, otherCell.earfcn)
+                        otherCell.isFDD = isBandFDD(otherCell.lteBand)
                         signal.otherCells!!.add(otherCell)
                     }
                 } else if (item is CellInfoCdma) {

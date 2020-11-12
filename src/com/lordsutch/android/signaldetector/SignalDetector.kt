@@ -44,13 +44,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ShareActionProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.view.MenuItemCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider.getUriForFile
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import kotlin.collections.ArrayList
 import kotlin.math.abs
 import kotlin.math.max
@@ -143,7 +143,7 @@ class SignalDetector : AppCompatActivity() {
                 val supportedLocales = filterUnsupportedLocales(config.locales)
 
                 if (!supportedLocales.isEmpty) {
-                    config.locales = supportedLocales
+                    config.setLocales(supportedLocales)
                     // updateConfiguration() is deprecated in SDK 25, but the alternative
                     // requires restarting the activity, which we don't want to do here.
                     resources.updateConfiguration(config, resources.displayMetrics)
@@ -210,7 +210,9 @@ class SignalDetector : AppCompatActivity() {
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val s = intent.getParcelableExtra<SignalInfo>(SignalDetectorService.SD_MESSAGE)
-                updateSigInfo(this@SignalDetector, s)
+                if (s != null) {
+                    updateSigInfo(this@SignalDetector, s)
+                }
                 updateGui()
             }
         }
@@ -906,7 +908,7 @@ class SignalDetector : AppCompatActivity() {
                 val supportedLocales = filterUnsupportedLocales(currentLocales)
                 if (!supportedLocales.isEmpty) {
                     val config = Configuration()
-                    config.locales = supportedLocales
+                    config.setLocales(supportedLocales)
                     base = base.createConfigurationContext(config)
                 }
             }
